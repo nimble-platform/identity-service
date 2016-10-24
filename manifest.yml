@@ -1,0 +1,13 @@
+---
+applications:
+- name: sample-client
+  host: nimble-sample-client
+  memory: 512M
+  instances: 1
+  buildpack: java_buildpack
+  path: target/sample-client-0.0.1-SNAPSHOT.jar
+  env:
+    spring.profiles.active: cloud
+  services:
+    - discovery-service
+    - config-service
