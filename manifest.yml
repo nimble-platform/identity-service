@@ -7,7 +7,7 @@ applications:
   buildpack: java_buildpack
   path: target/sample-client-0.0.1-SNAPSHOT.jar
   env:
-    spring.profiles.active: cloud
+    spring.profiles.active: cloudfoundry
   services:
     - discovery-service
     - config-service
