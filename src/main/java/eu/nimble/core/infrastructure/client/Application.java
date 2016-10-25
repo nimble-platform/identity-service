@@ -1,6 +1,7 @@
 package eu.nimble.core.infrastructure.client;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.cloud.client.circuitbreaker.EnableCircuitBreaker;
@@ -26,6 +27,9 @@ public class Application {
     @Autowired
     private UserRegistrationClient userClient;
 
+    @Value("${spring.datasource.password}")
+    private String password;
+
     @RequestMapping("/")
     public String home() {
         return userClient.getUser("0");
@@ -33,7 +37,7 @@ public class Application {
 
     @RequestMapping("/user/{userId}")
     public String getUser(@PathVariable("userId") String userId) {
-        return userClient.getUser(userId);
+        return userClient.getUser(userId) + "SecretPW: " + password;
     }
 
     public static void main(String[] args) {

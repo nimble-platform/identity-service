@@ -3,5 +3,6 @@ spring:
     name: sample-client
   cloud:
     config:
-      uri: ${vcap.services.config-service.credentials.url:https://github.com/jinnerbichler/nimble_test_config_rep0}
+      uri: ${vcap.services.config-service.credentials.url}
+      label: security_test
 
