@@ -10,6 +10,7 @@ import org.springframework.cloud.netflix.feign.EnableFeignClients;
 import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -27,17 +28,14 @@ public class Application {
     @Autowired
     private UserRegistrationClient userClient;
 
-    @Value("${spring.datasource.password}")
-    private String password;
-
     @RequestMapping("/")
     public String home() {
-        return userClient.getUser("0");
+        return "HOMEPAGE";
     }
 
     @RequestMapping("/user/{userId}")
     public String getUser(@PathVariable("userId") String userId) {
-        return userClient.getUser(userId) + "SecretPW: " + password;
+        return userClient.getUser(userId);
     }
 
     public static void main(String[] args) {
@@ -45,8 +43,16 @@ public class Application {
     }
 }
 
-@FeignClient("user-registration")
+@FeignClient(value = "user-registration", fallback = UserRegistrationClientFallback.class)
 interface UserRegistrationClient {
     @RequestMapping(method = RequestMethod.GET, value = "/user/{userId}")
     String getUser(@PathVariable("userId") String userId);
+}
+
+@Component
+class UserRegistrationClientFallback implements UserRegistrationClient {
+    @Override
+    public String getUser(@PathVariable("userId") String userId) {
+        return "fallback user";
+    }
 }

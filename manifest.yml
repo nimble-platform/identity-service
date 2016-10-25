@@ -5,7 +5,7 @@ applications:
   memory: 512M
   instances: 1
   buildpack: java_buildpack
-  path: target/sample-client-0.0.1-SNAPSHOT.jar
+  path: target/sample-client-0.0.1.jar
   env:
     spring.profiles.active: cloudfoundry
   services:

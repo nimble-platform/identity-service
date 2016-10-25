@@ -1,8 +1,9 @@
+server:
+  port: ${PORT:80}
 spring:
   application:
     name: sample-client
   cloud:
     config:
-      uri: ${vcap.services.config-service.credentials.url}
-      label: security_test
-
+      uri: ${vcap.services.config-service.credentials.url:${CONFIG_SERVER_URI:http://localhost:8888}}
+      failFast: true
