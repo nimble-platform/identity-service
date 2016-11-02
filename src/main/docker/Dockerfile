@@ -1,6 +1,8 @@
 FROM java:8
 VOLUME /tmp
+ENV PORT=20001
 ADD app.jar app.jar
-ADD entry.sh entry.sh
+ADD entrypoint.sh entrypoint.sh
 RUN bash -c 'touch /app.jar'
-ENTRYPOINT ["sh", "/entry.sh"]
+EXPOSE 20001
+ENTRYPOINT ["sh", "/entrypoint.sh"]
