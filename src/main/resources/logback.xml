@@ -6,7 +6,7 @@
         <port>5000</port>
     </appender>
 
-    <root level="all">
+    <root level="info">
         <appender-ref ref="LOGSTASH"/>
         <appender-ref ref="CONSOLE"/>
     </root>

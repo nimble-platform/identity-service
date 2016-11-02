@@ -4,11 +4,11 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>eu.nimble.core.infrastructure</groupId>
-    <artifactId>sample-client</artifactId>
+    <groupId>eu.nimble.core.infrastructure.templates</groupId>
+    <artifactId>java-microservice-template</artifactId>
     <version>0.0.1</version>
+    <name>Nimble Java Microservice Template</name>
     <packaging>jar</packaging>
-    <name>Nimble Microservice Template</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -83,6 +83,7 @@
     </dependencies>
 
     <build>
+        <finalName>app</finalName>
         <plugins>
             <plugin>
                 <groupId>com.spotify</groupId>
@@ -118,6 +119,17 @@
                     <registryUrl>https://index.docker.io/v1/</registryUrl>
                 </configuration>
             </plugin>
+             <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>repackage</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
         </plugins>
     </build>
 </project>

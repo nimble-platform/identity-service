@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.client;
+package eu.nimble.core.infrastructure.template;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,11 +1,11 @@
 ---
 applications:
-- name: sample-client
-  host: nimble-sample-client
+- name: java-microservice-template
+  host: nimble-java-microservice-template
   memory: 512M
   instances: 1
   buildpack: java_buildpack
-  path: target/sample-client-0.0.1.jar
+  path: target/app.jar
   env:
     spring.profiles.active: cloudfoundry
   services:
