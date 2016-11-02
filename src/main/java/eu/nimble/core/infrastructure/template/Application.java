@@ -1,5 +1,7 @@
 package eu.nimble.core.infrastructure.template;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -25,12 +27,21 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class Application {
 
+    private static Logger logger = LoggerFactory.getLogger(Application.class);
+
+    @Value("${build.version}")
+    private String buildVersion;
+
     @Autowired
     private UserRegistrationClient userClient;
 
     @RequestMapping("/")
     public String home() {
-        return "HOMEPAGE";
+
+        logger.info("Requested Homepage");
+        logger.info("Sample 1");
+        logger.info("Sample 3");
+        return buildVersion;
     }
 
     @RequestMapping("/user/{userId}")
