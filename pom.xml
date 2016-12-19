@@ -28,16 +28,9 @@
         <version>1.4.1.RELEASE</version>
     </parent>
 
-    <repositories>
-        <repository>
-            <id>uaa-java-client</id>
-            <url>https://raw.github.com/YOUR-USERNAME/YOUR-PROJECT-NAME/mvn-repo/</url>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </snapshots>
-        </repository>
-    </repositories>
+    <modules>
+        <module>libs/uaa-java-client</module>
+    </modules>
 
     <dependencyManagement>
         <dependencies>
