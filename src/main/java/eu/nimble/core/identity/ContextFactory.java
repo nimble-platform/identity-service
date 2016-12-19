@@ -15,7 +15,7 @@ import java.net.URISyntaxException;
 @Component
 public class ContextFactory {
 
-    @Value("${nimble.uaa.uri}")
+    @Value("${nimble.uaa.url}")
     private String uaaURI;
 
     private UaaContextFactory createFactory() throws URISyntaxException {

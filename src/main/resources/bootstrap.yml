@@ -12,4 +12,4 @@ logstash:
 
 nimble:
   uaa:
-    uri: ${UAA_URI:http://localhost:9090}
+    url: ${UAA_URI:http://localhost:9090}

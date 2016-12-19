@@ -1,50 +1,49 @@
 package eu.nimble.core.identity.user;
 
+import eu.nimble.core.identity.ConnectionFactory;
 import eu.nimble.core.identity.ContextFactory;
-import org.cloudfoundry.identity.client.UaaContext;
+import org.cloudfoundry.identity.uaa.api.common.model.expr.FilterRequest;
+import org.cloudfoundry.identity.uaa.rest.SearchResults;
+import org.cloudfoundry.identity.uaa.scim.ScimUser;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
-import org.springframework.security.oauth2.common.AuthenticationScheme;
+import org.springframework.security.oauth2.provider.client.BaseClientDetails;
 import org.springframework.web.bind.annotation.RequestMapping;
 import static org.springframework.web.bind.annotation.RequestMethod.*;
 import org.springframework.web.bind.annotation.RestController;
+import org.cloudfoundry.identity.uaa.api.common.UaaConnection;
+import java.util.UUID;
 
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.net.URL;
 
 @RestController
 @RequestMapping("/user")
 public class UserIdentityController {
 
-    @Value("${nimble.uaa.uri}")
-    private String uaaURI;
-
     @Autowired
     private ContextFactory contextFactory;
+
+    @Autowired
+    private  ConnectionFactory connectionFactory;
 
     @RequestMapping(method=POST)
     public String addUser(){
 
         try {
-            UaaContext context = contextFactory.withClientCredentials("sultans", "sultanssecret");
+            UaaConnection uaaConnection = connectionFactory.withClientCredentials("sultans",
+                    "sultanssecret");
 
-            ResourceOwnerPasswordResourceDetails credentials = new ResourceOwnerPasswordResourceDetails();
-            credentials.setAccessTokenUri("http://localhost:8080/uaa/oauth/token");
-            credentials.setClientAuthenticationScheme(AuthenticationScheme.header);
-            credentials.setClientId("app");
-            credentials.setClientSecret("appclientsecret");
-            credentials.setUsername("myuser");
-            credentials.setPassword("mypassword");
+            // create user
+            ScimUser newUser = new ScimUser(UUID.randomUUID().toString(), "user_name", "given_name", "family_name");
+            newUser.addEmail("j.innerbichler@gmail.com");
+            newUser.setPassword("password");
+            uaaConnection.userOperations().createUser(newUser);
 
-            URL uaaHost = new URL("http://localhost:8080/uaa");
-            UaaConnection connection = UaaConnectionFactory.getConnection(uaaHost, credentials);
-            UaaUserOperations operations = connection.userOperations();
+            // list user
+            SearchResults<ScimUser> user = uaaConnection.userOperations().getUsers(new FilterRequest());
 
-
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
+            for (ScimUser userDetails : user.getResources() ) {
+                System.out.println(userDetails);
+            }
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
