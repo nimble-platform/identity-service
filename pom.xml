@@ -28,10 +28,6 @@
         <version>1.4.1.RELEASE</version>
     </parent>
 
-    <modules>
-        <module>libs/uaa-java-client</module>
-    </modules>
-
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -84,6 +80,12 @@
             <artifactId>docker-maven-plugin</artifactId>
             <version>${docker.plugin.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/org.cloudfoundry.identity/cloudfoundry-identity-client-lib -->
         <dependency>
             <groupId>org.cloudfoundry.identity</groupId>
@@ -155,6 +157,32 @@
                     <registryUrl>https://index.docker.io/v1/</registryUrl>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>app</descriptorRef>
+                    </descriptorRefs>
+                    <archive>
+                        <manifest>
+                            <mainClass>eu.nimble.core.identity.Application</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

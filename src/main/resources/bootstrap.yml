@@ -2,14 +2,16 @@ server:
   port: ${PORT:9091}
 spring:
   application:
-    name: java-microservice-template
+    name: identity-service
   cloud:
     config:
       uri: ${vcap.services.config-service.credentials.url:${CONFIG_SERVER_URI:http://localhost:8888}}
-#      failFast: true
+      failFast: true
 logstash:
   uri: ${vcap.services.logstash-service.credentials.url:${LOGSTASH_URI:localhost:5000}}
 
 nimble:
   uaa:
     url: ${UAA_URI:http://localhost:9090}
+    clientid: ${UAA_CLIENT_ID:sultans}
+    clientsecret: ${UAA_CLIENT_SECRET:sultanssecret}

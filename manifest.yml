@@ -1,7 +1,7 @@
 ---
 applications:
-- name: java-microservice-template
-  host: nimble-java-microservice-template
+- name: identity-service
+  host: nimble-identity-service
   memory: 512M
   instances: 1
   buildpack: java_buildpack

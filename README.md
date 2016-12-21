@@ -1,2 +1,2 @@
 # identity-server
-Service for managing identities on the platform
+Service for managing identities on the platform.
