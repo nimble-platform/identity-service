@@ -28,6 +28,10 @@
         <version>1.4.1.RELEASE</version>
     </parent>
 
+    <modules>
+        <module>libs/uaa-java-client</module>
+    </modules>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
