@@ -1,6 +1,7 @@
 package eu.nimble.core.identity.user;
 
 import eu.nimble.core.identity.uaa.ConnectionFactory;
+import org.cloudfoundry.identity.uaa.api.common.UaaConnection;
 import org.cloudfoundry.identity.uaa.api.group.UaaGroupOperations;
 import org.cloudfoundry.identity.uaa.api.user.UaaUserOperations;
 import org.cloudfoundry.identity.uaa.scim.ScimUser;
@@ -11,17 +12,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import static org.springframework.web.bind.annotation.RequestMethod.*;
-
-import org.cloudfoundry.identity.uaa.api.common.UaaConnection;
 import org.springframework.web.client.HttpClientErrorException;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
+import java.net.MalformedURLException;
 import java.util.UUID;
 
-import java.net.MalformedURLException;
+import static org.springframework.web.bind.annotation.RequestMethod.*;
 
 @RestController
 @RequestMapping("/user")
