@@ -6,7 +6,7 @@ spring:
   cloud:
     config:
       uri: ${vcap.services.config-service.credentials.url:${CONFIG_SERVER_URI:http://localhost:8888}}
-      failFast: true
+#      failFast: true
 logstash:
   uri: ${vcap.services.logstash-service.credentials.url:${LOGSTASH_URI:localhost:5000}}
 
