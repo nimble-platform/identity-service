@@ -1,5 +1,6 @@
 package eu.nimble.core.identity.user;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import eu.nimble.core.identity.uaa.ConnectionFactory;
 import org.cloudfoundry.identity.uaa.api.common.UaaConnection;
 import org.cloudfoundry.identity.uaa.api.group.UaaGroupOperations;
@@ -49,15 +50,13 @@ public class UserIdentityController {
     }
 
     @RequestMapping(method = POST)
-    public ResponseEntity<ScimUser> addUser(
-            @RequestParam(value = "first_name") String firstName,
-            @RequestParam(value = "family_name") String familyName,
-            @RequestParam(value = "email") String email,
-            @RequestParam(value = "password") String password) { // TODO: send only hash of password?
+    public ResponseEntity<ScimUser> addUser(@RequestBody UserRegistrationData user) { // TODO: send only hash of password?
 
-        ScimUser newUser = new ScimUser(UUID.randomUUID().toString(), email, firstName, familyName);
-        newUser.addEmail(email);
-        newUser.setPassword(password);
+        // TODO: check password
+
+        ScimUser newUser = new ScimUser(UUID.randomUUID().toString(), user.email, user.firstname, user.surname);
+        newUser.addEmail(user.email);
+        newUser.setPassword(user.password);
         ScimUser createdUser = this.uaaUserOperations.createUser(newUser);
 
         logger.info("Created user '{}'", createdUser.toString());
@@ -97,5 +96,30 @@ public class UserIdentityController {
     public ResponseEntity<?> UaaExceptionHandler(HttpServletRequest req, HttpClientErrorException ex) {
         logger.error("Request: " + req.getRequestURL() + " raised " + ex);
         return new ResponseEntity<>("Error while communicating with UAA", null, ex.getStatusCode());
+    }
+
+    private static class UserRegistrationData {
+        @JsonProperty(value = "firstname")
+        private String firstname;
+        @JsonProperty(value = "surname")
+        private String surname;
+        @JsonProperty(value = "password")
+        private String password;
+        @JsonProperty(value = "repassword")
+        private String repassword;
+        @JsonProperty(value = "email")
+        private String email;
+        @JsonProperty(value = "job-title")
+        private String jobTitle;
+        @JsonProperty(value = "date-of-birth")
+        private String dateOfBirth;
+        @JsonProperty(value = "place-of-birth")
+        private String placeOfBirth;
+        @JsonProperty(value = "legal-domain")
+        private String legalDomain;
+        @JsonProperty(value = "person-id")
+        private String personId;
+        @JsonProperty(value = "phone")
+        private String phone;
     }
 }
