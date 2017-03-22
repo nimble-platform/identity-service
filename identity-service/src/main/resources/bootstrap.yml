@@ -9,6 +9,14 @@ spring:
       failFast: ${CONFIG_SERVER_FAILFAST:false}
     discovery:
       enabled: ${DISCOVERY_ENABLED:false}
+    datasource:
+      url: jdbc:postgresql://localhost:5433/blood
+      username: admin
+      password: changeme
+      driver-class-name: org.hsqldb.jdbcDriver
+    jpa:
+      generate-ddl: true
+
 logstash:
   uri: ${vcap.services.logstash-service.credentials.url:${LOGSTASH_URI:localhost:5000}}
 

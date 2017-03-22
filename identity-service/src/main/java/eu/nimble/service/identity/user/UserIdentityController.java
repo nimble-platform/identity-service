@@ -4,13 +4,24 @@ import eu.nimble.service.identity.swagger.api.LoginApi;
 import eu.nimble.service.identity.swagger.api.RegisterApi;
 import eu.nimble.service.identity.swagger.model.User;
 import eu.nimble.service.identity.swagger.model.UserToRegister;
+import eu.nimble.service.identity.test.model.Customer;
+import eu.nimble.service.identity.test.model.CustomerRepository;
 import io.swagger.annotations.ApiParam;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 public class UserIdentityController implements LoginApi, RegisterApi {
+
+    @Autowired
+    CustomerRepository repository;
+
     @Override
     public ResponseEntity<User> loginUser(@ApiParam(value = "Name of user") @RequestParam(value = "username", required = false) String username, @ApiParam(value = "Password of user") @RequestParam(value = "password", required = false) String password) {
+
+
+        repository.save(new Customer("Johannes", "Innerbichler"));
+
         return null;
     }
 

@@ -19,6 +19,7 @@
         </logback.version> <!-- Version was set back due to bug: http://jira.qos.ch/browse/LOGBACK-1158 -->
         <timestamp>${maven.build.timestamp}</timestamp>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
+        <spring.cloud.connector.version>1.2.3.RELEASE</spring.cloud.connector.version>
         <default.package>eu.nimble.service.identity</default.package>
         <swagger.api.src>src/main/resources/api.yml</swagger.api.src>
         <springfox.version>2.5.0</springfox.version>
@@ -121,8 +122,19 @@
             <version>1.0.2-SNAPSHOT</version>
         </dependency>
 
+        <!-- Spring Cloud Connector -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-localconfig-connector</artifactId>
+            <version>${spring.cloud.connector.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-spring-service-connector</artifactId>
+            <version>${spring.cloud.connector.version}</version>
+        </dependency>
 
-        <!--SpringFox dependencies -->
+        <!-- Swagger dependencies -->
         <dependency>
             <groupId>io.springfox</groupId>
             <artifactId>springfox-swagger2</artifactId>
@@ -133,7 +145,6 @@
             <artifactId>springfox-swagger-ui</artifactId>
             <version>${springfox.version}</version>
         </dependency>
-
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-joda</artifactId>
@@ -141,6 +152,22 @@
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-jpa</artifactId>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>9.1-901-1.jdbc4</version>
         </dependency>
     </dependencies>
 

@@ -26,12 +26,12 @@ paths:
           schema:
             $ref: '#/definitions/User'
   /login:
-    get:
+    post:
       description: Login user with credentials.
       operationId: loginUser
       parameters:
       - in: query
-        name: username
+        name: email
         description: Name of user
         type: string
         required: true
@@ -78,6 +78,8 @@ definitions:
     title: User Object
     type: object
     properties:
+      username:
+        type: string
       firstname:
         type: string
       lastname:
@@ -88,6 +90,7 @@ definitions:
         type: string
       dateOfBirth:
         type: string
+        format: date
       placeOBirth:
         type: string
       legalDomain:
