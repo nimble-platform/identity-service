@@ -1,0 +1,90 @@
+# Example OpenAPI spec using YAML
+# Be aware that YAML has indentation based scoping.
+# https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md
+# Generate client & server code stubs using http://editor.swagger.io/#/
+swagger: '2.0'
+
+info:
+  version: "0.0.1"
+  title: Identity Service API
+
+paths:
+  /user:
+    get:
+      description: Gets the user by UserID.
+      operationId: getUser
+      parameters:
+      - in: query
+        name: userid
+        description: ID of user
+        type: string
+      produces:
+      - application/json
+      responses:
+        200:
+          description: Successful response
+          schema:
+            $ref: '#/definitions/User'
+  /login:
+    get:
+      description: Login user with credentials.
+      operationId: loginUser
+      parameters:
+      - in: query
+        name: username
+        description: Name of user
+        type: string
+        required: true
+      - in: query
+        name: password
+        description: Password of user
+        type: string
+        required: true
+      produces:
+      - application/json
+      responses:
+        200:
+          description: Successful login
+          schema:
+            $ref: '#/definitions/User'
+        401:
+          description: Login failed
+  /register:
+    post:
+      summary: Register a new user to the nimble.
+      description: ""
+      operationId: registerUser
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: User object that needs to be registered to Nimble.
+          required: true
+          schema:
+            $ref: "#/definitions/UserToRegister"
+      responses:
+        201:
+          description: User created
+          schema:
+            $ref: '#/definitions/User'
+        405:
+          description: User not created
+
+definitions:
+  User:
+    title: User Object
+    type: object
+    properties:
+      username:
+        type: string
+      email:
+        type: string
+  UserToRegister:
+    allOf:
+      - $ref: '#/definitions/User' # UserToRegister has all properties of a User.
+      - properties: # extra properties only for registration
+          password:
+            type: string

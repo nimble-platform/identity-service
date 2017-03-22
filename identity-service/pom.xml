@@ -6,7 +6,7 @@
 
     <artifactId>identity-service</artifactId>
     <version>0.0.1</version>
-    <name>Service for managing identities on the platform</name>
+    <name>Service for managing identities on the platform.</name>
     <packaging>jar</packaging>
 
     <properties>
@@ -19,10 +19,13 @@
         </logback.version> <!-- Version was set back due to bug: http://jira.qos.ch/browse/LOGBACK-1158 -->
         <timestamp>${maven.build.timestamp}</timestamp>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
+        <default.package>eu.nimble.service.identity</default.package>
+        <swagger.api.src>src/main/resources/api.yml</swagger.api.src>
+        <springfox.version>2.5.0</springfox.version>
     </properties>
 
     <parent>
-        <groupId>eu.nimble.core.identity</groupId>
+        <groupId>eu.nimble.service.identity</groupId>
         <artifactId>identity-service-parent</artifactId>
         <version>0.0.1</version>
     </parent>
@@ -117,6 +120,28 @@
             <artifactId>uaa-java-client</artifactId>
             <version>1.0.2-SNAPSHOT</version>
         </dependency>
+
+
+        <!--SpringFox dependencies -->
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger2</artifactId>
+            <version>${springfox.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger-ui</artifactId>
+            <version>${springfox.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-joda</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -168,6 +193,43 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+
+                <groupId>io.swagger</groupId>
+                <artifactId>swagger-codegen-maven-plugin</artifactId>
+                <version>2.2.1</version>
+                <executions>
+                    <execution>
+                        <id>code</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${swagger.api.src}</inputSpec>
+                            <language>spring</language>
+                            <modelPackage>${default.package}.swagger.model</modelPackage>
+                            <apiPackage>${default.package}.swagger.api</apiPackage>
+                            <invokerPackage>${default.package}.swagger.invoker</invokerPackage>
+                            <configOptions>
+                                <sourceFolder>src/gen/java/main</sourceFolder>
+                                <interfaceOnly>true</interfaceOnly>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>doc</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${swagger.api.src}</inputSpec>
+                            <language>html</language>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 </project>

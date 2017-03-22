@@ -1,4 +1,4 @@
-package eu.nimble.core.identity;
+package eu.nimble.service.identity;
 
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
