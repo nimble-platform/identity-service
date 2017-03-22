@@ -2,7 +2,6 @@ package eu.nimble.service.identity.user;
 
 import eu.nimble.service.identity.swagger.api.LoginApi;
 import eu.nimble.service.identity.swagger.api.RegisterApi;
-import eu.nimble.service.identity.swagger.api.UserApi;
 import eu.nimble.service.identity.swagger.model.User;
 import eu.nimble.service.identity.swagger.model.UserToRegister;
 import io.swagger.annotations.ApiParam;

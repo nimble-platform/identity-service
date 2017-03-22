@@ -78,9 +78,21 @@ definitions:
     title: User Object
     type: object
     properties:
-      username:
+      firstname:
+        type: string
+      lastname:
+        type: string
+      jobTitle:
         type: string
       email:
+        type: string
+      dateOfBirth:
+        type: string
+      placeOBirth:
+        type: string
+      legalDomain:
+        type: string
+      phoneNumber:
         type: string
   UserToRegister:
     allOf:
