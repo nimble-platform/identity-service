@@ -1,32 +1,45 @@
 package eu.nimble.service.identity.user;
 
+import eu.nimble.service.identity.repository.CustomerRepository;
 import eu.nimble.service.identity.swagger.api.LoginApi;
 import eu.nimble.service.identity.swagger.api.RegisterApi;
+import eu.nimble.service.identity.swagger.api.RegisterCompanyApi;
+import eu.nimble.service.identity.swagger.model.CompanyRegistration;
 import eu.nimble.service.identity.swagger.model.User;
 import eu.nimble.service.identity.swagger.model.UserToRegister;
-import eu.nimble.service.identity.test.model.Customer;
-import eu.nimble.service.identity.test.model.CustomerRepository;
 import io.swagger.annotations.ApiParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-public class UserIdentityController implements LoginApi, RegisterApi {
+@Controller
+public class UserIdentityController implements LoginApi, RegisterApi, RegisterCompanyApi {
 
     @Autowired
     CustomerRepository repository;
 
     @Override
-    public ResponseEntity<User> loginUser(@ApiParam(value = "Name of user") @RequestParam(value = "username", required = false) String username, @ApiParam(value = "Password of user") @RequestParam(value = "password", required = false) String password) {
+    public ResponseEntity<User> loginUser(
+            @ApiParam(value = "Name of user") @RequestParam(value = "username", required = false) String username,
+            @ApiParam(value = "Password of user") @RequestParam(value = "password", required = false) String password) {
 
-
-        repository.save(new Customer("Johannes", "Innerbichler"));
+//        repository.save(new Customer("Johannes", "Innerbichler"));
 
         return null;
     }
 
     @Override
-    public ResponseEntity<User> registerUser(@ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody UserToRegister body) {
+    public ResponseEntity<User> registerUser(
+            @ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody UserToRegister user) {
+
+
+        return null;
+    }
+
+    @Override
+    public ResponseEntity<CompanyRegistration> registerCompany(
+            @ApiParam(value = "Company object that needs to be registered to Nimble.", required = true) @RequestBody CompanyRegistration company) {
         return null;
     }
 }
