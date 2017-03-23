@@ -139,28 +139,28 @@ definitions:
     title: Company registration object
     type: object
     properties:
-      adminUsername:
+      username:
         type: string
-      adminPassword:
+      password:
         type: string
-      adminFirstname:
+      firstname:
         type: string
-      adminLastname:
+      lastname:
         type: string
-      adminJobTitle:
+      jobTitle:
         type: string
-      adminEmail:
+      email:
         type: string
-      adminDateOfBirth:
+      dateOfBirth:
         type: string
         format: date
-      adminPlaceOBirth:
+      placeOBirth:
         type: string
-      adminLegalDomain:
+      legalDomain:
         type: string
-      adminPhoneNumber:
+      phoneNumber:
         type: string
-      adminID:
+      userID:
         type: string
       companyName:
         type: string
