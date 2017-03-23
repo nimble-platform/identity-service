@@ -154,7 +154,7 @@ definitions:
       dateOfBirth:
         type: string
         format: date
-      placeOBirth:
+      placeOfBirth:
         type: string
       legalDomain:
         type: string

@@ -1,6 +1,9 @@
 package eu.nimble.service.identity.user;
 
-import eu.nimble.service.identity.repository.CustomerRepository;
+import eu.nimble.service.identity.model.Company;
+import eu.nimble.service.identity.model.NimbleUser;
+import eu.nimble.service.identity.repository.CompanyRepository;
+import eu.nimble.service.identity.repository.UserRepository;
 import eu.nimble.service.identity.swagger.api.LoginApi;
 import eu.nimble.service.identity.swagger.api.RegisterApi;
 import eu.nimble.service.identity.swagger.api.RegisterCompanyApi;
@@ -9,15 +12,20 @@ import eu.nimble.service.identity.swagger.model.User;
 import eu.nimble.service.identity.swagger.model.UserToRegister;
 import io.swagger.annotations.ApiParam;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+@CrossOrigin
 @Controller
 public class UserIdentityController implements LoginApi, RegisterApi, RegisterCompanyApi {
 
     @Autowired
-    CustomerRepository repository;
+    UserRepository userRepository;
+
+    @Autowired
+    CompanyRepository companyRepository;
 
     @Override
     public ResponseEntity<User> loginUser(
@@ -40,7 +48,22 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
     @Override
     public ResponseEntity<CompanyRegistration> registerCompany(
             @ApiParam(value = "Company object that needs to be registered to Nimble.", required = true) @RequestBody CompanyRegistration company) {
-        return null;
+
+        NimbleUser companyAdmin = new NimbleUser(company.getUsername(), company.getPassword(), company.getFirstname(),
+                company.getLastname(), company.getJobTitle(), company.getEmail(), company.getDateOfBirth().toString(),
+                company.getPlaceOfBirth(), company.getLegalDomain(), company.getPhoneNumber());
+        Company newCompany = new Company(company.getCompanyName(), company.getCompanyAddress(), company.getCompanyCountry());
+
+        // add to database
+        companyAdmin = userRepository.save(companyAdmin);
+        newCompany = companyRepository.save(newCompany);
+
+        // set IDs
+        company.setUserID(companyAdmin.getId().toString());
+        company.setUsername(company.getEmail());
+        company.setCompanyID(newCompany.getId().toString());
+
+        return new ResponseEntity<>(company, HttpStatus.OK);
     }
 }
 
