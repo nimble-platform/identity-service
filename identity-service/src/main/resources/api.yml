@@ -160,9 +160,13 @@ definitions:
         type: string
       adminPhoneNumber:
         type: string
+      adminID:
+        type: string
       companyName:
         type: string
       companyAddress:
         type: string
       companyCountry:
+        type: string
+      companyID:
         type: string
