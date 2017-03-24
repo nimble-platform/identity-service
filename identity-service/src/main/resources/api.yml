@@ -30,16 +30,12 @@ paths:
       description: Login user with credentials.
       operationId: loginUser
       parameters:
-      - in: query
-        name: email
-        description: Name of user
-        type: string
-        required: true
-      - in: query
-        name: password
-        description: Password of user
-        type: string
-        required: true
+        - in: body
+          name: credentials
+          description: User object that needs to be registered to Nimble.
+          required: true
+          schema:
+            $ref: "#/definitions/Credentials"
       produces:
       - application/json
       responses:
@@ -133,6 +129,15 @@ definitions:
     type: object
     properties:
       address:
+        type: string
+
+  Credentials:
+    title: Credentials of user
+    type: object
+    properties:
+      email:
+        type: string
+      password:
         type: string
 
   CompanyRegistration:

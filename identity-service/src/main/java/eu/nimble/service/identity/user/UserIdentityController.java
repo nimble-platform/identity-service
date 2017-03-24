@@ -8,6 +8,7 @@ import eu.nimble.service.identity.swagger.api.LoginApi;
 import eu.nimble.service.identity.swagger.api.RegisterApi;
 import eu.nimble.service.identity.swagger.api.RegisterCompanyApi;
 import eu.nimble.service.identity.swagger.model.CompanyRegistration;
+import eu.nimble.service.identity.swagger.model.Credentials;
 import eu.nimble.service.identity.swagger.model.User;
 import eu.nimble.service.identity.swagger.model.UserToRegister;
 import io.swagger.annotations.ApiParam;
@@ -16,6 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @CrossOrigin
 @Controller
@@ -26,16 +29,6 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
 
     @Autowired
     CompanyRepository companyRepository;
-
-    @Override
-    public ResponseEntity<User> loginUser(
-            @ApiParam(value = "Name of user") @RequestParam(value = "username", required = false) String username,
-            @ApiParam(value = "Password of user") @RequestParam(value = "password", required = false) String password) {
-
-//        repository.save(new Customer("Johannes", "Innerbichler"));
-
-        return null;
-    }
 
     @Override
     public ResponseEntity<User> registerUser(
@@ -49,7 +42,7 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
     public ResponseEntity<CompanyRegistration> registerCompany(
             @ApiParam(value = "Company object that needs to be registered to Nimble.", required = true) @RequestBody CompanyRegistration company) {
 
-        NimbleUser companyAdmin = new NimbleUser(company.getUsername(), company.getPassword(), company.getFirstname(),
+        NimbleUser companyAdmin = new NimbleUser(company.getEmail(), company.getPassword(), company.getFirstname(),
                 company.getLastname(), company.getJobTitle(), company.getEmail(), company.getDateOfBirth().toString(),
                 company.getPlaceOfBirth(), company.getLegalDomain(), company.getPhoneNumber());
         Company newCompany = new Company(company.getCompanyName(), company.getCompanyAddress(), company.getCompanyCountry());
@@ -64,6 +57,28 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
         company.setCompanyID(newCompany.getId().toString());
 
         return new ResponseEntity<>(company, HttpStatus.OK);
+    }
+
+
+    @Override
+    public ResponseEntity<User> loginUser(@ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody Credentials credentials) {
+
+        // get potential users
+        List<NimbleUser> potentialUsers = userRepository.findByUsername(credentials.getEmail());
+
+        // check if users where found
+        if (potentialUsers.isEmpty())
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+
+        // check password
+        NimbleUser user = potentialUsers.get(0);
+        if (user.getPassword().equals(credentials.getPassword()) == false)
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+
+        User jsonUser = new User();
+        jsonUser.setUsername(user.getUsername());
+        jsonUser.setEmail(user.getEmail());
+        return new ResponseEntity<>(jsonUser, HttpStatus.OK);
     }
 }
 
