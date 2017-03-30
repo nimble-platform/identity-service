@@ -42,7 +42,7 @@ paths:
         200:
           description: Successful login
           schema:
-            $ref: '#/definitions/User'
+            $ref: '#/definitions/CompanyRegistration'
         401:
           description: Login failed
 
@@ -158,7 +158,6 @@ definitions:
         type: string
       dateOfBirth:
         type: string
-        format: date
       placeOfBirth:
         type: string
       legalDomain:

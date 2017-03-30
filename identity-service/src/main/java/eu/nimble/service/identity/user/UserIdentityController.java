@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin
 @Controller
 public class UserIdentityController implements LoginApi, RegisterApi, RegisterCompanyApi {
 
@@ -61,7 +60,7 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
 
 
     @Override
-    public ResponseEntity<User> loginUser(@ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody Credentials credentials) {
+    public ResponseEntity<CompanyRegistration> loginUser(@ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody Credentials credentials) {
 
         // get potential users
         List<NimbleUser> potentialUsers = userRepository.findByUsername(credentials.getEmail());
@@ -75,10 +74,13 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
         if (user.getPassword().equals(credentials.getPassword()) == false)
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
-        User jsonUser = new User();
-        jsonUser.setUsername(user.getUsername());
-        jsonUser.setEmail(user.getEmail());
-        return new ResponseEntity<>(jsonUser, HttpStatus.OK);
+        CompanyRegistration jsonCompnay = new CompanyRegistration();
+        jsonCompnay.setUsername(user.getUsername());
+        jsonCompnay.setEmail(user.getEmail());
+        jsonCompnay.setFirstname((user.getFirstname()));
+        jsonCompnay.setLastname(user.getLastname());
+        jsonCompnay.setUserID(user.getId().toString());
+        return new ResponseEntity<>(jsonCompnay, HttpStatus.OK);
     }
 }
 
