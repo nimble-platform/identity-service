@@ -1,4 +1,4 @@
-package eu.nimble.core.identity.uaa;
+package eu.nimble.service.identity.uaa;
 
 import org.cloudfoundry.identity.uaa.api.UaaConnectionFactory;
 import org.cloudfoundry.identity.uaa.api.common.UaaConnection;

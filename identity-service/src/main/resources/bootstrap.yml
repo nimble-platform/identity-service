@@ -1,5 +1,5 @@
 server:
-  port: ${PORT:9091}
+  port: ${PORT:9096}
 spring:
   application:
     name: identity-service
@@ -9,6 +9,7 @@ spring:
       failFast: ${CONFIG_SERVER_FAILFAST:false}
     discovery:
       enabled: ${DISCOVERY_ENABLED:false}
+
 logstash:
   uri: ${vcap.services.logstash-service.credentials.url:${LOGSTASH_URI:localhost:5000}}
 
