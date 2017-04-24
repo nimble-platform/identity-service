@@ -1,3 +1,6 @@
 [submodule "uaa-java-client"]
 	path = libs/uaa-java-client
 	url = https://github.com/nimble-platform/uaa-java-client
+[submodule "libs/catalog-service-srdc"]
+	path = libs/catalog-service-srdc
+	url = https://github.com/nimble-platform/catalog-service-srdc

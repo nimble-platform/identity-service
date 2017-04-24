@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>eu.nimble.service.identity</groupId>
+    <groupId>eu.nimble.core.infrastructure.idenity</groupId>
     <artifactId>identity-service-parent</artifactId>
     <version>0.0.1</version>
     <name>Parent Project for Identity Service</name>
@@ -18,6 +18,8 @@
 
     <modules>
         <module>libs/uaa-java-client</module>
+        <module>libs/catalog-service-srdc/core/utility</module>
+        <module>libs/catalog-service-srdc/business/ubl-data-model</module>
         <module>identity-service</module>
     </modules>
 </project>

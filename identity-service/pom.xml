@@ -21,12 +21,12 @@
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
         <spring.cloud.connector.version>1.2.3.RELEASE</spring.cloud.connector.version>
         <default.package>eu.nimble.service.identity</default.package>
-        <swagger.api.src>src/main/resources/api.yml</swagger.api.src>
+        <swagger.api.src>${project.basedir}/src/main/resources/api.yml</swagger.api.src>
         <springfox.version>2.5.0</springfox.version>
     </properties>
 
     <parent>
-        <groupId>eu.nimble.service.identity</groupId>
+        <groupId>eu.nimble.core.infrastructure.idenity</groupId>
         <artifactId>identity-service-parent</artifactId>
         <version>0.0.1</version>
     </parent>
@@ -46,7 +46,7 @@
     <dependencies>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-eureka</artifactId>
+                <artifactId>spring-cloud-starter-eureka</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
