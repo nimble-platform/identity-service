@@ -1,39 +1,34 @@
-package eu.nimble.service.identity.user;
+package eu.nimble.core.infrastructure.identity.controller;
 
-import eu.nimble.service.identity.model.Company;
-import eu.nimble.service.identity.model.NimbleUser;
-import eu.nimble.service.identity.repository.CompanyRepository;
-import eu.nimble.service.identity.repository.UserRepository;
-import eu.nimble.service.identity.swagger.api.LoginApi;
-import eu.nimble.service.identity.swagger.api.RegisterApi;
-import eu.nimble.service.identity.swagger.api.RegisterCompanyApi;
-import eu.nimble.service.identity.swagger.model.CompanyRegistration;
-import eu.nimble.service.identity.swagger.model.Credentials;
-import eu.nimble.service.identity.swagger.model.User;
-import eu.nimble.service.identity.swagger.model.UserToRegister;
+import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
+import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
+import eu.nimble.core.infrastructure.identity.swagger.api.LoginApi;
+import eu.nimble.core.infrastructure.identity.swagger.api.RegisterApi;
+import eu.nimble.core.infrastructure.identity.swagger.api.RegisterCompanyApi;
+import eu.nimble.core.infrastructure.identity.swagger.model.CompanyRegistration;
+import eu.nimble.core.infrastructure.identity.swagger.model.Credentials;
+import eu.nimble.core.infrastructure.identity.swagger.model.User;
+import eu.nimble.core.infrastructure.identity.swagger.model.UserToRegister;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.ApiParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @Controller
 public class UserIdentityController implements LoginApi, RegisterApi, RegisterCompanyApi {
 
     @Autowired
-    UserRepository userRepository;
+    private PersonRepository personRepository;
 
     @Autowired
-    CompanyRepository companyRepository;
+    private PartyRepository partyRepository;
 
     @Override
     public ResponseEntity<User> registerUser(
             @ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody UserToRegister user) {
-
-
         return null;
     }
 
@@ -41,51 +36,25 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
     public ResponseEntity<CompanyRegistration> registerCompany(
             @ApiParam(value = "Company object that needs to be registered to Nimble.", required = true) @RequestBody CompanyRegistration company) {
 
-        NimbleUser companyAdmin = new NimbleUser(company.getEmail(), company.getPassword(), company.getFirstname(),
-                company.getLastname(), company.getJobTitle(), company.getEmail(), company.getDateOfBirth().toString(),
-                company.getPlaceOfBirth(), company.getLegalDomain(), company.getPhoneNumber());
-        Company newCompany = new Company(company.getCompanyName(), company.getCompanyAddress(), company.getCompanyCountry());
+        PersonType adminPerson = new PersonType();
+        adminPerson.setFirstName(company.getFirstname());
+        adminPerson.setFamilyName(company.getLastname());
 
-        // add to database
-        companyAdmin = userRepository.save(companyAdmin);
-        newCompany = companyRepository.save(newCompany);
+        personRepository.save(adminPerson);
 
-        // set IDs
-        company.setUserID(companyAdmin.getId().toString());
-        company.setUsername(company.getEmail());
-        company.setCompanyID(newCompany.getId().toString());
-
-        return new ResponseEntity<>(company, HttpStatus.OK);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
 
     @Override
-    public ResponseEntity<CompanyRegistration> loginUser(@ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody Credentials credentials) {
-
-        // get potential users
-        List<NimbleUser> potentialUsers = userRepository.findByUsername(credentials.getEmail());
-
-        // check if users where found
-        if (potentialUsers.isEmpty())
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-
-        // check password
-        NimbleUser user = potentialUsers.get(0);
-        if (user.getPassword().equals(credentials.getPassword()) == false)
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-
-        CompanyRegistration jsonCompnay = new CompanyRegistration();
-        jsonCompnay.setUsername(user.getUsername());
-        jsonCompnay.setEmail(user.getEmail());
-        jsonCompnay.setFirstname((user.getFirstname()));
-        jsonCompnay.setLastname(user.getLastname());
-        jsonCompnay.setUserID(user.getId().toString());
-        return new ResponseEntity<>(jsonCompnay, HttpStatus.OK);
+    public ResponseEntity<CompanyRegistration> loginUser(
+            @ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody Credentials credentials) {
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }
 
 //@RestController
-//@RequestMapping("/user")
+//@RequestMapping("/controller")
 //public class UserIdentityController {
 //
 //    private static final Logger logger = LoggerFactory.getLogger(UserIdentityController.class);
@@ -112,44 +81,44 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
 //    }
 //
 //    @RequestMapping(method = POST)
-//    public ResponseEntity<ScimUser> addUser(@RequestBody UserRegistrationData user) { // TODO: send only hash of password?
+//    public ResponseEntity<ScimUser> addUser(@RequestBody UserRegistrationData controller) { // TODO: send only hash of password?
 //
 //        // TODO: check password
 //
-//        ScimUser newUser = new ScimUser(UUID.randomUUID().toString(), user.email, user.firstname, user.surname);
-//        newUser.addEmail(user.email);
-//        newUser.setPassword(user.password);
+//        ScimUser newUser = new ScimUser(UUID.randomUUID().toString(), controller.email, controller.firstname, controller.surname);
+//        newUser.addEmail(controller.email);
+//        newUser.setPassword(controller.password);
 //        ScimUser createdUser = this.uaaUserOperations.createUser(newUser);
 //
-//        logger.info("Created user '{}'", createdUser.toString());
+//        logger.info("Created controller '{}'", createdUser.toString());
 //
 //        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
 //    }
 //
 //    @RequestMapping(method = GET)
 //    public ScimUser getUser(@RequestParam(value = "user_name") String userName) throws UserNotFoundException {
-//        logger.info("Getting user with name '{}'", userName);
-//        ScimUser user = this.uaaUserOperations.getUserByName(userName);
+//        logger.info("Getting controller with name '{}'", userName);
+//        ScimUser controller = this.uaaUserOperations.getUserByName(userName);
 //
-//        if (user == null )
+//        if (controller == null )
 //            throw new UserNotFoundException();
 //
-//        return user;
+//        return controller;
 //    }
 //
 //    @RequestMapping(method = DELETE)
 //    public ResponseEntity<?> deleteUser(@RequestParam(value = "user_name") String userName) throws UserNotFoundException {
-//        logger.info("Deleting user with name '{}'", userName);
-//        ScimUser user = this.uaaUserOperations.getUserByName(userName);
+//        logger.info("Deleting controller with name '{}'", userName);
+//        ScimUser controller = this.uaaUserOperations.getUserByName(userName);
 //
-//        if (user == null )
+//        if (controller == null )
 //            throw new UserNotFoundException();
 //
-//        this.uaaUserOperations.deleteUser(user.getId());
+//        this.uaaUserOperations.deleteUser(controller.getId());
 //        return new ResponseEntity<>(HttpStatus.OK);
 //    }
 //
-//    @ResponseStatus(value = HttpStatus.GONE, reason = "This user is not found in the system")
+//    @ResponseStatus(value = HttpStatus.GONE, reason = "This controller is not found in the system")
 //    class UserNotFoundException extends Exception {
 //        private static final long serialVersionUID = 100L;
 //    }

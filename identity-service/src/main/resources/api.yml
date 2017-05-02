@@ -11,12 +11,12 @@ info:
 paths:
   /user:
     get:
-      description: Gets the user by UserID.
+      description: Gets the controller by UserID.
       operationId: getUser
       parameters:
       - in: query
         name: userid
-        description: ID of user
+        description: ID of controller
         type: string
       produces:
       - application/json
@@ -27,7 +27,7 @@ paths:
             $ref: '#/definitions/User'
   /login:
     post:
-      description: Login user with credentials.
+      description: Login controller with credentials.
       operationId: loginUser
       parameters:
         - in: body
@@ -48,7 +48,7 @@ paths:
 
   /registerCompany:
     post:
-      description: Register company with admin user.
+      description: Register company with admin controller.
       operationId: registerCompany
       consumes:
         - application/json
@@ -71,7 +71,7 @@ paths:
 
   /register:
     post:
-      summary: Register a new user to the nimble.
+      summary: Register a new controller to the nimble.
       description: ""
       operationId: registerUser
       consumes:
@@ -80,7 +80,7 @@ paths:
         - application/json
       parameters:
         - in: body
-          name: user
+          name: controller
           description: User object that needs to be registered to Nimble.
           required: true
           schema:
@@ -132,7 +132,7 @@ definitions:
         type: string
 
   Credentials:
-    title: Credentials of user
+    title: Credentials of controller
     type: object
     properties:
       email:

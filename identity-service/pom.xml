@@ -20,13 +20,13 @@
         <timestamp>${maven.build.timestamp}</timestamp>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
         <spring.cloud.connector.version>1.2.3.RELEASE</spring.cloud.connector.version>
-        <default.package>eu.nimble.service.identity</default.package>
+        <default.package>eu.nimble.core.infrastructure.identity</default.package>
         <swagger.api.src>${project.basedir}/src/main/resources/api.yml</swagger.api.src>
-        <springfox.version>2.5.0</springfox.version>
+        <springfox.version>2.6.1</springfox.version>
     </properties>
 
     <parent>
-        <groupId>eu.nimble.core.infrastructure.idenity</groupId>
+        <groupId>eu.nimble.core.infrastructure.identity</groupId>
         <artifactId>identity-service-parent</artifactId>
         <version>0.0.1</version>
     </parent>
@@ -146,6 +146,11 @@
             <version>${springfox.version}</version>
         </dependency>
         <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-data-rest</artifactId>
+            <version>${springfox.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-joda</artifactId>
         </dependency>
@@ -167,6 +172,13 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>9.4.1212</version>
+        </dependency>
+
+        <!-- UBL data format -->
+        <dependency>
+            <groupId>eu.nimble.core.infrastructure.business</groupId>
+            <artifactId>ubl-data-model</artifactId>
+            <version>0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
