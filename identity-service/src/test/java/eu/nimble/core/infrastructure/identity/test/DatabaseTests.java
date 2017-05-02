@@ -8,7 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.List;
 import java.util.Random;
+import java.util.stream.StreamSupport;
 
 /**
  * Created by Johannes Innerbichler on 25/04/17.
@@ -27,12 +29,16 @@ public class DatabaseTests {
     public void exampleTest() {
 
         Random ran = new Random();
-        Integer x = new Integer(ran.nextInt(6) + 5);
+        Integer x = ran.nextInt(6) + 5;
 
         PersonType person = new PersonType();
         person.setFamilyName("Innerbichler");
-        person.setFirstName(x.toString());
+        person.setFirstName("Johannes" + x.toString());
 
-        personRepository.save(new PersonType());
+        PersonType addedPerson = personRepository.save(person);
+
+        List<PersonType> allPersons = personRepository.findByHjid(addedPerson.getHjid());
+
+        assert allPersons.stream().anyMatch(p -> p.getFamilyName().equals("Innerbichler"));
     }
 }

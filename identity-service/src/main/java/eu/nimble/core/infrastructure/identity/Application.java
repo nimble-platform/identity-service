@@ -13,15 +13,15 @@ import org.springframework.context.annotation.Import;
 
 import java.net.URISyntaxException;
 
-//@ComponentScan
-//@Configuration
-//@EnableAutoConfiguration
-//@EnableDiscoveryClient
-//@SpringBootApplication
-//@EntityScan({"eu.nimble.service.model"})
-////@Import({springfox.documentation.spring.data.rest.configuration.SpringDataRestConfiguration.class})
+@ComponentScan
+@Configuration
+@EnableAutoConfiguration
+@EnableDiscoveryClient
+@SpringBootApplication
+@EntityScan({"eu.nimble.service.model"})
+//@Import({springfox.documentation.spring.data.rest.configuration.SpringDataRestConfiguration.class})
 public class Application {
-//    public static void main(String[] args) throws URISyntaxException {
-//        new SpringApplicationBuilder(Application.class).web(true).run(args);
-//    }
+    public static void main(String[] args) throws URISyntaxException {
+        new SpringApplicationBuilder(Application.class).web(true).run(args);
+    }
 }

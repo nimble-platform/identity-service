@@ -9,17 +9,13 @@ import eu.nimble.core.infrastructure.identity.swagger.model.CompanyRegistration;
 import eu.nimble.core.infrastructure.identity.swagger.model.Credentials;
 import eu.nimble.core.infrastructure.identity.swagger.model.User;
 import eu.nimble.core.infrastructure.identity.swagger.model.UserToRegister;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.ApiParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
-
-import java.util.Collections;
 
 @Controller
 public class UserIdentityController implements LoginApi, RegisterApi, RegisterCompanyApi {
