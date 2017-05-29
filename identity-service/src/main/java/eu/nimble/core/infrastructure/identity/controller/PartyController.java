@@ -1,7 +1,9 @@
 package eu.nimble.core.infrastructure.identity.controller;
 
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
+import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -29,6 +32,9 @@ public class PartyController {
 
     @Autowired
     private PartyRepository partyRepository;
+
+    @Autowired
+    private PersonRepository personRepository;
 
     @ApiOperation(value = "", notes = "Get Party for Id.", response = PartyType.class, tags = {})
     @RequestMapping(value = "/party/{partyId}", produces = {"application/json"}, method = RequestMethod.GET)
@@ -50,5 +56,24 @@ public class PartyController {
         return new ResponseEntity<>(party, HttpStatus.FOUND);
 
 
+    }
+
+    @ApiOperation(value = "", notes = "Get Party for person ID.", response = PartyType.class, tags = {})
+    @RequestMapping(value = "/party_by_person/{personId}", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<List<PartyType>> getPartyByPersonID(
+            @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long personId) {
+
+        // search for persons
+        List<PersonType> foundPersons = personRepository.findByHjid(personId);
+
+        // check if person was found
+        if (foundPersons.isEmpty()) {
+            logger.info("Requested person with Id {} not found", personId);
+            return new ResponseEntity<>(Collections.EMPTY_LIST, HttpStatus.OK);
+        }
+
+        PersonType person = foundPersons.get(0);
+        List<PartyType> parties = partyRepository.findByPerson(person);
+        return new ResponseEntity<>(parties, HttpStatus.OK);
     }
 }

@@ -15,11 +15,10 @@ import java.net.URISyntaxException;
 
 @ComponentScan
 @Configuration
-@EnableAutoConfiguration
 @EnableDiscoveryClient
 @SpringBootApplication
-@EntityScan({"eu.nimble.service.model"})
-//@Import({springfox.documentation.spring.data.rest.configuration.SpringDataRestConfiguration.class})
+@EntityScan({"eu.nimble.service.model", "eu.nimble.core.infrastructure.identity.entities"})
+@EnableAutoConfiguration
 public class Application {
     public static void main(String[] args) throws URISyntaxException {
         new SpringApplicationBuilder(Application.class).web(true).run(args);
