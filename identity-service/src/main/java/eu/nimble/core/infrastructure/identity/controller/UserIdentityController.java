@@ -16,6 +16,8 @@ import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyNameType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.ApiParam;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +30,8 @@ import java.util.List;
 @SuppressWarnings("PointlessBooleanExpression")
 @Controller
 public class UserIdentityController implements LoginApi, RegisterApi, RegisterCompanyApi {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserIdentityController.class);
 
     @Autowired
     private PersonRepository personRepository;
@@ -50,8 +54,10 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
             @ApiParam(value = "Company object that needs to be registered to Nimble.", required = true) @RequestBody CompanyRegistration company) {
 
         // check if user already exists
-//        if (uaaUserRepository.findByUsername(company.getEmail()).isEmpty() == false)
-//            return new ResponseEntity<>(HttpStatus.CONFLICT);
+        if (uaaUserRepository.findByUsername(company.getEmail()).isEmpty() == false)
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
+
+        logger.info("Registering company with user " + company.getEmail());
 
         // create UBL person
         PersonType adminPerson = new PersonType();
@@ -88,6 +94,8 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
     public ResponseEntity<CompanyRegistration> loginUser(
             @ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody Credentials credentials) {
 
+        logger.info("User " + credentials.getEmail() + " wants to login...");
+
         List<UaaUser> potentialUsers = uaaUserRepository.findByUsername(credentials.getEmail());
         if(potentialUsers.isEmpty())
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
@@ -98,108 +106,9 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
 
         CompanyRegistration retVal = new CompanyRegistration();
         retVal.setUserID(potentialUser.getUBLPerson().getHjid().toString());
+
+        logger.info("User " + credentials.getEmail() + " sucessfully logged in.");
+
         return new ResponseEntity<>(retVal, HttpStatus.OK);
     }
 }
-
-//@RestController
-//@RequestMapping("/controller")
-//public class UserIdentityController {
-//
-//    private static final Logger logger = LoggerFactory.getLogger(UserIdentityController.class);
-//
-//    @Value("${nimble.uaa.clientid}")
-//    private String uaaClientId;
-//
-//    @Value("${nimble.uaa.clientsecret}")
-//    private String uaaClientSecret;
-//
-//    @Autowired
-//    private ConnectionFactory connectionFactory;
-//
-//    private UaaUserOperations uaaUserOperations;
-//    private UaaGroupOperations uaaGroupOperations;
-//
-//    @PostConstruct
-//    public void init() throws MalformedURLException {
-//
-//        UaaConnection uaaConnection = this.connectionFactory.withClientCredentials(uaaClientId, uaaClientSecret);
-//
-//        this.uaaUserOperations = uaaConnection.userOperations();
-//        this.uaaGroupOperations = uaaConnection.groupOperations();
-//    }
-//
-//    @RequestMapping(method = POST)
-//    public ResponseEntity<ScimUser> addUser(@RequestBody UserRegistrationData controller) { // TODO: send only hash of password?
-//
-//        // TODO: check password
-//
-//        ScimUser newUser = new ScimUser(UUID.randomUUID().toString(), controller.email, controller.firstname, controller.surname);
-//        newUser.addEmail(controller.email);
-//        newUser.setPassword(controller.password);
-//        ScimUser createdUser = this.uaaUserOperations.createUser(newUser);
-//
-//        logger.info("Created controller '{}'", createdUser.toString());
-//
-//        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
-//    }
-//
-//    @RequestMapping(method = GET)
-//    public ScimUser getUser(@RequestParam(value = "user_name") String userName) throws UserNotFoundException {
-//        logger.info("Getting controller with name '{}'", userName);
-//        ScimUser controller = this.uaaUserOperations.getUserByName(userName);
-//
-//        if (controller == null )
-//            throw new UserNotFoundException();
-//
-//        return controller;
-//    }
-//
-//    @RequestMapping(method = DELETE)
-//    public ResponseEntity<?> deleteUser(@RequestParam(value = "user_name") String userName) throws UserNotFoundException {
-//        logger.info("Deleting controller with name '{}'", userName);
-//        ScimUser controller = this.uaaUserOperations.getUserByName(userName);
-//
-//        if (controller == null )
-//            throw new UserNotFoundException();
-//
-//        this.uaaUserOperations.deleteUser(controller.getId());
-//        return new ResponseEntity<>(HttpStatus.OK);
-//    }
-//
-//    @ResponseStatus(value = HttpStatus.GONE, reason = "This controller is not found in the system")
-//    class UserNotFoundException extends Exception {
-//        private static final long serialVersionUID = 100L;
-//    }
-//
-//    @ExceptionHandler(HttpClientErrorException.class)
-//    public ResponseEntity<?> UaaExceptionHandler(HttpServletRequest req, HttpClientErrorException ex) {
-//        logger.error("Request: " + req.getRequestURL() + " raised " + ex);
-//        return new ResponseEntity<>("Error while communicating with UAA", null, ex.getStatusCode());
-//    }
-//
-//    private static class UserRegistrationData {
-//        @JsonProperty(value = "firstname")
-//        private String firstname;
-//        @JsonProperty(value = "surname")
-//        private String surname;
-//        @JsonProperty(value = "password")
-//        private String password;
-//        @JsonProperty(value = "repassword")
-//        private String repassword;
-//        @JsonProperty(value = "email")
-//        private String email;
-//        @JsonProperty(value = "job-title")
-//        private String jobTitle;
-//        @JsonProperty(value = "date-of-birth")
-//        private String dateOfBirth;
-//        @JsonProperty(value = "place-of-birth")
-//        private String placeOfBirth;
-//        @JsonProperty(value = "legal-domain")
-//        private String legalDomain;
-//        @JsonProperty(value = "person-id")
-//        private String personId;
-//        @JsonProperty(value = "phone")
-//        private String phone;
-//    }
-//}
