@@ -17,7 +17,7 @@
     </parent>
 
     <modules>
-        <module>libs/uaa-java-client</module>
+        <!--<module>libs/uaa-java-client</module>-->
         <module>libs/catalog-service-srdc/core/utility</module>
         <module>libs/catalog-service-srdc/business/ubl-data-model</module>
         <module>identity-service</module>

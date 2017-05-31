@@ -3,7 +3,7 @@
 set -e    # Exit immediately if a command exits with a non-zero status.
 
 function build(){
-    mvn clean install
+    mvn clean install -DskipTests
 }
 
 function docker_build(){
@@ -18,6 +18,11 @@ elif [ "$1" == "docker-build" ]; then
     build
     # build docker
     docker_build
+
+elif [ "$1" == "docker-push" ]; then
+
+    mvn -f identity-service/pom.xml docker:push
+
 elif [ "$1" == "dev-startdb" ]; then
 #        -v /tmp/postgres:/var/lib/postgresql/data \
     docker run --rm \
