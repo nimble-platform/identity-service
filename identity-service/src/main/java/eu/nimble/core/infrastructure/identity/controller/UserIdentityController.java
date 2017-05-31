@@ -105,7 +105,17 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
         CompanyRegistration retVal = new CompanyRegistration();
+        retVal.setUsername(potentialUser.getUsername());
+        retVal.setFirstname(potentialUser.getUBLPerson().getFirstName());
+        retVal.setLastname(potentialUser.getUBLPerson().getFamilyName());
         retVal.setUserID(potentialUser.getUBLPerson().getHjid().toString());
+
+        // find company of user
+        List<PartyType> companies = partyRepository.findByPerson(potentialUser.getUBLPerson());
+        if (companies.isEmpty() == false) {
+            PartyType company = companies.get(0);
+            retVal.setCompanyID(company.getHjid().toString());
+        }
 
         logger.info("User " + credentials.getEmail() + " sucessfully logged in.");
 
