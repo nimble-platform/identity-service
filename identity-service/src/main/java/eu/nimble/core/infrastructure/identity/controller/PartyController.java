@@ -51,6 +51,7 @@ public class PartyController {
         }
 
         PartyType party = parties.get(0);
+        party = UserIdentityController.addIDToCompany(party, party.getHjid().toString());
 
         logger.debug("Returning reqeusted party with Id {0}", party.getHjid());
         return new ResponseEntity<>(party, HttpStatus.FOUND);
@@ -74,6 +75,11 @@ public class PartyController {
 
         PersonType person = foundPersons.get(0);
         List<PartyType> parties = partyRepository.findByPerson(person);
+
+        for (PartyType party: parties) {
+            UserIdentityController.addIDToCompany(party, party.getHjid().toString());
+        }
+
         return new ResponseEntity<>(parties, HttpStatus.OK);
     }
 }

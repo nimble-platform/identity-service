@@ -11,10 +11,8 @@ import eu.nimble.core.infrastructure.identity.swagger.model.CompanyRegistration;
 import eu.nimble.core.infrastructure.identity.swagger.model.Credentials;
 import eu.nimble.core.infrastructure.identity.swagger.model.User;
 import eu.nimble.core.infrastructure.identity.swagger.model.UserToRegister;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.ContactType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyNameType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
+import eu.nimble.service.model.ubl.commonbasiccomponents.IdentifierType;
 import io.swagger.annotations.ApiParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 @SuppressWarnings("PointlessBooleanExpression")
 @Controller
@@ -72,6 +69,12 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
         adminPerson.setContact(contact);
         personRepository.save(adminPerson);
 
+        // update id of person
+        IdentifierType personId = new IdentifierType();
+        personId.setValue(adminPerson.getHjid().toString());
+        adminPerson.setID(personId);
+        personRepository.save(adminPerson);
+
         // create UAA user
         UaaUser uaaUser = new UaaUser(company.getEmail(), company.getPassword(), adminPerson);
         uaaUserRepository.save(uaaUser);
@@ -83,6 +86,10 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
         companyParty.setPartyName(Collections.singletonList(companyName));
         companyParty.setPerson(Collections.singletonList(adminPerson));
         partyRepository.save(companyParty);
+
+        // update id of company
+//        companyParty = addIDToCompany(companyParty, companyParty.getHjid().toString());
+//        partyRepository.save(companyParty);
 
         company.setCompanyID(companyParty.getHjid().toString());
         company.setUserID(adminPerson.getHjid().toString());
@@ -120,5 +127,20 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
         logger.info("User " + credentials.getEmail() + " sucessfully logged in.");
 
         return new ResponseEntity<>(retVal, HttpStatus.OK);
+    }
+
+    public static PartyType addIDToCompany(PartyType companyParty, String id) {
+
+        IdentifierType companyID = new IdentifierType();
+        companyID.setValue(id);
+
+        PartyIdentificationType partyIdentificationType = new PartyIdentificationType();
+        partyIdentificationType.setID(companyID);
+
+        List<PartyIdentificationType> partyIdentications = new LinkedList<>(Collections.singletonList(partyIdentificationType));
+
+        companyParty.setPartyIdentification(partyIdentications);
+
+        return companyParty;
     }
 }
