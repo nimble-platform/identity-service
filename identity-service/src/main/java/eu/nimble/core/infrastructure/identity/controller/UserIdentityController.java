@@ -83,13 +83,13 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
         PartyType companyParty = new PartyType();
         PartyNameType companyName = new PartyNameType();
         companyName.setName(company.getCompanyName());
-        companyParty.setPartyName(Collections.singletonList(companyName));
-        companyParty.setPerson(Collections.singletonList(adminPerson));
+        companyParty.getPartyName().add(companyName);
+        companyParty.getPerson().add(adminPerson);
         partyRepository.save(companyParty);
 
         // update id of company
-//        companyParty = addIDToCompany(companyParty, companyParty.getHjid().toString());
-//        partyRepository.save(companyParty);
+        addIDToCompany(companyParty, companyParty.getHjid().toString());
+        partyRepository.save(companyParty);
 
         company.setCompanyID(companyParty.getHjid().toString());
         company.setUserID(adminPerson.getHjid().toString());
@@ -129,7 +129,7 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
         return new ResponseEntity<>(retVal, HttpStatus.OK);
     }
 
-    public static PartyType addIDToCompany(PartyType companyParty, String id) {
+    static PartyType addIDToCompany(PartyType companyParty, String id) {
 
         IdentifierType companyID = new IdentifierType();
         companyID.setValue(id);
@@ -137,9 +137,7 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
         PartyIdentificationType partyIdentificationType = new PartyIdentificationType();
         partyIdentificationType.setID(companyID);
 
-        List<PartyIdentificationType> partyIdentications = new LinkedList<>(Collections.singletonList(partyIdentificationType));
-
-        companyParty.setPartyIdentification(partyIdentications);
+        companyParty.getPartyIdentification().add(partyIdentificationType);
 
         return companyParty;
     }

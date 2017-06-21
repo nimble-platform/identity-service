@@ -51,7 +51,6 @@ public class PartyController {
         }
 
         PartyType party = parties.get(0);
-        party = UserIdentityController.addIDToCompany(party, party.getHjid().toString());
 
         logger.debug("Returning reqeusted party with Id {0}", party.getHjid());
         return new ResponseEntity<>(party, HttpStatus.FOUND);
