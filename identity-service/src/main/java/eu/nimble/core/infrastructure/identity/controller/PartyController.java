@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -52,10 +53,8 @@ public class PartyController {
 
         PartyType party = parties.get(0);
 
-        logger.debug("Returning reqeusted party with Id {0}", party.getHjid());
+        logger.debug("Returning requested party with Id {0}", party.getHjid());
         return new ResponseEntity<>(party, HttpStatus.FOUND);
-
-
     }
 
     @ApiOperation(value = "", notes = "Get Party for person ID.", response = PartyType.class, tags = {})
@@ -69,15 +68,11 @@ public class PartyController {
         // check if person was found
         if (foundPersons.isEmpty()) {
             logger.info("Requested person with Id {} not found", personId);
-            return new ResponseEntity<>(Collections.EMPTY_LIST, HttpStatus.OK);
+            return new ResponseEntity<>(new ArrayList<>(), HttpStatus.OK);
         }
 
         PersonType person = foundPersons.get(0);
         List<PartyType> parties = partyRepository.findByPerson(person);
-
-        for (PartyType party: parties) {
-            UserIdentityController.addIDToCompany(party, party.getHjid().toString());
-        }
 
         return new ResponseEntity<>(parties, HttpStatus.OK);
     }

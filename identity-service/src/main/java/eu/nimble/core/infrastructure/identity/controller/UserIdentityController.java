@@ -1,9 +1,7 @@
 package eu.nimble.core.infrastructure.identity.controller;
 
-import eu.nimble.core.infrastructure.identity.entities.UaaUser;
-import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
-import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
-import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
+import eu.nimble.core.infrastructure.identity.entity.UaaUser;
+import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.swagger.api.LoginApi;
 import eu.nimble.core.infrastructure.identity.swagger.api.RegisterApi;
 import eu.nimble.core.infrastructure.identity.swagger.api.RegisterCompanyApi;
@@ -11,8 +9,8 @@ import eu.nimble.core.infrastructure.identity.swagger.model.CompanyRegistration;
 import eu.nimble.core.infrastructure.identity.swagger.model.Credentials;
 import eu.nimble.core.infrastructure.identity.swagger.model.User;
 import eu.nimble.core.infrastructure.identity.swagger.model.UserToRegister;
+import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
-import eu.nimble.service.model.ubl.commonbasiccomponents.IdentifierType;
 import io.swagger.annotations.ApiParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +33,12 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
 
     @Autowired
     private PartyRepository partyRepository;
+
+    @Autowired
+    private DeliveryTermsRepository deliveryTermsRepository;
+
+    @Autowired
+    private PaymentMeansRepository paymentMeansRepository;
 
     @Autowired
     private UaaUserRepository uaaUserRepository;
@@ -70,16 +74,14 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
         personRepository.save(adminPerson);
 
         // update id of person
-        IdentifierType personId = new IdentifierType();
-        personId.setValue(adminPerson.getHjid().toString());
-        adminPerson.setID(personId);
+        adminPerson.setID(UblUtils.identifierType(adminPerson.getHjid()));
         personRepository.save(adminPerson);
 
         // create UAA user
         UaaUser uaaUser = new UaaUser(company.getEmail(), company.getPassword(), adminPerson);
         uaaUserRepository.save(uaaUser);
 
-        // create ubl company
+        // create company
         PartyType companyParty = new PartyType();
         PartyNameType companyName = new PartyNameType();
         companyName.setName(company.getCompanyName());
@@ -87,12 +89,27 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
         companyParty.getPerson().add(adminPerson);
         partyRepository.save(companyParty);
 
+        // create delivery terms
+        DeliveryTermsType blankDeliveryTerms = new DeliveryTermsType();
+        deliveryTermsRepository.save(blankDeliveryTerms);
+        blankDeliveryTerms.setID(UblUtils.identifierType(blankDeliveryTerms.getHjid()));
+        deliveryTermsRepository.save(blankDeliveryTerms);
+        companyParty.getDeliveryTerms().add(blankDeliveryTerms);
+
+        // create payment means
+        PaymentMeansType paymentMeans = new PaymentMeansType();
+        paymentMeansRepository.save(paymentMeans);
+        paymentMeans.setID(UblUtils.identifierType(paymentMeans.getHjid()));
+        paymentMeansRepository.save(paymentMeans);
+        companyParty.getPaymentMeans().add(paymentMeans);
+
         // update id of company
-        addIDToCompany(companyParty, companyParty.getHjid().toString());
+        companyParty.setID(UblUtils.identifierType(companyParty.getHjid()));
         partyRepository.save(companyParty);
 
-        company.setCompanyID(companyParty.getHjid().toString());
-        company.setUserID(adminPerson.getHjid().toString());
+        // add id to original object
+        company.setCompanyID(companyParty.getID().getValue());
+        company.setUserID(adminPerson.getID().getValue());
         return new ResponseEntity<>(company, HttpStatus.OK);
     }
 
@@ -127,18 +144,5 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
         logger.info("User " + credentials.getEmail() + " sucessfully logged in.");
 
         return new ResponseEntity<>(retVal, HttpStatus.OK);
-    }
-
-    static PartyType addIDToCompany(PartyType companyParty, String id) {
-
-        IdentifierType companyID = new IdentifierType();
-        companyID.setValue(id);
-
-        PartyIdentificationType partyIdentificationType = new PartyIdentificationType();
-        partyIdentificationType.setID(companyID);
-
-        companyParty.getPartyIdentification().add(partyIdentificationType);
-
-        return companyParty;
     }
 }

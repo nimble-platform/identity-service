@@ -1,7 +1,6 @@
-package eu.nimble.core.infrastructure.identity.entities;
+package eu.nimble.core.infrastructure.identity.entity;
 
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
-import eu.nimble.service.model.ubl.commonbasiccomponents.IdentifierType;
 
 import java.io.Serializable;
 import javax.persistence.*;

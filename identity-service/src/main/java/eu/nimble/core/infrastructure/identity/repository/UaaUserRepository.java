@@ -1,6 +1,6 @@
 package eu.nimble.core.infrastructure.identity.repository;
 
-import eu.nimble.core.infrastructure.identity.entities.UaaUser;
+import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;
