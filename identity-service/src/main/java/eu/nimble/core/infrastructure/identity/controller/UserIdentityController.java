@@ -18,12 +18,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.*;
 
-@SuppressWarnings("PointlessBooleanExpression")
 @Controller
+@CrossOrigin(origins = "http://localhost:9092")
+@SuppressWarnings("PointlessBooleanExpression")
 public class UserIdentityController implements LoginApi, RegisterApi, RegisterCompanyApi {
 
     private static final Logger logger = LoggerFactory.getLogger(UserIdentityController.class);
@@ -97,7 +99,7 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
         companyParty.getDeliveryTerms().add(blankDeliveryTerms);
 
         // create payment means
-        PaymentMeansType paymentMeans = new PaymentMeansType();
+        PaymentMeansType paymentMeans = UblUtils.emptyUBLObject(new PaymentMeansType());
         paymentMeansRepository.save(paymentMeans);
         paymentMeans.setID(UblUtils.identifierType(paymentMeans.getHjid()));
         paymentMeansRepository.save(paymentMeans);
@@ -121,12 +123,16 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
         logger.info("User " + credentials.getEmail() + " wants to login...");
 
         List<UaaUser> potentialUsers = uaaUserRepository.findByUsername(credentials.getEmail());
-        if(potentialUsers.isEmpty())
+        if(potentialUsers.isEmpty()) {
+            logger.info("User " + credentials.getEmail() + " not found.");
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
 
         UaaUser potentialUser = potentialUsers.get(0);
-        if (potentialUser.getPassword().equals(credentials.getPassword()) == false)
+        if (potentialUser.getPassword().equals(credentials.getPassword()) == false) {
+            logger.info("User " + credentials.getEmail() + " entered wrong password.");
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
 
         CompanyRegistration retVal = new CompanyRegistration();
         retVal.setUsername(potentialUser.getUsername());
