@@ -3,6 +3,7 @@ package eu.nimble.core.infrastructure.identity.utils;
 import eu.nimble.core.infrastructure.identity.entity.dto.Address;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.entity.dto.DeliveryTerms;
+import eu.nimble.core.infrastructure.identity.entity.dto.PaymentMeans;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 
 import java.util.ArrayList;
@@ -17,9 +18,11 @@ public class UblAdapter {
 
     public static CompanySettings adaptCompanySettings(PartyType partyType) {
         CompanySettings settings = new CompanySettings();
+
         settings.setAddress(adaptAddress(partyType.getPostalAddress()));
-        //noinspection ConstantConditions // TODO: check if terms exist
-        settings.setDeliveryTerms(adaptDeliveryTerms(partyType.getDeliveryTerms().stream().findFirst().get()));
+        partyType.getPaymentMeans().stream().findFirst().ifPresent(means -> settings.setPaymentMeans(adaptPaymentMeans(means)));
+        partyType.getDeliveryTerms().stream().findFirst()
+                .ifPresent(deliveryTermsType -> settings.setDeliveryTerms(adaptDeliveryTerms(deliveryTermsType)));
 
         return settings;
     }
@@ -65,7 +68,8 @@ public class UblAdapter {
         DeliveryTerms dtoDeliveryTerms = new DeliveryTerms();
         dtoDeliveryTerms.setSpecialTerms(ublDeliveryTerms.getSpecialTerms());
         if (ublDeliveryTerms.getDelivery() != null) {
-            dtoDeliveryTerms.setEstimatedDeliveryTime(ublDeliveryTerms.getDelivery().getActualDeliveryTime().getDay());
+            if (ublDeliveryTerms.getDelivery().getActualDeliveryTime() != null)
+                dtoDeliveryTerms.setEstimatedDeliveryTime(ublDeliveryTerms.getDelivery().getActualDeliveryTime().getDay());
             dtoDeliveryTerms.setDeliveryAddress(adaptAddress(ublDeliveryTerms.getDelivery().getDeliveryAddress()));
         }
 
@@ -74,18 +78,38 @@ public class UblAdapter {
 
     public static DeliveryTermsType adaptDeliveryTerms(DeliveryTerms dtoDeliveryTerms) {
 
+        if (dtoDeliveryTerms == null)
+            return new DeliveryTermsType();
+
         DeliveryTermsType ublDeliveryTerms = new DeliveryTermsType();
         ublDeliveryTerms.setSpecialTerms(dtoDeliveryTerms.getSpecialTerms());
 
         DeliveryType delivery = new DeliveryType();
         delivery.setDeliveryAddress(adaptAddress(dtoDeliveryTerms.getDeliveryAddress()));
+        ublDeliveryTerms.setDelivery(delivery);
 
-        // ToDO: create GregorianCalender and add 'EstimatedDeliveryTime'.
+        // ToDo: create GregorianCalender and add 'EstimatedDeliveryTime'.
 
         return ublDeliveryTerms;
     }
 
-    public static <V> List<V> toModifyableList(V... objects) {
-        return new ArrayList<>(Arrays.asList(objects));
+    public static PaymentMeansType adaptPaymentMeans(PaymentMeans dtoPaymentMeans) {
+
+        if (dtoPaymentMeans == null)
+            return new PaymentMeansType();
+
+        PaymentMeansType ublPaymentMeans = new PaymentMeansType();
+        ublPaymentMeans.setInstructionNote(dtoPaymentMeans.getInstructionNote());
+        return ublPaymentMeans;
+    }
+
+    public static PaymentMeans adaptPaymentMeans(PaymentMeansType ublPaymentMeans) {
+
+        if (ublPaymentMeans == null)
+            return new PaymentMeans();
+
+        PaymentMeans dtoPaymentMeans = new PaymentMeans();
+        dtoPaymentMeans.setInstructionNote(ublPaymentMeans.getInstructionNote());
+        return dtoPaymentMeans;
     }
 }

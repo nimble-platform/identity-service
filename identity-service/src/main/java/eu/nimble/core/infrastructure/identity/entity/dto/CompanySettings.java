@@ -6,7 +6,16 @@ package eu.nimble.core.infrastructure.identity.entity.dto;
 @SuppressWarnings("unused")
 public class CompanySettings {
     private Address address;
+    private PaymentMeans paymentMeans;
     private DeliveryTerms deliveryTerms;
+
+    public PaymentMeans getPaymentMeans() {
+        return paymentMeans;
+    }
+
+    public void setPaymentMeans(PaymentMeans paymentMeans) {
+        this.paymentMeans = paymentMeans;
+    }
 
     public Address getAddress() {
         return address;

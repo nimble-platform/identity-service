@@ -3,7 +3,6 @@ package eu.nimble.core.infrastructure.identity.entity.dto;
 /**
  * Created by Johannes Innerbichler on 04/07/17.
  */
-@SuppressWarnings("unused")
 public class Address {
     private String streetName;
     private String buildingNumber;

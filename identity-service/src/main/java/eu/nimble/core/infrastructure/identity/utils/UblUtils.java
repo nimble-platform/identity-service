@@ -4,6 +4,9 @@ import com.google.common.collect.Sets;
 import eu.nimble.service.model.ubl.commonbasiccomponents.IdentifierType;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -79,5 +82,9 @@ public class UblUtils {
             // recursive call for sub-objects
             initialize(fieldValue, rootObject, packages);
         }
+    }
+
+    public static <V> List<V> toModifyableList(V... objects) {
+        return new ArrayList<>(Arrays.asList(objects));
     }
 }

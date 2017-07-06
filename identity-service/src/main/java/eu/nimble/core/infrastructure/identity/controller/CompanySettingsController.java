@@ -3,9 +3,11 @@ package eu.nimble.core.infrastructure.identity.controller;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
+import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.AddressType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.DeliveryTermsType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.PaymentMeansType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -22,6 +24,7 @@ import java.util.Optional;
  * Created by Johannes Innerbichler on 04/07/17.
  */
 @RestController
+@CrossOrigin(origins = "http://localhost:9092")
 @RequestMapping("/company-settings")
 @Api(value = "company-settings", description = "API for handling settings of companies.")
 public class CompanySettingsController {
@@ -40,19 +43,19 @@ public class CompanySettingsController {
         Optional<PartyType> party = partyRepository.findByHjid(companyID).stream().findFirst();
 
         // check if party was found
-        if( party.isPresent() == false ) {
+        if (party.isPresent() == false) {
             logger.info("Requested party with Id {} not found", companyID);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
-        logger.debug("Returning requested settings for party with Id {0}", party.get().getHjid());
+        logger.debug("Returning requested settings for party with Id {}", party.get().getHjid());
 
         CompanySettings settings = UblAdapter.adaptCompanySettings(party.get());
         return new ResponseEntity<>(settings, HttpStatus.OK);
     }
 
     @ApiOperation(value = "Change company settings")
-    @RequestMapping(value = "/{companyID}", consumes={"application/json"}, method = RequestMethod.PUT)
+    @RequestMapping(value = "/{companyID}", consumes = {"application/json"}, method = RequestMethod.PUT)
     ResponseEntity<CompanySettings> setSettings(
             @ApiParam(value = "Id of company to change settings from.", required = true) @PathVariable Long companyID,
             @ApiParam(value = "Settings to update.", required = true) @RequestBody CompanySettings newSettings) {
@@ -61,17 +64,21 @@ public class CompanySettingsController {
         Optional<PartyType> partyOptional = partyRepository.findByHjid(companyID).stream().findFirst();
 
         // check if party was found
-        if( partyOptional.isPresent() == false ) {
+        if (partyOptional.isPresent() == false) {
             logger.info("Requested party with Id {} not found", companyID);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
         PartyType party = partyOptional.get();
-        logger.debug("Changing settings for party with Id {0}", party.getHjid());
+        logger.debug("Changing settings for party with Id {}", party.getHjid());
 
-        // change delivery terms
+        // setdelivery terms
         DeliveryTermsType deliveryTerms = UblAdapter.adaptDeliveryTerms(newSettings.getDeliveryTerms());
-        party.setDeliveryTerms(UblAdapter.toModifyableList(deliveryTerms));
+        party.setDeliveryTerms(UblUtils.toModifyableList(deliveryTerms));
+
+        // set payment means
+        PaymentMeansType paymentMeansType = UblAdapter.adaptPaymentMeans(newSettings.getPaymentMeans());
+        party.setPaymentMeans(UblUtils.toModifyableList(paymentMeansType));
 
         // set address
         AddressType companyAddress = UblAdapter.adaptAddress(newSettings.getAddress());
