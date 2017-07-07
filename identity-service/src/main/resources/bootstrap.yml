@@ -9,6 +9,12 @@ spring:
       failFast: ${CONFIG_SERVER_FAILFAST:false}
     discovery:
       enabled: ${DISCOVERY_ENABLED:false}
+  jpa:
+    show-sql: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+      use-new-id-generator-mappings: true
 
 logstash:
   uri: ${vcap.services.logstash-service.credentials.url:${LOGSTASH_URI:localhost:5000}}
@@ -18,3 +24,15 @@ nimble:
     url: ${UAA_URI:http://localhost:9090}
     clientid: ${UAA_CLIENT_ID:sultans}
     clientsecret: ${UAA_CLIENT_SECRET:sultanssecret}
+  cors_enabled: false
+
+---
+
+spring:
+  profiles: local_dev
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+nimble:
+  cors_enabled: true

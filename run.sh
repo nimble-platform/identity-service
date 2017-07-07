@@ -25,7 +25,7 @@ elif [ "$1" == "docker-push" ]; then
 
 elif [ "$1" == "dev-startdb" ]; then
 #        -v /tmp/postgres:/var/lib/postgresql/data \
-    docker run --rm \
+    docker run \
         --name identityDB \
         -p 5433:5432 \
         -e POSTGRES_PASSWORD=changeme \

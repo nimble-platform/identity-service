@@ -1,6 +1,7 @@
 package eu.nimble.core.infrastructure.identity.controller;
 
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
+import eu.nimble.core.infrastructure.identity.entity.dto.Address;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.swagger.api.LoginApi;
 import eu.nimble.core.infrastructure.identity.swagger.api.RegisterApi;
@@ -24,7 +25,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import java.util.*;
 
 @Controller
-@CrossOrigin(origins = "http://localhost:9092")
 @SuppressWarnings("PointlessBooleanExpression")
 public class UserIdentityController implements LoginApi, RegisterApi, RegisterCompanyApi {
 
@@ -90,6 +90,9 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
         companyParty.getPartyName().add(companyName);
         companyParty.getPerson().add(adminPerson);
         partyRepository.save(companyParty);
+
+        // create address
+        companyParty.setPostalAddress(UblUtils.addressType(company.getCompanyCountry(), company.getCompanyAddress()));
 
         // create delivery terms
         DeliveryTermsType blankDeliveryTerms = new DeliveryTermsType();

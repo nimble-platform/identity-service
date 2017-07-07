@@ -1,6 +1,9 @@
 package eu.nimble.core.infrastructure.identity.utils;
 
 import com.google.common.collect.Sets;
+import eu.nimble.core.infrastructure.identity.entity.dto.Address;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.AddressType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.CountryType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.IdentifierType;
 
 import java.lang.reflect.Field;
@@ -17,6 +20,18 @@ public class UblUtils {
         IdentifierType idType = new IdentifierType();
         idType.setValue(id);
         return idType;
+    }
+
+    public static AddressType addressType(String countryName, String streetName) {
+        AddressType address = new AddressType();
+
+        CountryType country = new CountryType();
+        country.setName(countryName);
+        address.setCountry(country);
+
+        address.setStreetName(streetName);
+
+        return address;
     }
 
     public static IdentifierType identifierType(Long id) {

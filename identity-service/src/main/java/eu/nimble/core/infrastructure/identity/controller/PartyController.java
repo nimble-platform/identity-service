@@ -27,7 +27,6 @@ import java.util.List;
  * Controller for retrieving party data.
  */
 @Controller
-@CrossOrigin(origins = "http://localhost:9092")
 @Api(value = "party", description = "API for handling parties on the platform.")
 public class PartyController {
 

@@ -24,7 +24,6 @@ import java.util.Optional;
  * Created by Johannes Innerbichler on 04/07/17.
  */
 @RestController
-@CrossOrigin(origins = "http://localhost:9092")
 @RequestMapping("/company-settings")
 @Api(value = "company-settings", description = "API for handling settings of companies.")
 public class CompanySettingsController {
