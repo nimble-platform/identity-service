@@ -2,6 +2,9 @@ package eu.nimble.core.infrastructure.identity.controller;
 
 import eu.nimble.core.infrastructure.identity.repository.DeliveryTermsRepository;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.DeliveryTermsType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,25 +17,15 @@ public class DeliveryTermsController {
     @Autowired
     private DeliveryTermsRepository deliveryRepo;
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
-    public ResponseEntity<DeliveryTermsType> getTerm(@PathVariable long id) {
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {"application/json"})
+    @ApiOperation(value = "Get delivery terms of party", notes = "Get delivery terms of party with id.", response = DeliveryTermsType.class, tags = {})
+    public ResponseEntity<DeliveryTermsType> getTerm(
+            @ApiParam(value = "Id of party to retrieve delivery terms from.", required = true) @PathVariable long id) {
         DeliveryTermsType terms = deliveryRepo.findOne(id);
 
         if (terms != null)
             return new ResponseEntity<>(terms, HttpStatus.OK);
         else
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
-
-    @RequestMapping(method = RequestMethod.PUT)
-    public ResponseEntity<?> updateTerms(@RequestBody DeliveryTermsType terms) {
-
-        if( terms.getID().getValue().equals(terms.getHjid().toString()) == false)
-            return new ResponseEntity<>("Ids of terms do not match", HttpStatus.CONFLICT);
-
-        if (deliveryRepo.exists(terms.getHjid()) == false)
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-
-        return new ResponseEntity<>(deliveryRepo.save(terms), HttpStatus.ACCEPTED);
     }
 }
