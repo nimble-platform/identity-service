@@ -20,12 +20,12 @@ public class SwaggerConfig {
                 .apis(RequestHandlerSelectors.basePackage("eu.nimble.core"))
                 .paths(PathSelectors.any())
                 .build()
-                .apiInfo(metaData());
+                .apiInfo(metaData())    ;
     }
 
     private ApiInfo metaData() {
         return new ApiInfo(
-                "NIMBLE identity service REST API",
+                "NIMBLE identity REST API",
                 "REST API handling identities on the NIMBLE platform",
                 "1.0",
                 null,
