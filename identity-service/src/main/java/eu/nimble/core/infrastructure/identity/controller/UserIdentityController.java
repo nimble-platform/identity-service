@@ -1,7 +1,6 @@
 package eu.nimble.core.infrastructure.identity.controller;
 
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
-import eu.nimble.core.infrastructure.identity.entity.dto.Address;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.swagger.api.LoginApi;
 import eu.nimble.core.infrastructure.identity.swagger.api.RegisterApi;
@@ -19,10 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import java.util.*;
+import java.util.List;
 
 @Controller
 @SuppressWarnings("PointlessBooleanExpression")
@@ -113,8 +111,8 @@ public class UserIdentityController implements LoginApi, RegisterApi, RegisterCo
         partyRepository.save(companyParty);
 
         // add id to original object
-        company.setCompanyID(companyParty.getID().getValue());
-        company.setUserID(adminPerson.getID().getValue());
+        company.setCompanyID(companyParty.getID());
+        company.setUserID(adminPerson.getID());
         return new ResponseEntity<>(company, HttpStatus.OK);
     }
 
