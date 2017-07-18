@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity.controller;
+package eu.nimble.core.infrastructure.identity.controller.ubl;
 
 import com.google.common.collect.Lists;
 import eu.nimble.core.infrastructure.identity.repository.PaymentMeansRepository;

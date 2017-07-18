@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity.controller;
+package eu.nimble.core.infrastructure.identity.controller.ubl;
 
 import eu.nimble.core.infrastructure.identity.repository.DeliveryTermsRepository;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.DeliveryTermsType;

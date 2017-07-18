@@ -1,14 +1,13 @@
 package eu.nimble.core.infrastructure.identity.utils;
 
-import eu.nimble.core.infrastructure.identity.entity.dto.Address;
-import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
-import eu.nimble.core.infrastructure.identity.entity.dto.DeliveryTerms;
-import eu.nimble.core.infrastructure.identity.entity.dto.PaymentMeans;
+import eu.nimble.core.infrastructure.identity.entity.UaaUser;
+import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Created by Johannes Innerbichler on 04/07/17.
@@ -18,7 +17,7 @@ public class UblAdapter {
 
     public static CompanySettings adaptCompanySettings(PartyType partyType) {
         CompanySettings settings = new CompanySettings();
-
+        settings.setName(partyType.getPartyName().stream().map(PartyNameType::getName).findFirst().orElse("undefined name"));
         settings.setAddress(adaptAddress(partyType.getPostalAddress()));
         partyType.getPaymentMeans().stream().findFirst().ifPresent(means -> settings.setPaymentMeans(adaptPaymentMeans(means)));
         partyType.getDeliveryTerms().stream().findFirst()
@@ -111,5 +110,54 @@ public class UblAdapter {
         PaymentMeans dtoPaymentMeans = new PaymentMeans();
         dtoPaymentMeans.setInstructionNote(ublPaymentMeans.getInstructionNote());
         return dtoPaymentMeans;
+    }
+
+    public static FrontEndUser adaptUser(UaaUser uaaUser, List<PartyType> companies) {
+        FrontEndUser frontEndUser = new FrontEndUser();
+        frontEndUser.setUsername(uaaUser.getUsername());
+        PersonType ublPerson = uaaUser.getUBLPerson();
+        frontEndUser.setFirstname(ublPerson.getFirstName());
+        frontEndUser.setLastname(ublPerson.getFamilyName());
+        if (ublPerson.getContact() != null)
+            frontEndUser.setEmail(ublPerson.getContact().getElectronicMail());
+        frontEndUser.setUserID(ublPerson.getHjid());
+
+        // set company ids
+        if (companies != null && companies.isEmpty() == false) {
+            PartyType company = companies.get(0);
+            frontEndUser.setCompanyID(company.getHjid().toString());
+            frontEndUser.setCompanyName(company.getPartyName().stream().findFirst().orElseGet(() -> {
+                PartyNameType pnt = new PartyNameType();
+                pnt.setName("Company name not found");
+                return pnt;
+            }).getName());
+        }
+
+        return frontEndUser;
+    }
+
+    public static PersonType adaptPerson(FrontEndUser frontEndUser) {
+        PersonType person = new PersonType();
+        person.setFirstName(frontEndUser.getFirstname());
+        person.setFamilyName(frontEndUser.getLastname());
+//        adminPerson.setBirthDate(frontEndUser.getDateOfBirth()); // TODO: convert date
+        person.setBirthplaceName(frontEndUser.getPlaceOBirth());
+        ContactType contact = new ContactType();
+        contact.setElectronicMail(frontEndUser.getEmail());
+        contact.setTelephone(frontEndUser.getPhoneNumber());
+        person.setContact(contact);
+        return person;
+    }
+
+    public static PartyType adaptCompanyRegistration(CompanyRegistration registration, PersonType admin) {
+
+        PartyType companyParty = new PartyType();
+        PartyNameType companyName = new PartyNameType();
+        companyName.setName(registration.getName());
+        companyParty.getPartyName().add(companyName);
+        companyParty.getPerson().add(admin);
+        companyParty.setPostalAddress(adaptAddress(registration.getAddress()));
+
+        return companyParty;
     }
 }

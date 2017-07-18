@@ -18,18 +18,6 @@ public class UblUtils {
         return id;
     }
 
-    public static AddressType addressType(String countryName, String streetName) {
-        AddressType address = new AddressType();
-
-        CountryType country = new CountryType();
-        country.setName(countryName);
-        address.setCountry(country);
-
-        address.setStreetName(streetName);
-
-        return address;
-    }
-
     public static String identifierType(Long id) {
         return identifierType(id.toString());
     }

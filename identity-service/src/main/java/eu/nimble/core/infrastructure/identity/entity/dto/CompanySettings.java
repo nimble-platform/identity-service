@@ -5,6 +5,7 @@ package eu.nimble.core.infrastructure.identity.entity.dto;
  */
 @SuppressWarnings("unused")
 public class CompanySettings {
+    private String name;
     private Address address;
     private PaymentMeans paymentMeans;
     private DeliveryTerms deliveryTerms;
@@ -23,6 +24,14 @@ public class CompanySettings {
 
     public void setAddress(Address address) {
         this.address = address;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public DeliveryTerms getDeliveryTerms() {
