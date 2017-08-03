@@ -36,12 +36,12 @@ nimble:
 spring:
   profiles: local_dev
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: ${IDENTITY_DB_DIALECT:org.hibernate.dialect.H2Dialect}
     hibernate:
       ddl-auto: none
   datasource:
-    driverClassName: org.h2.Driver
-    url: jdbc:h2:mem:AZ;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driverClassName: ${IDENTITY_DB_DRIVER:org.h2.Driver}
+    url: ${IDENTITY_DB_URL:jdbc:h2:mem:AZ;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
 
 nimble:
   cors_enabled: true

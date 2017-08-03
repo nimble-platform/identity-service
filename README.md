@@ -1,9 +1,6 @@
 # Identity Service
 Service for managing identities on the platform.
 
- ---
-The project leading to this application has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 723810.
-
 ## Cloning
 
 Set the ```--recursive``` flag when cloning this repository (e.g.
@@ -19,3 +16,6 @@ mvn clean install
 cd identity-service
 mvn spring-boot:run -Drun.jvmArguments="-Dspring.profiles.active=local_dev"
 ```
+
+ ---
+The project leading to this application has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 723810.
