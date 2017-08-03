@@ -15,6 +15,11 @@ spring:
     hibernate:
       ddl-auto: update
       use-new-id-generator-mappings: true
+  datasource:
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://${IDENTIY_DB_URI:localhost:5432}/${IDENTITY_DB_NAME:identityDB}
+    username: ${IDENTIY_DB_USER:root}
+    password: ${IDENTITY_DB_PASSWORD:changeme}
 
 logstash:
   uri: ${vcap.services.logstash-service.credentials.url:${LOGSTASH_URI:localhost:5000}}
@@ -31,8 +36,12 @@ nimble:
 spring:
   profiles: local_dev
   jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: none
+  datasource:
+    driverClassName: org.h2.Driver
+    url: jdbc:h2:mem:AZ;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
 
 nimble:
   cors_enabled: true
