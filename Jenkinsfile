@@ -7,13 +7,9 @@ node ('nimble-jenkins-slave') {
             sh 'git submodule update'
             withMaven(maven: 'M339') {
               sh 'mvn clean install -DskipTests'
-              sh 'mvn -f identity-service/pom.xml docker:build'
-              sh 'mvn -f identity-service/pom.xml docker:push'
-
             }
-
     }
-    /*stage ('Docker Build') {
+    stage ('Docker Build') {
         app = docker.build("nimbleplatform/identity-service")
     }
     stage ('Docker Push')  {
@@ -21,6 +17,6 @@ node ('nimble-jenkins-slave') {
             app.push("${env.BUILD_NUMBER}")
             app.push("latest")
         }
-    }*/ 
+    }
 }
 
