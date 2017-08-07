@@ -5,7 +5,7 @@ node ('nimble-jenkins-slave') {
             git(url: 'https://github.com/nimble-platform/identity-service.git', branch: 'master')
             sh 'git submodule init'
             sh 'git submodule update'
-            sh 'deploy.sh'
+            sh '${WORKSPACE}/deploy.sh'
     }
     stage ('Docker Build') {
         app = docker.build("nimbleplatform/identity-service")
