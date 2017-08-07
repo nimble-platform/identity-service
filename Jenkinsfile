@@ -5,6 +5,7 @@ node ('nimble-jenkins-slave') {
             git(url: 'https://github.com/nimble-platform/identity-service.git', branch: 'master')
             sh 'git submodule init'
             sh 'git submodule update'
+            sh ' sleep 100'
             withMaven(maven: 'M339') {
               sh 'mvn clean install -DskipTests'
             }
