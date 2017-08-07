@@ -89,39 +89,6 @@
             <artifactId>spring-boot-devtools</artifactId>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.cloudfoundry.identity/cloudfoundry-identity-client-lib -->
-        <dependency>
-            <groupId>org.cloudfoundry.identity</groupId>
-            <artifactId>cloudfoundry-identity-client-lib</artifactId>
-            <version>3.9.1</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>log4j</groupId>
-                    <artifactId>log4j</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <!-- User for cloudfoundry-client-lib: http://stackoverflow.com/questions/24652753/java-lang-noclassdeffounderror-javax-validation-parameternameprovider -->
-        <dependency>
-            <groupId>javax.validation</groupId>
-            <artifactId>validation-api</artifactId>
-            <version>1.1.0.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>org.cloudfoundry.identity</groupId>
-            <artifactId>cloudfoundry-identity-common</artifactId>
-            <version>2.7.4.9</version>
-        </dependency>
-        <dependency>
-            <groupId>org.cloudfoundry</groupId>
-            <artifactId>uaa-java-client</artifactId>
-            <version>1.0.2-SNAPSHOT</version>
-        </dependency>
-
         <!-- Spring Cloud Connector -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
