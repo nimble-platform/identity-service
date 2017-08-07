@@ -5,9 +5,15 @@ node ('nimble-jenkins-slave') {
             git(url: 'https://github.com/nimble-platform/identity-service.git', branch: 'master')
             sh 'git submodule init'
             sh 'git submodule update'
-            sh '${WORKSPACE}/deploy.sh'
+            withMaven(maven: 'M339') {
+              sh 'mvn clean install -DskipTests'
+              sh 'mvn -f identity-service/pom.xml docker:build'
+              sh 'mvn -f identity-service/pom.xml docker:push'
+
+            }
+
     }
-    stage ('Docker Build') {
+    /*stage ('Docker Build') {
         app = docker.build("nimbleplatform/identity-service")
     }
     stage ('Docker Push')  {
@@ -15,6 +21,6 @@ node ('nimble-jenkins-slave') {
             app.push("${env.BUILD_NUMBER}")
             app.push("latest")
         }
-    }
+    }*/ 
 }
 
