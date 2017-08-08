@@ -8,9 +8,9 @@ node ('nimble-jenkins-slave') {
             withMaven(maven: 'M339') {
               sh 'mvn clean install -DskipTests'
             }
-    }
-    stage ('Docker Build') {
-        app = docker.build("nimbleplatform/identity-service")
+            withMaven(maven: 'M339') {
+              sh 'mvn -f identity-service/pom.xml docker:build'
+            }
     }
     stage ('Docker Push')  {
       docker.withRegistry('https://registry.hub.docker.com', 'NimbelPlatformDocker') {
