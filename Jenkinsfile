@@ -1,6 +1,6 @@
 node ('nimble-jenkins-slave') {
     def app
-    stage('Clone & Build') {
+    /*stage('Clone & Build') {
         // slackSend 'Started build no. ${env.BUILD_ID} of ${env.JOB_NAME}'
         git(url: 'https://github.com/nimble-platform/identity-service.git', branch: 'master')
         sh 'git submodule init'
@@ -20,6 +20,10 @@ node ('nimble-jenkins-slave') {
                 sh 'mvn -f identity-service/pom.xml docker:push'
             }
         }
+    }*/
+    stage ('Run deploy.sh') {
+        sh 'deploy.sh docker-build'
+        sh 'deploy.sh docker-push'
     }
 }
 
