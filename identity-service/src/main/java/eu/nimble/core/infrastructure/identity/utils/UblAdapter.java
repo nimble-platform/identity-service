@@ -17,7 +17,7 @@ public class UblAdapter {
 
     public static CompanySettings adaptCompanySettings(PartyType partyType) {
         CompanySettings settings = new CompanySettings();
-        settings.setName(partyType.getPartyName().stream().map(PartyNameType::getName).findFirst().orElse("undefined name"));
+        settings.setName(partyType.getName());
         settings.setAddress(adaptAddress(partyType.getPostalAddress()));
         partyType.getPaymentMeans().stream().findFirst().ifPresent(means -> settings.setPaymentMeans(adaptPaymentMeans(means)));
         partyType.getDeliveryTerms().stream().findFirst()
@@ -126,11 +126,7 @@ public class UblAdapter {
         if (companies != null && companies.isEmpty() == false) {
             PartyType company = companies.get(0);
             frontEndUser.setCompanyID(company.getHjid().toString());
-            frontEndUser.setCompanyName(company.getPartyName().stream().findFirst().orElseGet(() -> {
-                PartyNameType pnt = new PartyNameType();
-                pnt.setName("Company name not found");
-                return pnt;
-            }).getName());
+            frontEndUser.setCompanyName(company.getName());
         }
 
         return frontEndUser;
@@ -152,9 +148,7 @@ public class UblAdapter {
     public static PartyType adaptCompanyRegistration(CompanyRegistration registration, PersonType admin) {
 
         PartyType companyParty = new PartyType();
-        PartyNameType companyName = new PartyNameType();
-        companyName.setName(registration.getName());
-        companyParty.getPartyName().add(companyName);
+        companyParty.setName(registration.getName());
         companyParty.getPerson().add(admin);
         companyParty.setPostalAddress(adaptAddress(registration.getAddress()));
 

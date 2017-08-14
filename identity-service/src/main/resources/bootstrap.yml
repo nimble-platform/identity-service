@@ -17,9 +17,9 @@ spring:
       use-new-id-generator-mappings: true
   datasource:
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://${IDENTIY_DB_URI:localhost:5432}/${IDENTITY_DB_NAME:identityDB}
-    username: ${IDENTIY_DB_USER:root}
-    password: ${IDENTITY_DB_PASSWORD:changeme}
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost:${POSTGRES_PORT:5432}}/${POSTGRES_DB:identityDB}
+    username: ${POSTGRES_USER:root}
+    password: ${POSTGRES_PASSWORD:changeme}
 
 logstash:
   uri: ${vcap.services.logstash-service.credentials.url:${LOGSTASH_URI:localhost:5000}}
@@ -41,7 +41,7 @@ spring:
       ddl-auto: none
   datasource:
     driverClassName: ${IDENTITY_DB_DRIVER:org.h2.Driver}
-    url: ${IDENTITY_DB_URL:jdbc:h2:mem:AZ;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    url: ${POSTGRES_HOST:jdbc:h2:mem:AZ;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
 
 nimble:
   cors_enabled: true
