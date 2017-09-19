@@ -10,3 +10,5 @@ spec:
     port: 8080
     protocol: TCP
     targetPort: 9096
+  selector:
+    app: identity-service
