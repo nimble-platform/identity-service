@@ -5,8 +5,10 @@ metadata:
     app: identity-service
   name: identity-service
 spec:
+  type: NodePort
   ports:
   - name: http
     port: 8080
     protocol: TCP
+    nodePort: 30001
     targetPort: 9096
