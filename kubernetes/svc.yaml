@@ -5,6 +5,8 @@ metadata:
     app: identity-service
   name: identity-service
 spec:
+  selector:
+    app: identity-service
   type: NodePort
   ports:
   - name: http
