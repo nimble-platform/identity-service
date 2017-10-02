@@ -33,7 +33,12 @@ spec:
             cpu: 200m
             memory: 256Mi
         env:
-          - name: "SPRING_PROFILES_ACTIVE"
-            value: "local_dev"
-          - name: "DISCOVERY_ENABLED"
+          - name: SPRING_PROFILES_ACTIVE
+            value: kubernetes_dev
+          - name: DISCOVERY_ENABLED
             value: "false"
+          - name: DB_CREDENTIALS_JSON
+            valueFrom:
+              secretKeyRef:
+                name: binding-identity-db-dev
+                key: binding

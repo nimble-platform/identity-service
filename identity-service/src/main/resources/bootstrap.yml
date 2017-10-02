@@ -34,6 +34,14 @@ nimble:
 ---
 
 spring:
+  profiles: kubernetes_dev
+
+nimble:
+  db-credentials-json: ${DB_CREDENTIALS_JSON}
+
+---
+
+spring:
   profiles: local_dev
   jpa:
     database-platform: ${IDENTITY_DB_DIALECT:org.hibernate.dialect.H2Dialect}
