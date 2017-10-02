@@ -1,6 +1,5 @@
 package eu.nimble.core.infrastructure.identity.config;
 
-import eu.nimble.core.infrastructure.identity.controller.frontend.UserIdentityController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,7 +35,7 @@ public class DataSourceConfig {
         String originalUrl = (String) parser.parseMap(this.dbCredentialsJson).get("uri");
 
         // construct data from 'postgres://username:password@host:port/database'
-        Matcher matcher = Pattern.compile("^postgres:\\/\\/(.*?):(.*?)\\@").matcher(originalUrl);
+        Matcher matcher = Pattern.compile("^postgres://(.*?):(.*?)@").matcher(originalUrl);
         matcher.find();
         String username = matcher.group(1);
         String password = matcher.group(2);
