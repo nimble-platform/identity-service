@@ -18,6 +18,6 @@ node ('nimble-jenkins-slave') {
     }
 
     stage ('Deploy') {
-        sh 'kubectl apply -f kubernetes/deploy.yaml -n prod --validate=false'
+        sh 'kubectl apply -f kubernetes/deploy-prod.yaml -n prod --validate=false'
     }
 }

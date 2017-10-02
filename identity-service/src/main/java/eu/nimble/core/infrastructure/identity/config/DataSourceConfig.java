@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 
 @Component
 @Configuration
-@Profile("kubernetes_dev")
+@Profile("kubernetesf")
 @SuppressWarnings({"unused", "ResultOfMethodCallIgnored"})
 public class DataSourceConfig {
 

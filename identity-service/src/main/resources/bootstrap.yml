@@ -34,7 +34,7 @@ nimble:
 ---
 
 spring:
-  profiles: kubernetes_dev
+  profiles: kubernetes
 
 nimble:
   db-credentials-json: ${DB_CREDENTIALS_JSON}

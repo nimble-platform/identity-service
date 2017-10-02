@@ -40,5 +40,5 @@ spec:
           - name: DB_CREDENTIALS_JSON
             valueFrom:
               secretKeyRef:
-                name: binding-identity-db-dev
+                name: binding-identity-db-prod
                 key: binding
