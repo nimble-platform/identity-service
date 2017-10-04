@@ -56,7 +56,9 @@ metadata:
     name: identity-service
 spec:
   ports:
-    - port: 9096
+    - name: http
+      protocol: TCP
+      port: 9096
       targetPort: 9096
   selector:
     app: nimble-platform
