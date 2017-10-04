@@ -2,13 +2,15 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    app: identity-service
+    app: nimble-platform
+    name: identity-service
   name: identity-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: identity-service
+      app: nimble-platform
+      name: identity-service
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -18,7 +20,8 @@ spec:
   template:
     metadata:
       labels:
-        app: identity-service
+        app: nimble-platform
+        name: identity-service
     spec:
       containers:
       - image: nimbleplatform/identity-service
@@ -42,3 +45,19 @@ spec:
               secretKeyRef:
                 name: binding-identity-db-dev
                 key: binding
+
+---
+
+kind: Service
+metadata:
+  name: identity-service
+  labels:
+    app: nimble-platform
+    name: identity-service
+spec:
+  ports:
+    - port: 9096
+      targetPort: 9096
+  selector:
+    app: nimble-platform
+    name: identity-service

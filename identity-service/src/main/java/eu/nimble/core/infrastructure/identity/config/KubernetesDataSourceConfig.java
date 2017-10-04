@@ -19,9 +19,9 @@ import java.util.regex.Pattern;
 @Configuration
 @Profile("kubernetes")
 @SuppressWarnings({"unused", "ResultOfMethodCallIgnored"})
-public class DataSourceConfig {
+public class KubernetesDataSourceConfig {
 
-    private static final Logger logger = LoggerFactory.getLogger(DataSourceConfig.class);
+    private static final Logger logger = LoggerFactory.getLogger(KubernetesDataSourceConfig.class);
 
     @Value("${nimble.db-credentials-json}")
     private String dbCredentialsJson;
