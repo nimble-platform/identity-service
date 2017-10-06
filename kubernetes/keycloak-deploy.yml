@@ -1,0 +1,98 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: nimble-platform
+    name: keycloak
+  name: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nimble-platform
+      name: keycloak
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  revisionHistoryLimit: 5
+  template:
+    metadata:
+      labels:
+        app: nimble-platform
+        name: keycloak
+    spec:
+      containers:
+        - image: jboss/keycloak-postgres:3.2.0.Final
+          imagePullPolicy: Always
+          name: keycloak
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          - containerPort: 9990
+            protocol: TCP
+          - containerPort: 8443
+            protocol: TCP
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+          env:
+            - name: KEYCLOAK_LOGLEVEL
+              value: DEBUG
+            - name: PROXY_ADDRESS_FORWARDING
+              value: "true"
+            - name: KEYCLOAK_USER
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret
+                  key: keycloak-user
+            - name: KEYCLOAK_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret
+                  key: keycloak-password
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret
+                  key: postgres-password
+            - name: POSTGRES_PORT_5432_TCP_ADDR
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret
+                  key: postgres-host
+            - name: POSTGRES_PORT_5432_TCP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret
+                  key: postgres-port
+            - name: POSTGRES_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret
+                  key: postgres-database
+
+---
+
+kind: Service
+metadata:
+  name: keycloak
+  labels:
+    app: nimble-platform
+    name: keycloak
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 9990
+  selector:
+    app: nimble-platform
+    name: keycloak
