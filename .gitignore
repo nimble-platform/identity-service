@@ -198,3 +198,5 @@ hs_err_pid*
 ### Custom ###
 .idea
 .gradle
+identity-service/src/test/
+kubernetes/keycloak-secret.yml
