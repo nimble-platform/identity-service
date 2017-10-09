@@ -143,10 +143,10 @@ public class UserIdentityController {
     }
 
 
-    @ApiOperation(value = "", notes = "Login controller with credentials.", response = eu.nimble.core.infrastructure.identity.swagger.model.CompanyRegistration.class, tags = {})
+    @ApiOperation(value = "", notes = "Login controller with credentials.", response = CompanyRegistration.class, tags = {})
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful login", response = eu.nimble.core.infrastructure.identity.swagger.model.CompanyRegistration.class),
-            @ApiResponse(code = 401, message = "Login failed", response = eu.nimble.core.infrastructure.identity.swagger.model.CompanyRegistration.class)})
+            @ApiResponse(code = 200, message = "Successful login", response = CompanyRegistration.class),
+            @ApiResponse(code = 401, message = "Login failed", response = CompanyRegistration.class)})
     @RequestMapping(value = "/login", produces = {"application/json"}, method = RequestMethod.POST)
     ResponseEntity<FrontEndUser> loginUser(
             @ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody Credentials credentials) {
