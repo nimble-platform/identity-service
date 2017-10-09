@@ -1,6 +1,7 @@
 package eu.nimble.core.infrastructure.identity.controller.frontend;
 
-import eu.nimble.core.infrastructure.identity.controller.frontend.dto.CompanyRegistration;
+import eu.nimble.core.infrastructure.identity.controller.frontend.dto.CompanyRegistrationResponse;
+import eu.nimble.core.infrastructure.identity.controller.frontend.dto.UserRegistration;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.repository.*;
@@ -25,24 +26,28 @@ import java.util.List;
 import java.util.Optional;
 
 @Controller
-@SuppressWarnings("PointlessBooleanExpression")
 public class UserIdentityController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserIdentityController.class);
 
     @Autowired
+    @SuppressWarnings("unused")
     private PersonRepository personRepository;
 
     @Autowired
+    @SuppressWarnings("unused")
     private PartyRepository partyRepository;
 
     @Autowired
+    @SuppressWarnings("unused")
     private DeliveryTermsRepository deliveryTermsRepository;
 
     @Autowired
+    @SuppressWarnings("unused")
     private PaymentMeansRepository paymentMeansRepository;
 
     @Autowired
+    @SuppressWarnings("unused")
     private UaaUserRepository uaaUserRepository;
 
     @ApiOperation(value = "Register a new controller to the nimble.", response = FrontEndUser.class, tags = {})
@@ -51,7 +56,7 @@ public class UserIdentityController {
             @ApiResponse(code = 405, message = "User not registered", response = FrontEndUser.class)})
     @RequestMapping(value = "/register/user", produces = {"application/json"}, consumes = {"application/json"}, method = RequestMethod.POST)
     ResponseEntity<FrontEndUser> registerUser(
-            @ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody UserRegistation userRegistation) {
+            @ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody UserRegistration userRegistation) {
 
         FrontEndUser frontEndUser = userRegistation.getUser();
         Credentials credentials = userRegistation.getCredentials();
@@ -90,13 +95,13 @@ public class UserIdentityController {
         return new ResponseEntity<>(frontEndUser, HttpStatus.OK);
     }
 
-    public @ApiOperation(value = "", notes = "Register company controller.", response = eu.nimble.core.infrastructure.identity.controller.frontend.dto.CompanyRegistration.class, tags = {})
+    public @ApiOperation(value = "", notes = "Register company controller.", response = CompanyRegistration.class, tags = {})
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "Company registered", response = eu.nimble.core.infrastructure.identity.controller.frontend.dto.CompanyRegistration.class),
-            @ApiResponse(code = 405, message = "Company not registered", response = eu.nimble.core.infrastructure.identity.controller.frontend.dto.CompanyRegistration.class)})
+            @ApiResponse(code = 201, message = "Company registered", response = CompanyRegistrationResponse.class),
+            @ApiResponse(code = 405, message = "Company not registered", response = CompanyRegistrationResponse.class)})
     @RequestMapping(value = "/register/company", produces = {"application/json"}, consumes = {"application/json"}, method = RequestMethod.POST)
-    ResponseEntity<eu.nimble.core.infrastructure.identity.controller.frontend.dto.CompanyRegistration> registerCompany(
-            @ApiParam(value = "Company object that needs to be registered to Nimble.", required = true) @RequestBody eu.nimble.core.infrastructure.identity.controller.frontend.dto.CompanyRegistration company) {
+    ResponseEntity<CompanyRegistration> registerCompany(
+            @ApiParam(value = "Company object that needs to be registered to Nimble.", required = true) @RequestBody CompanyRegistration company) {
 
         Address companyAddress = company.getAddress();
         if( companyAddress == null || company.getName() == null )
@@ -144,9 +149,9 @@ public class UserIdentityController {
     }
 
 
-    @ApiOperation(value = "", notes = "Login controller with credentials.", response = eu.nimble.core.infrastructure.identity.controller.frontend.dto.CompanyRegistration.class, tags = {})
+    @ApiOperation(value = "", notes = "Login controller with credentials.", response = CompanyRegistrationResponse.class, tags = {})
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful login", response = eu.nimble.core.infrastructure.identity.controller.frontend.dto.CompanyRegistration.class),
+            @ApiResponse(code = 200, message = "Successful login", response = CompanyRegistrationResponse.class),
             @ApiResponse(code = 401, message = "Login failed", response = CompanyRegistration.class)})
     @RequestMapping(value = "/login", produces = {"application/json"}, method = RequestMethod.POST)
     ResponseEntity<FrontEndUser> loginUser(
@@ -173,32 +178,5 @@ public class UserIdentityController {
         logger.info("User " + credentials.getUsername() + " successfully logged in.");
 
         return new ResponseEntity<>(frontEndUser, HttpStatus.OK);
-    }
-
-    private static class UserRegistation {
-
-        private FrontEndUser user = null;
-        private Credentials credentials = null;
-
-        public FrontEndUser getUser() {
-            return user;
-        }
-
-        public void setUser(FrontEndUser user) {
-            this.user = user;
-        }
-
-        public Credentials getCredentials() {
-            return credentials;
-        }
-
-        public void setCredentials(Credentials credentials) {
-            this.credentials = credentials;
-        }
-
-        @Override
-        public String toString() {
-            return "UserRegistation{" + "user=" + user + ", credentials=" + credentials + '}';
-        }
     }
 }
