@@ -201,42 +201,6 @@
                 </executions>
             </plugin>
 
-            <plugin>
-
-                <groupId>io.swagger</groupId>
-                <artifactId>swagger-codegen-maven-plugin</artifactId>
-                <version>2.2.1</version>
-                <executions>
-                    <execution>
-                        <id>code</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <inputSpec>${swagger.api.src}</inputSpec>
-                            <language>spring</language>
-                            <modelPackage>${default.package}.swagger.model</modelPackage>
-                            <apiPackage>${default.package}.swagger.api</apiPackage>
-                            <invokerPackage>${default.package}.swagger.invoker</invokerPackage>
-                            <configOptions>
-                                <sourceFolder>src/gen/java/main</sourceFolder>
-                                <interfaceOnly>true</interfaceOnly>
-                            </configOptions>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>doc</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <inputSpec>${swagger.api.src}</inputSpec>
-                            <language>html</language>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
         </plugins>
     </build>
 </project>
