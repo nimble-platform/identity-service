@@ -66,11 +66,6 @@ public class UblAdapter {
 
         DeliveryTerms dtoDeliveryTerms = new DeliveryTerms();
         dtoDeliveryTerms.setSpecialTerms(ublDeliveryTerms.getSpecialTerms());
-        if (ublDeliveryTerms.getDelivery() != null) {
-            if (ublDeliveryTerms.getDelivery().getActualDeliveryTime() != null)
-                dtoDeliveryTerms.setEstimatedDeliveryTime(ublDeliveryTerms.getDelivery().getActualDeliveryTime().getDay());
-            dtoDeliveryTerms.setDeliveryAddress(adaptAddress(ublDeliveryTerms.getDelivery().getDeliveryAddress()));
-        }
 
         return dtoDeliveryTerms;
     }
@@ -82,10 +77,6 @@ public class UblAdapter {
 
         DeliveryTermsType ublDeliveryTerms = new DeliveryTermsType();
         ublDeliveryTerms.setSpecialTerms(dtoDeliveryTerms.getSpecialTerms());
-
-        DeliveryType delivery = new DeliveryType();
-        delivery.setDeliveryAddress(adaptAddress(dtoDeliveryTerms.getDeliveryAddress()));
-        ublDeliveryTerms.setDelivery(delivery);
 
         // ToDo: create GregorianCalender and add 'EstimatedDeliveryTime'.
 
