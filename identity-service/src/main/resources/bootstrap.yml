@@ -46,7 +46,7 @@ spring:
   jpa:
     database-platform: ${IDENTITY_DB_DIALECT:org.hibernate.dialect.H2Dialect}
     hibernate:
-      ddl-auto: none
+      ddl-auto: create-drop
   datasource:
     driverClassName: ${IDENTITY_DB_DRIVER:org.h2.Driver}
     url: ${POSTGRES_HOST:jdbc:h2:mem:AZ;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
