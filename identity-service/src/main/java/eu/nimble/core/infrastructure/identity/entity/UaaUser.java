@@ -16,13 +16,13 @@ public class UaaUser implements Serializable {
     @GeneratedValue
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String username;
 
     @Column(nullable = false)
     private String password;
 
-    @Column
+    @OneToOne
     private PersonType ublPerson;
 
 
