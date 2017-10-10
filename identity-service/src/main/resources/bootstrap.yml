@@ -49,7 +49,7 @@ spring:
       ddl-auto: create-drop
   datasource:
     driverClassName: ${IDENTITY_DB_DRIVER:org.h2.Driver}
-    url: ${POSTGRES_HOST:jdbc:h2:mem:AZ;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    url: ${POSTGRES_HOST:jdbc:h2:mem:AZ;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=TRUE}
 
 nimble:
   cors_enabled: true
