@@ -8,7 +8,9 @@ node ('nimble-jenkins-slave') {
     }
 
     stage ('Build Docker Image') {
-        sh '/bin/bash -xe deploy.sh docker-build'
+        withDockerRegistry([credentialsId: 'NimbleDocker']) {
+            sh '/bin/bash -xe deploy.sh docker-build'
+        }
     }
 
     stage ('Push Docker image') {
