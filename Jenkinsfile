@@ -9,14 +9,16 @@ node('nimble-jenkins-slave') {
         sh 'git submodule update'
     }
 
-    stage('Build Docker Image') {
-        withDockerRegistry([credentialsId: 'NimbleDocker']) {
-            sh '/bin/bash -xe deploy.sh docker-build'
-        }
+    stage('Build Java') {
+        sh 'mvn clean install -DskipTests'
+    }
+
+    stage('Build Docker') {
+        sh 'mvn -f identity-service/pom.xml docker:build'
     }
 
     if (env.BRANCH_NAME == 'master') {
-        stage('Push Docker image') {
+        stage('Push Docker') {
             withDockerRegistry([credentialsId: 'NimbleDocker']) {
                 sh 'docker push nimbleplatform/identity-service'
             }
