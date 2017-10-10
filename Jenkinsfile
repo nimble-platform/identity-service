@@ -20,6 +20,6 @@ node ('nimble-jenkins-slave') {
     }
 
     stage ('Apply to Cluster') {
-        sh 'kubectl apply -f kubernetes/deploy-prod.yaml -n prod --validate=false'
+        sh 'kubectl apply -f kubernetes/deploy-prod.yml -n prod --validate=false'
     }
 }
