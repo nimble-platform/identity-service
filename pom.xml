@@ -17,8 +17,7 @@
     </parent>
 
     <modules>
-        <module>libs/catalog-service-srdc/core/utility</module>
-        <module>libs/catalog-service-srdc/business/ubl-data-model</module>
+        <module>libs/common</module>
         <module>identity-service</module>
     </modules>
 </project>
