@@ -2,22 +2,13 @@
 
 set -e    # Exits immediately if a command exits with a non-zero status.sadfaksjdflakjsdf
 
-function build(){
-    mvn clean install -DskipTests
-}
-
-function docker_build(){
-    mvn -f identity-service/pom.xml docker:build
-}
-
 if [ "$1" == "build" ]; then
-    # build projects
-    build
+
+    mvn clean install -DskipTests
+
 elif [ "$1" == "docker-build" ]; then
-    # build projects
-    build
-    # build docker
-    docker_build
+
+    mvn -f identity-service/pom.xml docker:build
 
 elif [ "$1" == "docker-push" ]; then
 
