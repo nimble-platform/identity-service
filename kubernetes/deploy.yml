@@ -24,7 +24,7 @@ spec:
         name: identity-service
     spec:
       containers:
-      - image: nimbleplatform/identity-service
+      - image: nimbleplatform/identity-service:latest
         imagePullPolicy: Always
         name: identity-service
         ports:
