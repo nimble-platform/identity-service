@@ -40,11 +40,11 @@ spec:
             value: local_dev,docker
           - name: DISCOVERY_ENABLED
             value: "false"
-#          - name: DB_CREDENTIALS_JSON
-#            valueFrom:
-#              secretKeyRef:
-#                name: binding-nimble-identity-db-prod
-#                key: binding
+          - name: DB_CREDENTIALS_JSON
+            valueFrom:
+              secretKeyRef:
+                name: binding-nimble-identity-db-prod
+                key: binding
 
 ---
 
