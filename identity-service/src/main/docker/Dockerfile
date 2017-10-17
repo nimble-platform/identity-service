@@ -7,6 +7,7 @@ ARG port
 ADD $finalName $JAR
 RUN touch $JAR
 ENV PORT 9096
+
 EXPOSE $PORT
-CMD [${JAR}]
+
 ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
