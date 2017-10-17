@@ -20,7 +20,7 @@ node('nimble-jenkins-slave') {
     if (env.BRANCH_NAME == 'master') {
         stage('Push Docker') {
             withDockerRegistry([credentialsId: 'NimbleDocker']) {
-                sh 'docker push nimbleplatform/identity-service'
+                sh 'docker push nimbleplatform/identity-service:latest'
             }
         }
 
