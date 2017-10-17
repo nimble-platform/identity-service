@@ -37,14 +37,14 @@ spec:
             memory: 256Mi
         env:
           - name: SPRING_PROFILES_ACTIVE
-            value: kubernetes
+            value: local_dev,docker
           - name: DISCOVERY_ENABLED
             value: "false"
-          - name: DB_CREDENTIALS_JSON
-            valueFrom:
-              secretKeyRef:
-                name: binding-identity-db-dev
-                key: binding
+#          - name: DB_CREDENTIALS_JSON
+#            valueFrom:
+#              secretKeyRef:
+#                name: binding-nimble-identity-db-prod
+#                key: binding
 
 ---
 

@@ -38,8 +38,6 @@ spring:
 
 nimble:
   db-credentials-json: ${DB_CREDENTIALS_JSON}
-
-nimble:
   cors_enabled: true
 
 ---
