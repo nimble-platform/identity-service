@@ -5,7 +5,7 @@ spring:
     name: identity-service
   cloud:
     config:
-      uri: ${vcap.services.config-service.credentials.url:${CONFIG_SERVER_URI:http://localhost:8888}}
+      uri: ${CONFIG_SERVER_URI:http://localhost:8888}
       failFast: ${CONFIG_SERVER_FAILFAST:false}
     discovery:
       enabled: ${DISCOVERY_ENABLED:false}
@@ -17,12 +17,12 @@ spring:
       use-new-id-generator-mappings: true
   datasource:
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost:${POSTGRES_PORT:5432}}/${POSTGRES_DB:identityDB}
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:identityDB}
     username: ${POSTGRES_USER:root}
     password: ${POSTGRES_PASSWORD:changeme}
 
 logstash:
-  uri: ${vcap.services.logstash-service.credentials.url:${LOGSTASH_URI:localhost:5000}}
+  uri: ${LOGSTASH_URI:localhost:5000}
 
 nimble:
   uaa:
