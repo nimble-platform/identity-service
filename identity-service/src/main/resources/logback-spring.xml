@@ -21,7 +21,7 @@
                 <pattern>
                     <pattern>
                         {
-                        "severity": "%level",
+                        "level": "%level",
                         "serviceID": "${springAppName:-}",
                         "trace": "%X{X-B3-TraceId:-}",
                         "span": "%X{X-B3-SpanId:-}",
@@ -30,7 +30,7 @@
                         "thread": "%thread",
                         "class": "%logger{40}",
                         "version": "${build-version:-}",
-                        "rest": "%message"
+                        "message": "%message"
                         }
                     </pattern>
                 </pattern>
