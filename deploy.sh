@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e    # Exits immediately if a command exits with a non-zero status.sadfaksjdflakjsdf
+set -e    # Exits immediately if a command exits with a non-zero status.
 
 if [ "$1" == "build" ]; then
 
