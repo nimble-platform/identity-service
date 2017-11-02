@@ -25,7 +25,7 @@ node('nimble-jenkins-slave') {
         }
 
         stage('Apply to Cluster') {
-            sh 'ssh jenkins@nimbleplatform "sudo /docker-compose up"'
+            sh 'ssh nimble "cd /data/nimble_setup/ && sudo ./run-prod.sh restart-single identity-service"'
 //            sh 'kubectl apply -f kubernetes/deploy.yml -n prod --validate=false'
         }
     }
