@@ -25,16 +25,16 @@ node('nimble-jenkins-slave') {
         sh 'mvn -f identity-service/pom.xml docker:build'
     }
 
-    if (env.BRANCH_NAME == 'master') {
-        stage('Push Docker') {
-            withDockerRegistry([credentialsId: 'NimbleDocker']) {
-                sh 'docker push nimbleplatform/identity-service:latest'
-            }
-        }
-
-        stage('Apply to Cluster') {
-            sh 'ssh nimble "cd /data/nimble_setup/ && sudo ./run-prod.sh restart-single identity-service"'
-//            sh 'kubectl apply -f kubernetes/deploy.yml -n prod --validate=false'
-        }
-    }
+//    if (env.BRANCH_NAME == 'master') {
+//        stage('Push Docker') {
+//            withDockerRegistry([credentialsId: 'NimbleDocker']) {
+//                sh 'docker push nimbleplatform/identity-service:latest'
+//            }
+//        }
+//
+//        stage('Apply to Cluster') {
+//            sh 'ssh nimble "cd /data/nimble_setup/ && sudo ./run-prod.sh restart-single identity-service"'
+////            sh 'kubectl apply -f kubernetes/deploy.yml -n prod --validate=false'
+//        }
+//    }
 }
