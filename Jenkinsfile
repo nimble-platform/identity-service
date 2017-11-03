@@ -14,8 +14,13 @@ node('nimble-jenkins-slave') {
     }
 
     stage('Build Docker') {
-
         sh 'mvn -f identity-service/pom.xml docker:build'
+    }
+
+    if (env.BRANCH_NAME == 'master') {
+        stage('Deploy') {
+            sh 'ssh nimble "cd /data/nimble_setup/ && sudo ./run-prod.sh restart-single identity-service"'
+        }
     }
 
 //    if (env.BRANCH_NAME == 'master') {
