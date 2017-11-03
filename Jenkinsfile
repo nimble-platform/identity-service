@@ -22,7 +22,6 @@ node('nimble-jenkins-slave') {
     }
 
     stage('Build Docker') {
-
         sh 'mvn -f identity-service/pom.xml docker:build'
     }
 
