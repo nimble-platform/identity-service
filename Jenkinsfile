@@ -9,14 +9,6 @@ node('nimble-jenkins-slave') {
         sh 'git submodule update'
     }
 
-    stage('Build Dependencies') {
-        sh 'rm -rf common   '
-        sh 'git clone https://github.com/nimble-platform/common'
-        dir ('common') {
-            sh 'mvn clean install'
-        }
-    }
-
     stage('Build Java') {
         sh 'mvn clean install -DskipTests'
     }
