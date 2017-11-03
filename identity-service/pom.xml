@@ -144,9 +144,9 @@
 
         <!-- UBL data format -->
         <dependency>
-            <groupId>eu.nimble.core.infrastructure.business</groupId>
+            <groupId>eu.nimble.core.common</groupId>
             <artifactId>ubl-data-model</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
     </dependencies>
