@@ -33,8 +33,8 @@ public class EmailService {
     }
 
     private void send(String to, String subject, String template, Context context) {
-        String message = textMailTemplateEngine.process(template, context);
         SimpleMailMessage mailMessage = new SimpleMailMessage();
+        String message = textMailTemplateEngine.process(template, context);
         mailMessage.setFrom(defaultFrom);
         mailMessage.setTo(to);
         mailMessage.setSubject(subject);
