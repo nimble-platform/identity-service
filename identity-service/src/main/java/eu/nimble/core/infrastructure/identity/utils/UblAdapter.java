@@ -4,10 +4,7 @@ import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * Created by Johannes Innerbichler on 04/07/17.

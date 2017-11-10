@@ -63,7 +63,7 @@ spring:
     port: 8465 # 465
 
 nimble:
-  cors_enabled: true
+  corsEnabled: true
   mail:
-    default_from: "johannes.innerbichler@salzburgresearch.at"
+    defaultFrom: "johannes.innerbichler@salzburgresearch.at"
 

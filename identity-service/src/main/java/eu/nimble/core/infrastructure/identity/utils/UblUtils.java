@@ -1,8 +1,6 @@
 package eu.nimble.core.infrastructure.identity.utils;
 
 import com.google.common.collect.Sets;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.AddressType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.CountryType;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
