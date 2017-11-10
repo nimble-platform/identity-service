@@ -54,8 +54,8 @@ spring:
   mail:
     host: localhost # in-v3.mailjet.com
     port: 8465 # 465
-    username: "0adfa4014f159b37090bd7af314ac80c"
-    password: "c0a41603180178dc526ad83c1ac9d8fa"
+    username: ""
+    password: ""
     smtp.auth: true
     properties.mail.smtp.starttls.enable: true
 
