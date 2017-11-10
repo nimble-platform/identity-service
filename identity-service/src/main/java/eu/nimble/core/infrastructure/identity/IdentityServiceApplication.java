@@ -6,6 +6,11 @@ import eu.nimble.service.model.ubl.commonaggregatecomponents.ActivityDataLineTyp
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.KeycloakBuilder;
+import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.representations.idm.RealmRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -34,14 +39,10 @@ public class IdentityServiceApplication extends SpringBootServletInitializer {
     @Value("${nimble.corsEnabled}")
     private String corsEnabled;
 
-    @Autowired
-    private
-    EmailService emailService;
-
     @Bean
     public WebMvcConfigurer corsConfigurer() {
 
-        emailService.sendInvite("johannes.innerbichler@salzburgresearch.at");
+        test();
 
         return new WebMvcConfigurerAdapter() {
             @Override
@@ -50,6 +51,21 @@ public class IdentityServiceApplication extends SpringBootServletInitializer {
                     registry.addMapping("/**").allowedOrigins("*");
             }
         };
+    }
+
+    public void test() {
+        Keycloak kc = KeycloakBuilder.builder()
+                .serverUrl("http://localhost:10096/auth/")
+                .realm("LocalTest")
+                .username("admin")
+                .password("173674cf-3436-4c89-8718-d963e120a73e")
+                .clientId("admin-cli")
+                .resteasyClient(
+                        new ResteasyClientBuilder()
+                                .connectionPoolSize(10).build())
+                .build();
+        RealmResource realmResource = kc.realm("LocalTest");
+        System.out.println(realmResource.users());
     }
 
     public static void main(String[] args) throws URISyntaxException {
