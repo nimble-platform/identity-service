@@ -1,0 +1,9 @@
+Dear [(${firstName})] [(${lastName})],
+
+you have been invited to the NIMBLE platform by [(${senderName})].
+
+Please follow the link in order to get access.
+[(${invitationUrl})]
+
+Sincerely,
+    your NIMBLE platform manager
