@@ -2,7 +2,6 @@ package eu.nimble.core.infrastructure.identity.controller.ubl;
 
 import eu.nimble.core.infrastructure.identity.repository.DeliveryTermsRepository;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.DeliveryTermsType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.springframework.beans.factory.annotation.Autowired;

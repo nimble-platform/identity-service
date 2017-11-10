@@ -17,7 +17,7 @@ public class EmailService {
     @Autowired
     private TemplateEngine textMailTemplateEngine;
 
-    @Value("${nimble.mail.default_from}")
+    @Value("${nimble.mail.defaultFrom}")
     private String defaultFrom;
 
     public void sendInvite(String to) {
@@ -34,8 +34,8 @@ public class EmailService {
 
     private void send(String to, String subject, String template, Context context) {
         SimpleMailMessage mailMessage = new SimpleMailMessage();
-        String message = textMailTemplateEngine.process(template, context);
-        mailMessage.setFrom(defaultFrom);
+        String message = this.textMailTemplateEngine.process(template, context);
+        mailMessage.setFrom(this.defaultFrom);
         mailMessage.setTo(to);
         mailMessage.setSubject(subject);
         mailMessage.setText(message);
