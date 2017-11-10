@@ -20,6 +20,13 @@ spring:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:identityDB}
     username: ${POSTGRES_USER:root}
     password: ${POSTGRES_PASSWORD:changeme}
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:25}
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    smtp.auth: true
+    properties.mail.smtp.starttls.enable: true
 
 logstash:
   uri: ${LOGSTASH_URI:localhost:5000}
@@ -54,10 +61,6 @@ spring:
   mail:
     host: localhost # in-v3.mailjet.com
     port: 8465 # 465
-    username: ""
-    password: ""
-    smtp.auth: true
-    properties.mail.smtp.starttls.enable: true
 
 nimble:
   cors_enabled: true
