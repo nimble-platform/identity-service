@@ -33,11 +33,11 @@ logstash:
   uri: ${LOGSTASH_URI:localhost:5000}
 
 nimble:
+  corsEnabled: false
   uaa:
     url: ${UAA_URI:http://localhost:9090}
     clientid: ${UAA_CLIENT_ID:sultans}
     clientsecret: ${UAA_CLIENT_SECRET:sultanssecret}
-  cors_enabled: false
   keycloak:
     serverUrl: ${KEYCLOAK_URL:http://localhost:10096/auth}
     realm: ${KEYCLOAK_REALM:master}
@@ -59,7 +59,7 @@ spring:
 
 nimble:
   db-credentials-json: ${DB_CREDENTIALS_JSON}
-  cors_enabled: true
+  corsEnabled: true
 
 ---
 
