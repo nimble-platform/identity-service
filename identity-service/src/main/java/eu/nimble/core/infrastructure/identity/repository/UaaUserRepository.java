@@ -19,5 +19,5 @@ public interface UaaUserRepository extends PagingAndSortingRepository<UaaUser, L
 
     List<UaaUser> findByUsername(String username);
 
-    List<UaaUser> findById(long id);
+    List<UaaUser> findByExternalID(long id);
 }
