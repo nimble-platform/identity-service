@@ -5,6 +5,7 @@ import eu.nimble.core.infrastructure.identity.controller.frontend.dto.UserRegist
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.repository.*;
+import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
@@ -17,11 +18,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.WebApplicationException;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,26 +37,24 @@ public class UserIdentityController {
     private static final Logger logger = LoggerFactory.getLogger(UserIdentityController.class);
 
     @Autowired
-    @SuppressWarnings("unused")
     private PersonRepository personRepository;
 
     @Autowired
-    @SuppressWarnings("unused")
     private PartyRepository partyRepository;
 
     @Autowired
-    @SuppressWarnings("unused")
     private DeliveryTermsRepository deliveryTermsRepository;
 
     @Autowired
-    @SuppressWarnings("unused")
     private PaymentMeansRepository paymentMeansRepository;
 
     @Autowired
-    @SuppressWarnings("unused")
     private UaaUserRepository uaaUserRepository;
 
-    @ApiOperation(value = "Register a new controller to the nimble.", response = FrontEndUser.class, tags = {})
+    @Autowired
+    private KeycloakAdmin keycloakAdmin;
+
+    @ApiOperation(value = "Register a new user to the nimble.", response = FrontEndUser.class, tags = {})
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "User created", response = FrontEndUser.class),
             @ApiResponse(code = 405, message = "User not registered", response = FrontEndUser.class)})
@@ -68,10 +72,15 @@ public class UserIdentityController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        // check if user already exists
-        if (uaaUserRepository.findByUsername(credentials.getUsername()).isEmpty() == false) {
-            logger.info("User with username {} already exists", credentials.getUsername());
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
+        // create user on Keycloak
+        String keycloakID;
+        try {
+            keycloakID = keycloakAdmin.registerUser(
+                    frontEndUser.getFirstname(), frontEndUser.getLastname(), credentials.getPassword(), frontEndUser.getEmail());
+        } catch (WebApplicationException ex) {
+            if (ex.getResponse().getStatus() == HttpStatus.CONFLICT.value())
+                return new ResponseEntity<>(HttpStatus.CONFLICT);
+            throw ex;
         }
 
         // create UBL party of user
@@ -82,8 +91,8 @@ public class UserIdentityController {
         newUserParty.setID(UblUtils.identifierType(newUserParty.getHjid()));
         personRepository.save(newUserParty);
 
-        // create UAA user
-        UaaUser uaaUser = new UaaUser(credentials.getUsername(), credentials.getPassword(), newUserParty);
+        // create entry in identity DB
+        UaaUser uaaUser = new UaaUser(credentials.getUsername(), newUserParty, keycloakID);
         uaaUserRepository.save(uaaUser);
 
         // update user data
@@ -104,7 +113,7 @@ public class UserIdentityController {
             @ApiParam(value = "Company object that needs to be registered to Nimble.", required = true) @RequestBody CompanyRegistration company) {
 
         Address companyAddress = company.getAddress();
-        if( companyAddress == null || company.getName() == null )
+        if (companyAddress == null || company.getName() == null)
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
         Optional<PersonType> userPartyOpt = personRepository.findByHjid(company.getUserID()).stream().findFirst();
@@ -155,25 +164,33 @@ public class UserIdentityController {
             @ApiResponse(code = 401, message = "Login failed", response = CompanyRegistration.class)})
     @RequestMapping(value = "/login", produces = {"application/json"}, method = RequestMethod.POST)
     ResponseEntity<FrontEndUser> loginUser(
-            @ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody Credentials credentials) {
+            @ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody Credentials credentials,
+            HttpServletResponse response) {
 
-        logger.info("User " + credentials.getUsername() + " wants to login...");
-
-        List<UaaUser> potentialUsers = uaaUserRepository.findByUsername(credentials.getUsername());
-        if (potentialUsers.isEmpty()) {
+        OAuth2AccessToken accessToken = null;
+        try {
+            logger.info("User " + credentials.getUsername() + " wants to login...");
+            accessToken = keycloakAdmin.getToken(credentials.getUsername(), credentials.getPassword());
+        } catch (OAuth2AccessDeniedException ex) {
             logger.info("User " + credentials.getUsername() + " not found.");
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
 
-        UaaUser potentialUser = potentialUsers.get(0);
-        if (potentialUser.getPassword().equals(credentials.getPassword()) == false) {
-            logger.info("User " + credentials.getUsername() + " entered wrong password.");
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        List<UaaUser> potentialUsers = uaaUserRepository.findByUsername(credentials.getUsername());
+        if (potentialUsers.isEmpty()) {
+            logger.info("User " + credentials.getUsername() + " not found in local database, but on Keycloak.");
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
         // create front end user DTO
+        UaaUser potentialUser = potentialUsers.get(0);
         List<PartyType> companies = partyRepository.findByPerson(potentialUser.getUBLPerson());
         FrontEndUser frontEndUser = UblAdapter.adaptUser(potentialUser, companies);
+
+        // set cookie for OID token
+        Cookie jwtCookie = new Cookie("OPENID_TOKEN", accessToken.getValue());
+        jwtCookie.setMaxAge(accessToken.getExpiresIn()); // set expire time to expire time of access token
+        response.addCookie(jwtCookie);
 
         logger.info("User " + credentials.getUsername() + " successfully logged in.");
 

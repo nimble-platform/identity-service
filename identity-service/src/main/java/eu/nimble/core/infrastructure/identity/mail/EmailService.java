@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity.utils.mail;
+package eu.nimble.core.infrastructure.identity.mail;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

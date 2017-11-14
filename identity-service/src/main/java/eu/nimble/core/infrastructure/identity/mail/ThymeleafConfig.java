@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity.utils.mail;
+package eu.nimble.core.infrastructure.identity.mail;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -66,4 +66,11 @@ nimble:
   corsEnabled: true
   mail:
     defaultFrom: "johannes.innerbichler@salzburgresearch.at"
-
+  keycloak:
+    serverUrl: http://localhost:10096/auth
+    realm: master
+    admin:
+      username: admin
+      password: nimbleplatform
+      cliendId: admin-cli
+      cliendSecret: ae3f7b66-903b-4333-94fe-5c158ce70d33

@@ -13,36 +13,31 @@ import javax.persistence.*;
 public class UaaUser implements Serializable {
 
     @Id
-    @GeneratedValue
-    private Long id;
-
     @Column(nullable = false, unique = true)
-    private String username;
+    private String externalID;
 
-    @Column(nullable = false)
-    private String password;
+    private String username;
 
     @OneToOne
     private PersonType ublPerson;
-
 
     protected UaaUser() {
         // no-args constructor required by JPA spec
         // this one is protected since it shouldn't be used directly
     }
 
-    public UaaUser(String username, String password, PersonType ublPerson) {
+    public UaaUser(String username, PersonType ublPerson, String externalID) {
         this.username = username;
-        this.password = password;
         this.ublPerson = ublPerson;
+        this.externalID = externalID;
     }
 
     public String getUsername() {
-        return this.username;
+        return username;
     }
 
-    public String getPassword() {
-        return this.password;
+    public String getExternalID() {
+        return externalID;
     }
 
     public PersonType getUBLPerson() {
