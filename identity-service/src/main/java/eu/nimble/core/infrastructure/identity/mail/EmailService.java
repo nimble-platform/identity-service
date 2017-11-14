@@ -17,7 +17,7 @@ public class EmailService {
     @Autowired
     private TemplateEngine textMailTemplateEngine;
 
-    @Value("${nimble.mail.defaultFrom}")
+    @Value("${spring.mail.defaultFrom}")
     private String defaultFrom;
 
     public void sendInvite(String to) {

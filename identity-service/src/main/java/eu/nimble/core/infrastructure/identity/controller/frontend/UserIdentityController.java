@@ -6,6 +6,7 @@ import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
+import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
@@ -53,6 +54,9 @@ public class UserIdentityController {
 
     @Autowired
     private KeycloakAdmin keycloakAdmin;
+
+    @Autowired
+    private OAuthClient oAuthClient;
 
     @ApiOperation(value = "Register a new user to the nimble.", response = FrontEndUser.class, tags = {})
     @ApiResponses(value = {
@@ -167,10 +171,10 @@ public class UserIdentityController {
             @ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody Credentials credentials,
             HttpServletResponse response) {
 
-        OAuth2AccessToken accessToken = null;
+        OAuth2AccessToken accessToken;
         try {
             logger.info("User " + credentials.getUsername() + " wants to login...");
-            accessToken = keycloakAdmin.getToken(credentials.getUsername(), credentials.getPassword());
+            accessToken = oAuthClient.getToken(credentials.getUsername(), credentials.getPassword());
         } catch (OAuth2AccessDeniedException ex) {
             logger.info("User " + credentials.getUsername() + " not found.");
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);

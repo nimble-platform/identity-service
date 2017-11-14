@@ -23,6 +23,7 @@ spring:
   mail:
     host: ${SMTP_HOST:localhost}
     port: ${SMTP_PORT:25}
+    defaultFrom: ${SMTP_DEFAULT_FROM}
     username: ${SMTP_USERNAME}
     password: ${SMTP_PASSWORD}
     smtp.auth: true
@@ -37,6 +38,19 @@ nimble:
     clientid: ${UAA_CLIENT_ID:sultans}
     clientsecret: ${UAA_CLIENT_SECRET:sultanssecret}
   cors_enabled: false
+  keycloak:
+    serverUrl: ${KEYCLOAK_URL:http://localhost:10096/auth}
+    realm: ${KEYCLOAK_REALM:master}
+    admin:
+      username: ${KEYCLOAK_ADMIN_USERNAME:admin}
+      password: ${KEYCLOAK_ADMIN_PASSWORD:password}
+      cliendId: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
+      cliendSecret: ${KEYCLOAK_ADMIN_CLIENT_SECRET}
+  oauth:
+    client:
+      cliendId: ${OAUTH_CLIENT_ID:nimble-client}
+      cliendSecret: ${OAUTH_CLIENT_SECRET}
+      accessTokenUri: ${OAUTH_CLIENT_ACCESSTOKEN_URI}
 
 ---
 
@@ -54,7 +68,7 @@ spring:
   jpa:
     database-platform: ${IDENTITY_DB_DIALECT:org.hibernate.dialect.H2Dialect}
     hibernate:
-      ddl-auto: create
+      ddl-auto: create-drop
   datasource:
     driverClassName: ${IDENTITY_DB_DRIVER:org.h2.Driver}
     url: ${POSTGRES_HOST:jdbc:h2:mem:AZ;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=TRUE}
@@ -64,13 +78,3 @@ spring:
 
 nimble:
   corsEnabled: true
-  mail:
-    defaultFrom: "johannes.innerbichler@salzburgresearch.at"
-  keycloak:
-    serverUrl: http://localhost:10096/auth
-    realm: master
-    admin:
-      username: admin
-      password: nimbleplatform
-      cliendId: admin-cli
-      cliendSecret: ae3f7b66-903b-4333-94fe-5c158ce70d33
