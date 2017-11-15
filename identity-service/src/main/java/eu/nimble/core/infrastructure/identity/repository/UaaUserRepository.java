@@ -1,6 +1,7 @@
 package eu.nimble.core.infrastructure.identity.repository;
 
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;
@@ -20,4 +21,6 @@ public interface UaaUserRepository extends PagingAndSortingRepository<UaaUser, L
     List<UaaUser> findByUsername(String username);
 
     List<UaaUser> findByExternalID(long id);
+
+    List<UaaUser> findByUblPerson(PersonType ublPerson);
 }

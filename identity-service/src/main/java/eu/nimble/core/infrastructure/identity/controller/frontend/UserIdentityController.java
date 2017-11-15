@@ -22,18 +22,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import javax.ws.rs.WebApplicationException;
 import java.util.List;
 import java.util.Optional;
 
 @Controller
 public class UserIdentityController {
+
+    private static final String REFRESH_TOKEN_SESSION_KEY = "refresh_token";
 
     private static final Logger logger = LoggerFactory.getLogger(UserIdentityController.class);
 
@@ -57,6 +59,9 @@ public class UserIdentityController {
 
     @Autowired
     private OAuthClient oAuthClient;
+
+    @Autowired
+    private HttpSession httpSession;
 
     @ApiOperation(value = "Register a new user to the nimble.", response = FrontEndUser.class, tags = {})
     @ApiResponses(value = {
@@ -110,11 +115,18 @@ public class UserIdentityController {
 
     public @ApiOperation(value = "", notes = "Register company controller.", response = CompanyRegistration.class, tags = {})
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "Company registered", response = CompanyRegistrationResponse.class),
-            @ApiResponse(code = 405, message = "Company not registered", response = CompanyRegistrationResponse.class)})
+            @ApiResponse(code = 201, message = "Company registered", response = CompanyRegistration.class),
+            @ApiResponse(code = 405, message = "Company not registered", response = CompanyRegistration.class)})
     @RequestMapping(value = "/register/company", produces = {"application/json"}, consumes = {"application/json"}, method = RequestMethod.POST)
-    ResponseEntity<CompanyRegistration> registerCompany(
-            @ApiParam(value = "Company object that needs to be registered to Nimble.", required = true) @RequestBody CompanyRegistration company) {
+    ResponseEntity<?> registerCompany(
+            @ApiParam(value = "Company object that needs to be registered to Nimble.", required = true) @RequestBody CompanyRegistration company,
+            @RequestHeader(value="Authorization") String bearer,
+            HttpServletResponse response, HttpServletRequest request) {
+
+        // update token
+        String refreshToken = (String) httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY);
+        if (refreshToken == null)
+            return new ResponseEntity<>("Refresh token not found in session", HttpStatus.UNAUTHORIZED);
 
         Address companyAddress = company.getAddress();
         if (companyAddress == null || company.getName() == null)
@@ -158,19 +170,38 @@ public class UserIdentityController {
 
         logger.info("Registered company with id {} for user with id {}", company.getCompanyID(), company.getUserID());
 
+        // adapt role of user and refresh access token
+        try {
+            String keyCloakId = getKeycloakUserId(userParty);
+            keycloakAdmin.setRole(keyCloakId, KeycloakAdmin.INITIAL_REPRESENTATIVE_ROLE);
+        } catch (Exception e) {
+            logger.error("Could not set role for user " + userParty.getID(), e);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        // update token
+        OAuth2AccessToken updatedToken = oAuthClient.refreshToken(refreshToken);
+        httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, updatedToken.getRefreshToken().getValue());
+
+        // set new access token
+        company.setAccessToken(updatedToken.getValue());
+
         return new ResponseEntity<>(company, HttpStatus.OK);
     }
 
-
     @ApiOperation(value = "", notes = "Login controller with credentials.", response = CompanyRegistrationResponse.class, tags = {})
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful login", response = CompanyRegistrationResponse.class),
-            @ApiResponse(code = 401, message = "Login failed", response = CompanyRegistration.class)})
+            @ApiResponse(code = 200, message = "Successful login", response = FrontEndUser.class),
+            @ApiResponse(code = 401, message = "Login failed", response = FrontEndUser.class)})
     @RequestMapping(value = "/login", produces = {"application/json"}, method = RequestMethod.POST)
     ResponseEntity<FrontEndUser> loginUser(
             @ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody Credentials credentials,
             HttpServletResponse response) {
 
+        // invalidate old session (e.g. of previous user)
+        httpSession.invalidate();
+
+        // try to obtain access token
         OAuth2AccessToken accessToken;
         try {
             logger.info("User " + credentials.getUsername() + " wants to login...");
@@ -180,6 +211,7 @@ public class UserIdentityController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
 
+        // check local database
         List<UaaUser> potentialUsers = uaaUserRepository.findByUsername(credentials.getUsername());
         if (potentialUsers.isEmpty()) {
             logger.info("User " + credentials.getUsername() + " not found in local database, but on Keycloak.");
@@ -191,13 +223,18 @@ public class UserIdentityController {
         List<PartyType> companies = partyRepository.findByPerson(potentialUser.getUBLPerson());
         FrontEndUser frontEndUser = UblAdapter.adaptUser(potentialUser, companies);
 
-        // set cookie for OID token
-        Cookie jwtCookie = new Cookie("OPENID_TOKEN", accessToken.getValue());
-        jwtCookie.setMaxAge(accessToken.getExpiresIn()); // set expire time to expire time of access token
-        response.addCookie(jwtCookie);
+        // set and store tokens
+        frontEndUser.setAccessToken(accessToken.getValue());
+        httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, accessToken.getRefreshToken().getValue());
 
         logger.info("User " + credentials.getUsername() + " successfully logged in.");
 
         return new ResponseEntity<>(frontEndUser, HttpStatus.OK);
+    }
+
+    private String getKeycloakUserId(PersonType ublPerson) throws Exception {
+        List<UaaUser> potentialUser = uaaUserRepository.findByUblPerson(ublPerson);
+        UaaUser uaaUser = potentialUser.stream().findFirst().orElseThrow(() -> new Exception("Invalid user mapping"));
+        return uaaUser.getExternalID();
     }
 }

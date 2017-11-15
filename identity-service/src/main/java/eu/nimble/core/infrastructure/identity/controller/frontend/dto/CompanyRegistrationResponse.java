@@ -41,6 +41,16 @@ public class CompanyRegistrationResponse {
 
     private String companyID = null;
 
+    private String accessToken = null;
+
+    public String getAccessToken() {
+        return accessToken;
+    }
+
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
+    }
+
     public CompanyRegistrationResponse username(String username) {
         this.username = username;
         return this;
