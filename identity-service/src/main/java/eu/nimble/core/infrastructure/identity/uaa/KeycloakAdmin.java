@@ -11,11 +11,6 @@ import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.oauth2.client.OAuth2ClientContext;
-import org.springframework.security.oauth2.client.token.AccessTokenRequest;
-import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordAccessTokenProvider;
-import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -26,6 +21,11 @@ import java.util.Collections;
 
 @Service
 public class KeycloakAdmin {
+
+    public static final String NIMBLE_USER_ROLE = "nimble_user";
+    public static final String INITIAL_REPRESENTATIVE_ROLE = "initial_representative";
+    public static final String LEGAL_REPRESENTATIVE_ROLE = "legal_representative";
+    public static final String PLATFORM_MANAGER_ROLE = "platform_manager";
 
     @Autowired
     private KeycloakConfig config;
@@ -75,7 +75,7 @@ public class KeycloakAdmin {
         // extract identifier of user
         Response response = userResource.create(user);
         String userId = extractCreatedId(response);
-        UserResource createdUser = userResource.get(userId);
+        UserResource createdUser = fetchUserResource(userId);
 
         // ToDo: throw exception if user already exists
 
@@ -85,11 +85,24 @@ public class KeycloakAdmin {
         // send verification mail
 //        createdUser.sendVerifyEmail();
 
-        RoleRepresentation roleRepresentation = realmResource.roles().get("legal_representative").toRepresentation();
-        createdUser.roles().realmLevel().add(Collections.singletonList(roleRepresentation));
+        setRole(userId, NIMBLE_USER_ROLE);
 
         return createdUser.toRepresentation().getId();
     }
+
+    public void setRole(String userId, String role) {
+        UserResource userResource = fetchUserResource(userId);
+
+        RealmResource realmResource = this.keycloak.realm(config.getRealm());
+        RoleRepresentation roleRepresentation = realmResource.roles().get(role).toRepresentation();
+        userResource.roles().realmLevel().add(Collections.singletonList(roleRepresentation));
+    }
+
+    private UserResource fetchUserResource(String userId) {
+        RealmResource realmResource = this.keycloak.realm(config.getRealm());
+        return realmResource.users().get(userId);
+    }
+
 
     private String extractCreatedId(Response response) {
         URI location = response.getLocation();

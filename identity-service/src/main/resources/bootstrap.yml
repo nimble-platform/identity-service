@@ -66,12 +66,14 @@ nimble:
 spring:
   profiles: local_dev
   jpa:
-    database-platform: ${IDENTITY_DB_DIALECT:org.hibernate.dialect.H2Dialect}
+    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: udpate
   datasource:
-    driverClassName: ${IDENTITY_DB_DRIVER:org.h2.Driver}
-    url: ${POSTGRES_HOST:jdbc:h2:mem:AZ;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=TRUE}
+    driverClassName: org.h2.Driver
+    url: jdbc:h2:file:~/identity_h2
+    username: dev
+    password:
   mail:
     host: localhost # in-v3.mailjet.com
     port: 8465 # 465
