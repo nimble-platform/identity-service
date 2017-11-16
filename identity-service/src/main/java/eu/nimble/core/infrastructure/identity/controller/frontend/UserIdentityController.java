@@ -136,6 +136,10 @@ public class UserIdentityController {
             company.getPerson().add(newUserParty);
             partyRepository.save(company);
 
+            // save new state of invitation
+            invitation.setPending(false);
+            userInvitationRepository.save(invitation);
+
             logger.info("Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(), newUserParty.getID(), company.getName(), company.getID());
         }
 
@@ -296,7 +300,7 @@ public class UserIdentityController {
         // send invitation
         emailService.sendInvite(email, senderName, company.getName());
 
-        logger.info("Invitation sent: {} (%{}, {}) -> {}", senderName, company.getName(), companyId, email);
+        logger.info("Invitation sent: {} ({}, {}) -> {}", senderName, company.getName(), companyId, email);
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
