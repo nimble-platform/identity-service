@@ -3,10 +3,13 @@ package eu.nimble.core.infrastructure.identity.controller.frontend;
 import eu.nimble.core.infrastructure.identity.controller.frontend.dto.CompanyRegistrationResponse;
 import eu.nimble.core.infrastructure.identity.controller.frontend.dto.UserRegistration;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
+import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
+import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
+import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
@@ -19,16 +22,20 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.jwt.Jwt;
+import org.springframework.security.jwt.JwtHelper;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.validation.Valid;
 import javax.ws.rs.WebApplicationException;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Optional;
 
@@ -55,6 +62,9 @@ public class UserIdentityController {
     private UaaUserRepository uaaUserRepository;
 
     @Autowired
+    private UserInvitationRepository userInvitationRepository;
+
+    @Autowired
     private KeycloakAdmin keycloakAdmin;
 
     @Autowired
@@ -62,6 +72,9 @@ public class UserIdentityController {
 
     @Autowired
     private HttpSession httpSession;
+
+    @Autowired
+    private EmailService emailService;
 
     @ApiOperation(value = "Register a new user to the nimble.", response = FrontEndUser.class, tags = {})
     @ApiResponses(value = {
@@ -120,7 +133,7 @@ public class UserIdentityController {
     @RequestMapping(value = "/register/company", produces = {"application/json"}, consumes = {"application/json"}, method = RequestMethod.POST)
     ResponseEntity<?> registerCompany(
             @ApiParam(value = "Company object that needs to be registered to Nimble.", required = true) @RequestBody CompanyRegistration company,
-            @RequestHeader(value="Authorization") String bearer,
+            @RequestHeader(value = "Authorization") String bearer,
             HttpServletResponse response, HttpServletRequest request) {
 
         // update token
@@ -230,6 +243,42 @@ public class UserIdentityController {
         logger.info("User " + credentials.getUsername() + " successfully logged in.");
 
         return new ResponseEntity<>(frontEndUser, HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "", notes = "Send inviation to user.", response = ResponseEntity.class, tags = {})
+    @RequestMapping(value = "/send_invitation", produces = {"application/json"}, method = RequestMethod.POST)
+    ResponseEntity<?> sendInvitation(
+            @ApiParam(value = "Invitation object.", required = true) @Valid @RequestBody UserInvitation invitation,
+            @RequestHeader(value = "Authorization") String bearer,
+            HttpServletRequest request) throws IOException, URISyntaxException {
+
+        OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
+        if (userDetails.hasRole(OAuthClient.Roles.INITIAL_REPRESENTATIVE.toString()) == false)
+            return new ResponseEntity<>("Only legal representative are allowd to invite users", HttpStatus.UNAUTHORIZED);
+
+        // Todo: check if company ID matches with user
+
+        // collect store invitation
+        String email = invitation.getEmail();
+        String companyId = invitation.getCompanyId();
+        UaaUser sender = uaaUserRepository.findByExternalID(userDetails.getUserId());
+        UserInvitation userInvitation = new UserInvitation(email, companyId, sender);
+        userInvitationRepository.save(userInvitation);
+
+        // obtain sending company and user
+        Optional<PartyType> parties = partyRepository.findByHjid(Long.parseLong(companyId)).stream().findFirst();
+        if (parties.isPresent() == false) {
+            logger.info("Requested party with Id {} not found", companyId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        PartyType company = parties.get();
+        PersonType sendingPerson = sender.getUBLPerson();
+        String senderName = sendingPerson.getFirstName() + " " + sendingPerson.getFamilyName();
+
+        // send invitation
+        emailService.sendInvite(email, senderName, company.getName());
+
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     private String getKeycloakUserId(PersonType ublPerson) throws Exception {

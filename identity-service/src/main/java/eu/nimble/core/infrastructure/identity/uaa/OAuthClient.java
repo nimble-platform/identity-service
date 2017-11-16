@@ -2,15 +2,11 @@ package eu.nimble.core.infrastructure.identity.uaa;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.oauth2.client.OAuth2ClientContext;
 import org.springframework.security.oauth2.client.token.AccessTokenRequest;
 import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordAccessTokenProvider;
 import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
-import org.springframework.security.oauth2.common.OAuth2RefreshToken;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.token.TokenStore;
 import org.springframework.security.oauth2.provider.token.store.InMemoryTokenStore;
 import org.springframework.stereotype.Service;
@@ -63,5 +59,23 @@ public class OAuthClient {
         // perform refresh
         OAuth2AccessToken newAccessToken = accessTokenProvider.refreshAccessToken(resourceDetails, () -> refreshToken, accessTokenRequest);
         return newAccessToken;
+    }
+
+    public enum Roles {
+        NIMBLE_USER("nimble_user"),
+        INITIAL_REPRESENTATIVE("initial_representative"),
+        LEGAL_REPRESENTATIVE("legal_representative"),
+        PLATFORM_MANAGER("platform_manager");
+
+        private final String role;
+
+        Roles(final String role) {
+            this.role = role;
+        }
+
+        @Override
+        public String toString() {
+            return role;
+        }
     }
 }

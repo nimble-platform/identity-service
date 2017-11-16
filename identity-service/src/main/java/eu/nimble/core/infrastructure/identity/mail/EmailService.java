@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.mail;
 
+import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -7,6 +8,9 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 
 @Service
 public class EmailService {
@@ -20,16 +24,22 @@ public class EmailService {
     @Value("${spring.mail.defaultFrom}")
     private String defaultFrom;
 
-    public void sendInvite(String to) {
+    @Value("${nimble.frontend.url}")
+    private String frontendUrl;
+
+    public void sendInvite(String toEmail, String senderName, String companyName) throws URISyntaxException, MalformedURLException {
+
+        URIBuilder invitationUriBuilder = new URIBuilder(frontendUrl + "/#/registration");
+        invitationUriBuilder.addParameter("email", toEmail);
+
         Context context = new Context();
-        context.setVariable("firstName", "Johannes");
-        context.setVariable("lastName", "Innerbichler");
-        context.setVariable("senderName", "Oliver Jung");
-        context.setVariable("invitationUrl", "www.nimble-project.org/invite");
+        context.setVariable("senderName", senderName);
+        context.setVariable("companyName", companyName);
+        context.setVariable("invitationUrl", invitationUriBuilder.build().toURL().toString());
 
         String subject = "Invitation to the NIMBLE platform";
 
-        this.send(to, subject, "invitation", context);
+        this.send(toEmail, subject, "invitation", context);
     }
 
     private void send(String to, String subject, String template, Context context) {

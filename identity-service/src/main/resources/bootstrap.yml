@@ -51,6 +51,8 @@ nimble:
       cliendId: ${OAUTH_CLIENT_ID:nimble-client}
       cliendSecret: ${OAUTH_CLIENT_SECRET}
       accessTokenUri: ${OAUTH_CLIENT_ACCESSTOKEN_URI}
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:9092}
 
 ---
 
@@ -68,10 +70,10 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: udpate
+      ddl-auto: update
   datasource:
     driverClassName: org.h2.Driver
-    url: jdbc:h2:file:~/identity_h2
+    url: jdbc:h2:file:~/identity_h2;AUTO_SERVER=TRUE
     username: dev
     password:
   mail:
