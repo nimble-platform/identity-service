@@ -2,12 +2,10 @@ package eu.nimble.core.infrastructure.identity.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.NotBlank;
 
 import javax.persistence.*;
-import javax.validation.constraints.NotNull;
 
 @Entity
 //@Table(uniqueConstraints = {
@@ -33,6 +31,8 @@ public class UserInvitation {
     @JsonIgnore
     private UaaUser sender;
 
+    private Boolean isPending;
+
     protected UserInvitation() {
         // no-args constructor required by JPA spec
         // this one is protected since it shouldn't be used directly
@@ -42,6 +42,7 @@ public class UserInvitation {
         this.email = email;
         this.companyId = companyId;
         this.sender = sender;
+        this.isPending = true;
     }
 
     public String getEmail() {
@@ -66,5 +67,13 @@ public class UserInvitation {
 
     public void setSender(UaaUser sender) {
         this.sender = sender;
+    }
+
+    public Boolean getPending() {
+        return isPending;
+    }
+
+    public void setPending(Boolean pending) {
+        isPending = pending;
     }
 }
