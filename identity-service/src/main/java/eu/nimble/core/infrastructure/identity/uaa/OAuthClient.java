@@ -61,7 +61,7 @@ public class OAuthClient {
         return newAccessToken;
     }
 
-    public enum Roles {
+    public enum Role {
         NIMBLE_USER("nimble_user"),
         INITIAL_REPRESENTATIVE("initial_representative"),
         LEGAL_REPRESENTATIVE("legal_representative"),
@@ -69,7 +69,7 @@ public class OAuthClient {
 
         private final String role;
 
-        Roles(final String role) {
+        Role(final String role) {
             this.role = role;
         }
 
