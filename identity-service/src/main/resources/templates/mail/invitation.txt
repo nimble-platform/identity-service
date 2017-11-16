@@ -1,6 +1,6 @@
-Dear [(${firstName})] [(${lastName})],
+Hello,
 
-you have been invited to the NIMBLE platform by [(${senderName})].
+you have been invited to [(${companyName})] by [(${senderName})].
 
 Please follow the link in order to get access.
 [(${invitationUrl})]
