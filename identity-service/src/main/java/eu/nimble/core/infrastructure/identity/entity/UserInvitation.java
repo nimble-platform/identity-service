@@ -8,9 +8,9 @@ import org.hibernate.validator.constraints.NotBlank;
 import javax.persistence.*;
 
 @Entity
-//@Table(uniqueConstraints = {
-//        @UniqueConstraint(columnNames = {"email", "companyId"})
-//})
+@Table(uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"email", "companyId"})
+})
 public class UserInvitation {
 
     @Id

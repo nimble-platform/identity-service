@@ -11,6 +11,7 @@ import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import org.h2.jdbc.JdbcSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +59,7 @@ public class InvitationController {
             HttpServletRequest request) throws IOException, URISyntaxException {
 
         OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
-        if (userDetails.hasRole(OAuthClient.Roles.INITIAL_REPRESENTATIVE.toString()) == false)
+        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>("Only legal representatives are allowd to invite users", HttpStatus.UNAUTHORIZED);
 
         // Todo: check if company ID matches with user
@@ -68,7 +69,14 @@ public class InvitationController {
         String companyId = invitation.getCompanyId();
         UaaUser sender = uaaUserRepository.findByExternalID(userDetails.getUserId());
         UserInvitation userInvitation = new UserInvitation(email, companyId, sender);
-        userInvitationRepository.save(userInvitation);
+
+        try {
+            // saving invitation with duplicate check
+            userInvitationRepository.save(userInvitation);
+        } catch (Exception ex) {
+            logger.info("Impossible to register user {} twice for company {}", email, companyId);
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
 
         // obtain sending company and user
         Optional<PartyType> parties = partyRepository.findByHjid(Long.parseLong(companyId)).stream().findFirst();
@@ -89,8 +97,8 @@ public class InvitationController {
     }
 
 
-    @ApiOperation(value = "", notes = "Get pending invitations.", response = UserInvitation.class, tags = {})
-    @RequestMapping(value = "/pending_invitations", produces = {"application/json"}, method = RequestMethod.GET)
+    @ApiOperation(value = "", notes = "Get pending invitations.", response = UserInvitation.class, responseContainer = "List", tags = {})
+    @RequestMapping(value = "/invitations", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<?> pendingInvitations(@RequestHeader(value = "Authorization") String bearer) throws IOException, URISyntaxException {
         UaaUser user = identityUtils.getUserfromBearer(bearer);
 
@@ -102,7 +110,6 @@ public class InvitationController {
         PartyType company = companyOpt.get();
 
         List<UserInvitation> pendingInvitations = userInvitationRepository.findByCompanyId(company.getID());
-        pendingInvitations = pendingInvitations.stream().filter(i -> Boolean.TRUE.equals(i.getPending())).collect(Collectors.toList());
-        return new ResponseEntity<>(pendingInvitations, HttpStatus.FOUND);
+        return new ResponseEntity<>(pendingInvitations, HttpStatus.OK);
     }
 }

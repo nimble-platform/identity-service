@@ -9,8 +9,10 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 
 @Service
 public class EmailService {
@@ -27,15 +29,17 @@ public class EmailService {
     @Value("${nimble.frontend.url}")
     private String frontendUrl;
 
-    public void sendInvite(String toEmail, String senderName, String companyName) throws URISyntaxException, MalformedURLException {
+    public void sendInvite(String toEmail, String senderName, String companyName) throws UnsupportedEncodingException {
 
-        URIBuilder invitationUriBuilder = new URIBuilder(frontendUrl + "/#/registration");
-        invitationUriBuilder.addParameter("email", toEmail);
+//        URIBuilder invitationUriBuilder = new URIBuilder(frontendUrl + "/#/registration/");
+//        invitationUriBuilder.addParameter("email", toEmail);
+//        String invitationUrl = invitationUriBuilder.build().toURL().toString();
+        String invitationUrl = frontendUrl + "/#/registration/?email=" + URLEncoder.encode(toEmail, "UTF-8");
 
         Context context = new Context();
         context.setVariable("senderName", senderName);
         context.setVariable("companyName", companyName);
-        context.setVariable("invitationUrl", invitationUriBuilder.build().toURL().toString());
+        context.setVariable("invitationUrl", invitationUrl);
 
         String subject = "Invitation to the NIMBLE platform";
 

@@ -1,7 +1,10 @@
 package eu.nimble.core.infrastructure.identity.controller.ubl;
 
+import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
+import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
+import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.Api;
@@ -14,9 +17,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,21 +41,29 @@ public class PartyController {
     @Autowired
     private PersonRepository personRepository;
 
+    @Autowired
+    private IdentityUtils identityUtils;
+
     @ApiOperation(value = "", notes = "Get Party for Id.", response = PartyType.class, tags = {})
     @RequestMapping(value = "/party/{partyId}", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<PartyType> getParty(
-            @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long partyId) {
+            @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long partyId,
+            @RequestHeader(value = "Authorization") String bearer) throws IOException {
 
         // search relevant parties
         List<PartyType> parties = partyRepository.findByHjid(partyId);
 
         // check if party was found
-        if( parties.isEmpty() ) {
+        if (parties.isEmpty()) {
             logger.info("Requested party with Id {} not found", partyId);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
         PartyType party = parties.get(0);
+
+        // remove person depending on access rights
+        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+            party.setPerson(new ArrayList<>());
 
         logger.debug("Returning requested party with Id {0}", party.getHjid());
         return new ResponseEntity<>(party, HttpStatus.FOUND);
