@@ -22,8 +22,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.jwt.Jwt;
-import org.springframework.security.jwt.JwtHelper;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.stereotype.Controller;
@@ -120,6 +118,26 @@ public class UserIdentityController {
         // update user data
         frontEndUser.setUserID(Long.parseLong(newUserParty.getID()));
         frontEndUser.setUsername(credentials.getUsername());
+
+        // check if user was invited and add to company
+        Optional<UserInvitation> invitationOpt = userInvitationRepository.findByEmail(frontEndUser.getEmail()).stream().findFirst();
+        if (invitationOpt.isPresent()) {
+            UserInvitation invitation = invitationOpt.get();
+
+            // fetch company
+            Optional<PartyType> companyOpt = partyRepository.findByHjid(Long.parseLong(invitation.getCompanyId())).stream().findFirst();
+            if (companyOpt.isPresent() == false) {
+                logger.error("Invalid invitation: Company %s not found", invitation.getCompanyId());
+                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            PartyType company = companyOpt.get();
+
+            // add new user
+            company.getPerson().add(newUserParty);
+            partyRepository.save(company);
+
+            logger.info("Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(), newUserParty.getID(), company.getName(), company.getID());
+        }
 
         logger.info("Registering a new user with email {} and id {}", frontEndUser.getEmail(), frontEndUser.getUserID());
 
@@ -277,6 +295,8 @@ public class UserIdentityController {
 
         // send invitation
         emailService.sendInvite(email, senderName, company.getName());
+
+        logger.info("Invitation sent: {} (%{}, {}) -> {}", senderName, company.getName(), companyId, email);
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
