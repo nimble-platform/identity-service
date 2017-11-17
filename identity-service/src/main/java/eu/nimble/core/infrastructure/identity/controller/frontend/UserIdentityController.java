@@ -8,6 +8,7 @@ import eu.nimble.core.infrastructure.identity.entity.dto.Address;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanyRegistration;
 import eu.nimble.core.infrastructure.identity.entity.dto.Credentials;
 import eu.nimble.core.infrastructure.identity.entity.dto.FrontEndUser;
+import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
@@ -21,6 +22,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +42,7 @@ import javax.servlet.http.HttpSession;
 import javax.ws.rs.WebApplicationException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Controller
 public class UserIdentityController {
@@ -74,6 +77,9 @@ public class UserIdentityController {
 
     @Autowired
     private HttpSession httpSession;
+
+    @Autowired
+    private EmailService emailService;
 
     @ApiOperation(value = "Register a new user to the nimble.", response = FrontEndUser.class, tags = {})
     @ApiResponses(value = {
@@ -222,6 +228,13 @@ public class UserIdentityController {
         // set new access token
         company.setAccessToken(updatedToken.getValue());
 
+        // inform platform managers
+        try {
+            informPlatformMangager(userParty, companyParty);
+        } catch (Exception ex) {
+            logger.error("Could not notify platform managers", ex);
+        }
+
         return new ResponseEntity<>(company, HttpStatus.OK);
     }
 
@@ -272,5 +285,13 @@ public class UserIdentityController {
         List<UaaUser> potentialUser = uaaUserRepository.findByUblPerson(ublPerson);
         UaaUser uaaUser = potentialUser.stream().findFirst().orElseThrow(() -> new Exception("Invalid user mapping"));
         return uaaUser.getExternalID();
+    }
+
+    private void informPlatformMangager(PersonType representative, PartyType company) {
+        List<UserRepresentation> managers = keycloakAdmin.getPlatformManagers();
+        List<String> emails = managers.stream().map(UserRepresentation::getEmail).collect(Collectors.toList());
+
+        String username = representative.getFirstName() + " " + representative.getFamilyName();
+        emailService.notifiyPlatformManagersNewCompany(emails, username, company.getName());
     }
 }

@@ -8,6 +8,7 @@ import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,8 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class KeycloakAdmin {
@@ -96,6 +99,18 @@ public class KeycloakAdmin {
         RealmResource realmResource = this.keycloak.realm(config.getRealm());
         RoleRepresentation roleRepresentation = realmResource.roles().get(role).toRepresentation();
         userResource.roles().realmLevel().add(Collections.singletonList(roleRepresentation));
+    }
+
+    public List<UserRepresentation> getPlatformManagers() {
+
+        RealmResource realmResource = this.keycloak.realm(config.getRealm());
+        List<GroupRepresentation> groups = realmResource.groups().groups();
+
+        Optional<GroupRepresentation> platformManagerGroup = groups.stream().filter(g -> "Platform Manager".equals(g.getName())).findFirst();
+        if (platformManagerGroup.isPresent() == false) {
+            // ToDo: handle this case
+        }
+        return realmResource.groups().group(platformManagerGroup.get().getId()).members();
     }
 
     private UserResource fetchUserResource(String userId) {

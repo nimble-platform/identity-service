@@ -1,6 +1,5 @@
 package eu.nimble.core.infrastructure.identity.mail;
 
-import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -10,9 +9,8 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.util.List;
 
 @Service
 public class EmailService {
@@ -30,10 +28,6 @@ public class EmailService {
     private String frontendUrl;
 
     public void sendInvite(String toEmail, String senderName, String companyName) throws UnsupportedEncodingException {
-
-//        URIBuilder invitationUriBuilder = new URIBuilder(frontendUrl + "/#/registration/");
-//        invitationUriBuilder.addParameter("email", toEmail);
-//        String invitationUrl = invitationUriBuilder.build().toURL().toString();
         String invitationUrl = frontendUrl + "/#/registration/?email=" + URLEncoder.encode(toEmail, "UTF-8");
 
         Context context = new Context();
@@ -43,10 +37,21 @@ public class EmailService {
 
         String subject = "Invitation to the NIMBLE platform";
 
-        this.send(toEmail, subject, "invitation", context);
+        this.send(new String[]{toEmail}, subject, "invitation", context);
     }
 
-    private void send(String to, String subject, String template, Context context) {
+    public void notifiyPlatformManagersNewCompany(List<String> emails, String username, String comanyName) {
+
+        Context context = new Context();
+        context.setVariable("username", username);
+        context.setVariable("companyName", comanyName);
+
+        String subject = "NIMBLE: New company registered";
+
+        this.send(emails.toArray(new String[]{}), subject, "new_company", context);
+    }
+
+    private void send(String[] to, String subject, String template, Context context) {
         SimpleMailMessage mailMessage = new SimpleMailMessage();
         String message = this.textMailTemplateEngine.process(template, context);
         mailMessage.setFrom(this.defaultFrom);
