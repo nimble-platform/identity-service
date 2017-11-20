@@ -21,11 +21,12 @@ spring:
     username: ${POSTGRES_USER:root}
     password: ${POSTGRES_PASSWORD:changeme}
   mail:
+    debug: false  # disable printing email to log output
     host: ${SMTP_HOST:localhost}
     port: ${SMTP_PORT:25}
-    defaultFrom: ${SMTP_DEFAULT_FROM}
-    username: ${SMTP_USERNAME}
-    password: ${SMTP_PASSWORD}
+    defaultFrom: ${SMTP_DEFAULT_FROM:}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
     smtp.auth: true
     properties.mail.smtp.starttls.enable: true
 
@@ -77,6 +78,7 @@ spring:
     username: dev
     password:
   mail:
+    debug: true  # prints email to log output
     host: localhost # in-v3.mailjet.com
     port: 8465 # 465
 
