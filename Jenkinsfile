@@ -29,6 +29,7 @@ node('nimble-jenkins-slave') {
 //                sh 'docker push nimbleplatform/identity-service:latest'
 //            }
 //        }
+    
 //
 //        stage('Apply to Cluster') {
 //            sh 'ssh nimble "cd /data/nimble_setup/ && sudo ./run-prod.sh restart-single identity-service"'
