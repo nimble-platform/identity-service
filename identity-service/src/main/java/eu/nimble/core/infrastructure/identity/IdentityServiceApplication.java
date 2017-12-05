@@ -1,12 +1,13 @@
 package eu.nimble.core.infrastructure.identity;
 
+import eu.nimble.core.infrastructure.identity.controller.frontend.CompanySettingsController;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
-import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.ActivityDataLineType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -17,14 +18,10 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.oauth2.client.token.grant.client.ClientCredentialsResourceDetails;
-import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordAccessTokenProvider;
-import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
-import javax.annotation.PostConstruct;
 import java.net.URISyntaxException;
 
 @ComponentScan
@@ -35,6 +32,8 @@ import java.net.URISyntaxException;
 @EnableAutoConfiguration
 public class IdentityServiceApplication extends SpringBootServletInitializer {
 
+    private static final Logger logger = LoggerFactory.getLogger(IdentityServiceApplication.class);
+
     @Value("${nimble.corsEnabled}")
     private String corsEnabled;
 
@@ -44,8 +43,10 @@ public class IdentityServiceApplication extends SpringBootServletInitializer {
         return new WebMvcConfigurerAdapter() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                if (corsEnabled.equals("true"))
+                if (corsEnabled.equals("true")) {
+                    logger.info("Enabling CORS...");
                     registry.addMapping("/**").allowedOrigins("*");
+                }
             }
         };
     }
