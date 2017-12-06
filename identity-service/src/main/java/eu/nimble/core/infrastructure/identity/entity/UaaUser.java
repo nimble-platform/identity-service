@@ -23,6 +23,7 @@ public class UaaUser implements Serializable {
 
     protected UaaUser() {
         // no-args constructor required by JPA spec
+
         // this one is protected since it shouldn't be used directly
     }
 
