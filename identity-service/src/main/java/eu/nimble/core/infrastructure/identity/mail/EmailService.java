@@ -36,7 +36,7 @@ public class EmailService {
     private String frontendUrl;
 
     public void sendInvite(String toEmail, String senderName, String companyName) throws UnsupportedEncodingException {
-        String invitationUrl = frontendUrl + "/#/registration/?email=" + URLEncoder.encode(toEmail, "UTF-8");
+        String invitationUrl = frontendUrl + "/#/user-mgmt/registration/?email=" + URLEncoder.encode(toEmail, "UTF-8");
 
         Context context = new Context();
         context.setVariable("senderName", senderName);
