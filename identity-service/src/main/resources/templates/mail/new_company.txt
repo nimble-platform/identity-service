@@ -2,7 +2,17 @@ Dear platform manager,
 
 a new company registered on NIMBLE: [(${companyName})]
 
-[(${username})] is the current initial representative.
+[(${username})] ([(${userEmail})]) is the current initial representative.
+
+Company Details:
+    ID: [(${companyID})]
+    Name: [(${companyName})]
+    Address:
+        Country: [(${companyCountry})]
+        Street: [(${companyStreet})]
+        Building Number: [(${companyBuildingNumber})]
+        City: [(${companyCity})]
+        Postalcode: [(${companypostalCode})]
 
 Sincerely,
     your platform
