@@ -260,7 +260,7 @@ public class UserIdentityController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
 
-        // check local database
+        // check identity database
         List<UaaUser> potentialUsers = uaaUserRepository.findByUsername(credentials.getUsername());
         if (potentialUsers.isEmpty()) {
             logger.info("User " + credentials.getUsername() + " not found in local database, but on Keycloak.");
@@ -291,7 +291,6 @@ public class UserIdentityController {
         List<UserRepresentation> managers = keycloakAdmin.getPlatformManagers();
         List<String> emails = managers.stream().map(UserRepresentation::getEmail).collect(Collectors.toList());
 
-        String username = representative.getFirstName() + " " + representative.getFamilyName();
-        emailService.notifiyPlatformManagersNewCompany(emails, username, company.getName());
+        emailService.notifiyPlatformManagersNewCompany(emails, representative, company);
     }
 }

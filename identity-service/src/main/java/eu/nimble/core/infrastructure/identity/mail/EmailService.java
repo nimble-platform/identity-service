@@ -1,6 +1,9 @@
 package eu.nimble.core.infrastructure.identity.mail;
 
 import eu.nimble.core.infrastructure.identity.controller.frontend.CompanySettingsController;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.AddressType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,11 +51,33 @@ public class EmailService {
         this.send(new String[]{toEmail}, subject, "invitation", context);
     }
 
-    public void notifiyPlatformManagersNewCompany(List<String> emails, String username, String comanyName) {
+    public void notifiyPlatformManagersNewCompany(List<String> emails, PersonType representative, PartyType company) {
 
         Context context = new Context();
+
+        // collect info of user
+        String username = representative.getFirstName() + " " + representative.getFamilyName();
         context.setVariable("username", username);
-        context.setVariable("companyName", comanyName);
+
+        String userEmail = null;
+        if (representative.getContact() != null)
+            userEmail = representative.getContact().getElectronicMail();
+        context.setVariable("userEmail", userEmail);
+
+        // collect info of user
+        context.setVariable("companyName", company.getName());
+        context.setVariable("companyID", company.getHjid());
+
+        // collect info of company
+        if (company.getPostalAddress() != null) {
+            AddressType address = company.getPostalAddress();
+            String countryName = address.getCountry() != null ? address.getCountry().getName() : null;
+            context.setVariable("companyCountry", countryName);
+            context.setVariable("companyStreet", address.getStreetName())    ;
+            context.setVariable("companyBuildingNumber", address.getBuildingNumber());
+            context.setVariable("companyCity", address.getCityName());
+            context.setVariable("companypostalCode", address.getPostalZone());
+        }
 
         String subject = "NIMBLE: New company registered";
 
