@@ -69,9 +69,13 @@ nimble:
 spring:
   profiles: local_dev
   jpa:
+    properties:
+      hibernate:
+        temp.use_jdbc_metadata_defaults: false
+        show_sql: false
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
   datasource:
     driverClassName: org.h2.Driver
     url: jdbc:h2:file:~/identity_h2;AUTO_SERVER=TRUE
