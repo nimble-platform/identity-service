@@ -13,8 +13,22 @@ node('nimble-jenkins-slave') {
         sh 'mvn clean install -DskipTests'
     }
 
-    stage('Build Docker') {
-        sh 'mvn -f identity-service/pom.xml docker:build'
+    if (env.BRANCH_NAME == 'staging') {
+        stage('Build Docker') {
+            sh 'mvn -f identity-service/pom.xml docker:build -DdockerImageTag=staging'
+        }
+
+        stage('Push Docker') {
+            sh 'mvn -f identity-service/pom.xml docker:push -DdockerImageTag=staging'
+        }
+
+        stage('Deploy') {
+            sh 'ssh staging "cd /srv/nimble-staging/ && sudo ./run-staging.sh restart-single identity-service"'
+        }
+    } else {
+        stage('Build Docker') {
+            sh 'mvn -f identity-service/pom.xml docker:build'
+        }
     }
 
     if (env.BRANCH_NAME == 'master') {
@@ -29,7 +43,7 @@ node('nimble-jenkins-slave') {
 //                sh 'docker push nimbleplatform/identity-service:latest'
 //            }
 //        }
-    
+
 //
 //        stage('Apply to Cluster') {
 //            sh 'ssh nimble "cd /data/nimble_setup/ && sudo ./run-prod.sh restart-single identity-service"'

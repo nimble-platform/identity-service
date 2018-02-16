@@ -27,7 +27,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -62,21 +64,8 @@ public class InvitationController {
         if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>("Only legal representatives are allowd to invite users", HttpStatus.UNAUTHORIZED);
 
-        // Todo: check if company ID matches with user
-
-        // collect store invitation
-        String email = invitation.getEmail();
+        String emailInvitee = invitation.getEmail();
         String companyId = invitation.getCompanyId();
-        UaaUser sender = uaaUserRepository.findByExternalID(userDetails.getUserId());
-        UserInvitation userInvitation = new UserInvitation(email, companyId, sender);
-
-        try {
-            // saving invitation with duplicate check
-            userInvitationRepository.save(userInvitation);
-        } catch (Exception ex) {
-            logger.info("Impossible to register user {} twice for company {}", email, companyId);
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
 
         // obtain sending company and user
         Optional<PartyType> parties = partyRepository.findByHjid(Long.parseLong(companyId)).stream().findFirst();
@@ -85,13 +74,48 @@ public class InvitationController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         PartyType company = parties.get();
+
+
+        // check if user is already registered
+        Optional<UaaUser> potentialInvitee = uaaUserRepository.findByUsername(emailInvitee).stream().findFirst();
+        if (potentialInvitee.isPresent()) {
+
+            UaaUser invitee = potentialInvitee.get();
+
+            // check if user is already part of a copmany
+            List<PartyType> companiesOfInvitee = partyRepository.findByPerson(invitee.getUBLPerson());
+            if (companiesOfInvitee.isEmpty() == false) {
+                return new ResponseEntity<>(HttpStatus.CONFLICT);
+            }
+
+            // ToDo: ask for approval of invitee
+
+            // add existing user to company
+            company.getPerson().add(potentialInvitee.get().getUBLPerson());
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Existing user added to company");
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        }
+
+        // collect store invitation
+        UaaUser sender = uaaUserRepository.findByExternalID(userDetails.getUserId());
+        UserInvitation userInvitation = new UserInvitation(emailInvitee, companyId, sender);
+
+        try {
+            // saving invitation with duplicate check
+            userInvitationRepository.save(userInvitation);
+        } catch (Exception ex) {
+            logger.info("Impossible to register user {} twice for company {}", emailInvitee, companyId);
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
         PersonType sendingPerson = sender.getUBLPerson();
         String senderName = sendingPerson.getFirstName() + " " + sendingPerson.getFamilyName();
 
         // send invitation
-        emailService.sendInvite(email, senderName, company.getName());
+        emailService.sendInvite(emailInvitee, senderName, company.getName());
 
-        logger.info("Invitation sent: {} ({}, {}) -> {}", senderName, company.getName(), companyId, email);
+        logger.info("Invitation sent FROM {} ({}, {}) TO {}", senderName, company.getName(), companyId, emailInvitee);
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
