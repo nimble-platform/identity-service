@@ -19,7 +19,7 @@ node('nimble-jenkins-slave') {
         }
 
         stage('Push Docker') {
-            sh 'mvn -f identity-service/pom.xml docker:push -DdockerImageTag=staging'
+            sh 'docker push nimbleplatform/identity-service:staging'
         }
 
         stage('Deploy') {
