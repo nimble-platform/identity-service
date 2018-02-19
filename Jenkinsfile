@@ -23,7 +23,7 @@ node('nimble-jenkins-slave') {
         }
 
         stage('Deploy') {
-            sh 'ssh staging "cd /srv/nimble-staging/ && sudo ./run-staging.sh restart-single identity-service"'
+            sh 'ssh staging "cd /srv/nimble-staging/ && ./run-staging.sh restart-single identity-service"'
         }
     } else {
         stage('Build Docker') {
