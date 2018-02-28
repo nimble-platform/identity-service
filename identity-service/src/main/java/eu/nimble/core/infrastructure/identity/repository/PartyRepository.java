@@ -11,7 +11,7 @@ import java.util.List;
  * Created by Johannes Innerbichler on 25/04/17.
  * Repository for parties.
  */
-@RepositoryRestResource(collectionResourceRel = "party", path = "party-hal")
+//@RepositoryRestResource(collectionResourceRel = "party", path = "party-hal")
 public interface PartyRepository extends PagingAndSortingRepository<PartyType, Long> {
 
     List<PartyType> findByHjid(Long hijd);

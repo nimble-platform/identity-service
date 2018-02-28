@@ -10,7 +10,7 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import java.util.List;
 
 @SuppressWarnings("unused")
-@RepositoryRestResource(collectionResourceRel = "uaa-user", path = "uaa-hal")
+//@RepositoryRestResource(collectionResourceRel = "uaa-user", path = "uaa-hal")
 public interface UserInvitationRepository extends PagingAndSortingRepository<UserInvitation, Long> {
     Page<UserInvitation> findAll(Pageable pageable);
 

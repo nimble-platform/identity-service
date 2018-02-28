@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.uaa;
 
+import eu.nimble.core.infrastructure.identity.controller.frontend.UserIdentityController;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
@@ -11,6 +12,8 @@ import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,12 +21,14 @@ import javax.annotation.PostConstruct;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.net.URI;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
+@SuppressWarnings("Convert2MethodRef")
 @Service
 public class KeycloakAdmin {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserIdentityController.class);
 
     public static final String NIMBLE_USER_ROLE = "nimble_user";
     public static final String INITIAL_REPRESENTATIVE_ROLE = "initial_representative";
@@ -93,6 +98,15 @@ public class KeycloakAdmin {
         return createdUser.toRepresentation().getId();
     }
 
+    public Map<String, String> getUserRoles() {
+        RealmResource realmResource = this.keycloak.realm(config.getRealm());
+
+        List<String> invalidRoles = Arrays.asList("platform_manager", "uma_authorization", "offline_access", "admin", "create-realm", "create-realm", "nimble_user");
+        return realmResource.roles().list().stream()
+                .filter(r -> invalidRoles.contains(r.getName()) == false)
+                .collect(Collectors.toMap(r -> r.getId(), r -> r.getName()));
+    }
+
     public void setRole(String userId, String role) {
         UserResource userResource = fetchUserResource(userId);
 
@@ -108,7 +122,8 @@ public class KeycloakAdmin {
 
         Optional<GroupRepresentation> platformManagerGroup = groups.stream().filter(g -> "Platform Manager".equals(g.getName())).findFirst();
         if (platformManagerGroup.isPresent() == false) {
-            // ToDo: handle this case
+            logger.warn("No platform managers found!");
+            return new ArrayList<>();  // empty list as fallback
         }
         return realmResource.groups().group(platformManagerGroup.get().getId()).members();
     }

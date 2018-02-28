@@ -7,7 +7,7 @@ import org.springframework.security.access.annotation.Secured;
 
 import java.util.List;
 
-@RepositoryRestResource(collectionResourceRel = "person", path = "person-hal")
+//@RepositoryRestResource(collectionResourceRel = "person", path = "person-hal")
 public interface PersonRepository extends PagingAndSortingRepository<PersonType, Long> {
     List<PersonType> findByHjid(Long hijd);
 }
