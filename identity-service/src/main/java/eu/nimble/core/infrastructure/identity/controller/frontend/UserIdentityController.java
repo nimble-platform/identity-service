@@ -289,11 +289,14 @@ public class UserIdentityController {
             @ApiResponse(code = 404, message = "Error while fetching roles")})
     @RequestMapping(value = "/roles", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<Map<String, String>> roles(HttpServletResponse response) {
+
+        logger.info("Fetching user roles");
+
         Map<String, String> roles = keycloakAdmin.getUserRoles();
 
         // prettify names
         roles = roles.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey,
+                Map.Entry::getValue,
                 e -> WordUtils.capitalize(e.getValue().replace("_", " "))
         ));
 

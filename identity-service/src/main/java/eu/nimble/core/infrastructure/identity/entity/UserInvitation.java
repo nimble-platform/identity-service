@@ -6,6 +6,7 @@ import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.NotBlank;
 
 import javax.persistence.*;
+import java.util.List;
 
 @Entity
 @Table(uniqueConstraints = {
@@ -27,6 +28,10 @@ public class UserInvitation {
     @JsonProperty(required = true)
     private String companyId;
 
+    @Column
+    @ElementCollection(targetClass=String.class)
+    private List<String> roleIDs;
+
     @ManyToOne
     @JsonIgnore
     private UaaUser sender;
@@ -38,10 +43,12 @@ public class UserInvitation {
         // this one is protected since it shouldn't be used directly
     }
 
-    public UserInvitation(String email, String companyId, UaaUser sender) {
+    public UserInvitation(String email, String companyId, List<String> roleIDs, UaaUser sender) {
         this.email = email;
         this.companyId = companyId;
         this.sender = sender;
+        this.roleIDs = roleIDs;
+
         this.isPending = true;
     }
 
@@ -59,6 +66,14 @@ public class UserInvitation {
 
     public void setCompanyId(String companyId) {
         this.companyId = companyId;
+    }
+
+    public List<String> getRoleIDs() {
+        return roleIDs;
+    }
+
+    public void setRoleIDs(List<String> roleIDs) {
+        this.roleIDs = roleIDs;
     }
 
     public UaaUser getSender() {

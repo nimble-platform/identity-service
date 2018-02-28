@@ -101,7 +101,8 @@ public class KeycloakAdmin {
     public Map<String, String> getUserRoles() {
         RealmResource realmResource = this.keycloak.realm(config.getRealm());
 
-        List<String> invalidRoles = Arrays.asList("platform_manager", "uma_authorization", "offline_access", "admin", "create-realm", "create-realm", "nimble_user");
+        List<String> invalidRoles = Arrays.asList("platform_manager", "uma_authorization", "offline_access",
+                "admin", "create-realm", "create-realm", "nimble_user", "initial_representative");
         return realmResource.roles().list().stream()
                 .filter(r -> invalidRoles.contains(r.getName()) == false)
                 .collect(Collectors.toMap(r -> r.getId(), r -> r.getName()));

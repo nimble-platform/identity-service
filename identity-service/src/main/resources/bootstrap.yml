@@ -76,12 +76,16 @@ spring:
         show_sql: false
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
   datasource:
     name: identitydb
     driverClassName: org.h2.Driver
-    url: jdbc:h2:mem:test;DB_CLOSE_DELAY=-1
-#    url: jdbc:h2:file:~/identitydb;DB_CLOSE_ON_EXIT=FALSE;IFEXISTS=TRUE;DB_CLOSE_DELAY=-1;
+#    url: jdbc:h2:mem:test;DB_CLOSE_DELAY=-1
+    url: jdbc:h2:file:~/identitydb;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1;
     initialize: false
     username: sa
     password: sa

@@ -27,10 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
@@ -100,7 +97,8 @@ public class InvitationController {
 
         // collect store invitation
         UaaUser sender = uaaUserRepository.findByExternalID(userDetails.getUserId());
-        UserInvitation userInvitation = new UserInvitation(emailInvitee, companyId, sender);
+        List<String> userRoleIDs = invitation.getRoleIDs() == null ? new ArrayList() : invitation.getRoleIDs();
+        UserInvitation userInvitation = new UserInvitation(emailInvitee, companyId, userRoleIDs, sender);
 
         try {
             // saving invitation with duplicate check
