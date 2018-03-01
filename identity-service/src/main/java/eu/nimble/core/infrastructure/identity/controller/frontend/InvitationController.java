@@ -5,6 +5,7 @@ import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.repository.*;
+import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
@@ -46,6 +47,9 @@ public class InvitationController {
 
     @Autowired
     private IdentityUtils identityUtils;
+
+    @Autowired
+    private KeycloakAdmin keycloakAdmin;
 
     @ApiOperation(value = "", notes = "Send inviation to user.", response = ResponseEntity.class, tags = {})
     @RequestMapping(value = "/send_invitation", produces = {"application/json"}, method = RequestMethod.POST)
@@ -129,6 +133,19 @@ public class InvitationController {
         PartyType company = companyOpt.get();
 
         List<UserInvitation> pendingInvitations = userInvitationRepository.findByCompanyId(company.getID());
+
+        // update roles
+        for( UserInvitation invitation : pendingInvitations) {
+            if (invitation.getPending() == false) {
+                String username = invitation.getEmail();
+                UaaUser uaaUser = uaaUserRepository.findOneByUsername(username);
+                if (uaaUser != null) {
+                    Set<String> roles = keycloakAdmin.getUserRoles(uaaUser.getExternalID());
+                    invitation.setRoleIDs(new ArrayList<>(roles));
+                }
+            }
+        }
+
         return new ResponseEntity<>(pendingInvitations, HttpStatus.OK);
     }
 }

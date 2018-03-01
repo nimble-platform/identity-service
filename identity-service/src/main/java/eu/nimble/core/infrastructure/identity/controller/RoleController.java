@@ -99,7 +99,7 @@ public class RoleController {
             notes = "After calling this operation the list of roles is applied to the user, which might result in removing certain roles.",
             response = String.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Roles sucessfully applied", response = String.class),
+            @ApiResponse(code = 200, message = "Roles sucessfully applied", response = String[].class),
             @ApiResponse(code = 401, message = "Not authorized"),
             @ApiResponse(code = 404, message = "User not found"),
             @ApiResponse(code = 400, message = "Error while applying roles")})

@@ -35,6 +35,10 @@ public class KeycloakAdmin {
     public static final String LEGAL_REPRESENTATIVE_ROLE = "legal_representative";
     public static final String PLATFORM_MANAGER_ROLE = "platform_manager";
 
+    public static final List<String> NON_USER_ROLES = Arrays.asList("platform_manager", "uma_authorization",
+            "offline_access", "admin", "create-realm",
+            "create-realm", "nimble_user", "initial_representative");
+
     @Autowired
     private KeycloakConfig config;
 
@@ -101,16 +105,17 @@ public class KeycloakAdmin {
     public Map<String, String> getRoles() {
         RealmResource realmResource = this.keycloak.realm(config.getRealm());
 
-        List<String> invalidRoles = Arrays.asList("platform_manager", "uma_authorization", "offline_access",
-                "admin", "create-realm", "create-realm", "nimble_user", "initial_representative");
         return realmResource.roles().list().stream()
-                .filter(r -> invalidRoles.contains(r.getName()) == false)
+                .filter(r -> NON_USER_ROLES.contains(r.getName()) == false)
                 .collect(Collectors.toMap(r -> r.getId(), r -> r.getName()));
     }
 
     public Set<String> getUserRoles(String userId) {
         UserResource userResource = fetchUserResource(userId);
-        return userResource.roles().realmLevel().listAll().stream().map(r -> r.getName()).collect(Collectors.toSet());
+        return userResource.roles().realmLevel().listAll().stream()
+                .map(r -> r.getName())
+                .filter(role -> NON_USER_ROLES.contains(role) == false)
+                .collect(Collectors.toSet());
     }
 
     public void addRole(String userId, String role) {
