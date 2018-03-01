@@ -73,6 +73,11 @@ public class InvitationController {
         }
         PartyType company = parties.get();
 
+        // collect information of sending user
+        UaaUser sender = uaaUserRepository.findByExternalID(userDetails.getUserId());
+        PersonType sendingPerson = sender.getUBLPerson();
+        String senderName = sendingPerson.getFirstName() + " " + sendingPerson.getFamilyName();
+
 
         // check if user is already registered
         Optional<UaaUser> potentialInvitee = uaaUserRepository.findByUsername(emailInvitee).stream().findFirst();
@@ -86,7 +91,8 @@ public class InvitationController {
                 return new ResponseEntity<>(HttpStatus.CONFLICT);
             }
 
-            // ToDo: ask for approval of invitee
+            // send information
+            emailService.informInviteExistingCompany(emailInvitee, senderName, company.getName());
 
             // add existing user to company
             company.getPerson().add(potentialInvitee.get().getUBLPerson());
@@ -97,7 +103,6 @@ public class InvitationController {
         }
 
         // collect store invitation
-        UaaUser sender = uaaUserRepository.findByExternalID(userDetails.getUserId());
         List<String> userRoleIDs = invitation.getRoleIDs() == null ? new ArrayList() : invitation.getRoleIDs();
         UserInvitation userInvitation = new UserInvitation(emailInvitee, companyId, userRoleIDs, sender);
 
@@ -108,8 +113,6 @@ public class InvitationController {
             logger.info("Impossible to register user {} twice for company {}", emailInvitee, companyId);
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        PersonType sendingPerson = sender.getUBLPerson();
-        String senderName = sendingPerson.getFirstName() + " " + sendingPerson.getFamilyName();
 
         // send invitation
         emailService.sendInvite(emailInvitee, senderName, company.getName());

@@ -51,6 +51,17 @@ public class EmailService {
         this.send(new String[]{toEmail}, subject, "invitation", context);
     }
 
+    public void informInviteExistingCompany(String toEmail, String senderName, String companyName) {
+        Context context = new Context();
+        context.setVariable("senderName", senderName);
+        context.setVariable("companyName", companyName);
+        context.setVariable("nimbleUrl", frontendUrl);
+
+        String subject = "Invitation to " + companyName;
+
+        this.send(new String[]{toEmail}, subject, "invitation_existing_company", context);
+    }
+
     public void notifiyPlatformManagersNewCompany(List<String> emails, PersonType representative, PartyType company) {
 
         Context context = new Context();
@@ -73,7 +84,7 @@ public class EmailService {
             AddressType address = company.getPostalAddress();
             String countryName = address.getCountry() != null ? address.getCountry().getName() : null;
             context.setVariable("companyCountry", countryName);
-            context.setVariable("companyStreet", address.getStreetName())    ;
+            context.setVariable("companyStreet", address.getStreetName());
             context.setVariable("companyBuildingNumber", address.getBuildingNumber());
             context.setVariable("companyCity", address.getCityName());
             context.setVariable("companypostalCode", address.getPostalZone());
