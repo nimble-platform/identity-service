@@ -142,7 +142,19 @@ public class UserIdentityController {
 
             // save new state of invitation
             invitation.setPending(false);
+
+            // set roles
+            for (String role : invitation.getRoleIDs()) {
+                try {
+                    keycloakAdmin.addRole(keycloakID, role);
+                }
+                catch (Exception ex) {
+                    logger.error("Error while setting role", ex);
+                }
+            }
+
             userInvitationRepository.save(invitation);
+
 
             logger.info("Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(), newUserParty.getID(), company.getName(), company.getID());
         }

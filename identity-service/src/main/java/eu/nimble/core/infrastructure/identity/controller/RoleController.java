@@ -45,7 +45,7 @@ public class RoleController {
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Roles found", response = Iterable.class),
             @ApiResponse(code = 400, message = "Error while fetching roles")})
-    @RequestMapping(value = "/", produces = {"application/json"}, method = RequestMethod.GET)
+    @RequestMapping(value = "", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<Map<String, String>> roles(HttpServletResponse response) {
 
         logger.info("Fetching list of user roles");
