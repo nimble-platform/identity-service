@@ -93,12 +93,12 @@ public class KeycloakAdmin {
         // send verification mail
 //        createdUser.sendVerifyEmail();
 
-        setRole(userId, NIMBLE_USER_ROLE);
+        addRole(userId, NIMBLE_USER_ROLE);
 
         return createdUser.toRepresentation().getId();
     }
 
-    public Map<String, String> getUserRoles() {
+    public Map<String, String> getRoles() {
         RealmResource realmResource = this.keycloak.realm(config.getRealm());
 
         List<String> invalidRoles = Arrays.asList("platform_manager", "uma_authorization", "offline_access",
@@ -108,12 +108,25 @@ public class KeycloakAdmin {
                 .collect(Collectors.toMap(r -> r.getId(), r -> r.getName()));
     }
 
-    public void setRole(String userId, String role) {
+    public Set<String> getUserRoles(String userId) {
+        UserResource userResource = fetchUserResource(userId);
+        return userResource.roles().realmLevel().listAll().stream().map(r -> r.getName()).collect(Collectors.toSet());
+    }
+
+    public void addRole(String userId, String role) {
         UserResource userResource = fetchUserResource(userId);
 
         RealmResource realmResource = this.keycloak.realm(config.getRealm());
         RoleRepresentation roleRepresentation = realmResource.roles().get(role).toRepresentation();
         userResource.roles().realmLevel().add(Collections.singletonList(roleRepresentation));
+    }
+
+    public void removeRole(String userId, String role) {
+        UserResource userResource = fetchUserResource(userId);
+
+        RealmResource realmResource = this.keycloak.realm(config.getRealm());
+        RoleRepresentation roleRepresentation = realmResource.roles().get(role).toRepresentation();
+        userResource.roles().realmLevel().remove(Collections.singletonList(roleRepresentation));
     }
 
     public List<UserRepresentation> getPlatformManagers() {

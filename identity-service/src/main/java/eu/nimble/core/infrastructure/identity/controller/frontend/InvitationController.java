@@ -11,7 +11,6 @@ import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.h2.jdbc.JdbcSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +25,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Controller
 public class InvitationController {
@@ -55,7 +52,7 @@ public class InvitationController {
     ResponseEntity<?> sendInvitation(
             @ApiParam(value = "Invitation object.", required = true) @Valid @RequestBody UserInvitation invitation,
             @RequestHeader(value = "Authorization") String bearer,
-            HttpServletRequest request) throws IOException, URISyntaxException {
+            HttpServletRequest request) throws IOException {
 
         OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
         if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
@@ -121,7 +118,7 @@ public class InvitationController {
 
     @ApiOperation(value = "", notes = "Get pending invitations.", response = UserInvitation.class, responseContainer = "List", tags = {})
     @RequestMapping(value = "/invitations", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<?> pendingInvitations(@RequestHeader(value = "Authorization") String bearer) throws IOException, URISyntaxException {
+    ResponseEntity<?> pendingInvitations(@RequestHeader(value = "Authorization") String bearer) throws IOException{
         UaaUser user = identityUtils.getUserfromBearer(bearer);
 
         Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(user);

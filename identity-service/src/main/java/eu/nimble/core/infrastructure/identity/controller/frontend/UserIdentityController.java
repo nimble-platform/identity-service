@@ -22,7 +22,6 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import org.apache.commons.lang.WordUtils;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,17 +31,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.WebApplicationException;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -217,7 +212,7 @@ public class UserIdentityController {
         // adapt role of user and refresh access token
         try {
             String keyCloakId = getKeycloakUserId(userParty);
-            keycloakAdmin.setRole(keyCloakId, KeycloakAdmin.INITIAL_REPRESENTATIVE_ROLE);
+            keycloakAdmin.addRole(keyCloakId, KeycloakAdmin.INITIAL_REPRESENTATIVE_ROLE);
         } catch (Exception e) {
             logger.error("Could not set role for user " + userParty.getID(), e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -281,26 +276,6 @@ public class UserIdentityController {
         logger.info("User " + credentials.getUsername() + " successfully logged in.");
 
         return new ResponseEntity<>(frontEndUser, HttpStatus.OK);
-    }
-
-    @ApiOperation(value = "", notes = "Role mapping", response = Map.class, tags = {})
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Roles found", response = Map.class),
-            @ApiResponse(code = 404, message = "Error while fetching roles")})
-    @RequestMapping(value = "/roles", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<Map<String, String>> roles(HttpServletResponse response) {
-
-        logger.info("Fetching user roles");
-
-        Map<String, String> roles = keycloakAdmin.getUserRoles();
-
-        // prettify names
-        roles = roles.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getValue,
-                e -> WordUtils.capitalize(e.getValue().replace("_", " "))
-        ));
-
-        return new ResponseEntity<>(roles, HttpStatus.OK);
     }
 
     private String getKeycloakUserId(PersonType ublPerson) throws Exception {
