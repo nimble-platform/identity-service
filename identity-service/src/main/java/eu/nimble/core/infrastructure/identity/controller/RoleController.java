@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping(path = "/roles")
-
 @Api(value = "user roles", description = "Services for managing roles on the platform.")
 public class RoleController {
 
@@ -41,7 +40,7 @@ public class RoleController {
     @Autowired
     private IdentityUtils identityUtils;
 
-    @ApiOperation(value = "List of user roles on the platfrom.", response = Iterable.class)
+    @ApiOperation(value = "List of user roles on the platform.", response = Iterable.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Roles found", response = Iterable.class),
             @ApiResponse(code = 400, message = "Error while fetching roles")})
@@ -61,6 +60,7 @@ public class RoleController {
         return new ResponseEntity<>(roles, HttpStatus.OK);
     }
 
+    @SuppressWarnings("PointlessBooleanExpression")
     @ApiOperation(value = "List of roles of a specific user", response = Iterable.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Roles found", response = Iterable.class),
@@ -74,7 +74,7 @@ public class RoleController {
 
         logger.info("Requesting roles of user {}", username);
 
-        // Check if requesting user is legal representive
+        // Check if requesting user is legal representative
         OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
         if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
@@ -95,11 +95,12 @@ public class RoleController {
         return new ResponseEntity<>(roles, HttpStatus.OK);
     }
 
+    @SuppressWarnings("PointlessBooleanExpression")
     @ApiOperation(value = "Apply roles to a specific user",
             notes = "After calling this operation the list of roles is applied to the user, which might result in removing certain roles.",
             response = String.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Roles sucessfully applied", response = String[].class),
+            @ApiResponse(code = 200, message = "Roles successfully applied", response = String[].class),
             @ApiResponse(code = 401, message = "Not authorized"),
             @ApiResponse(code = 404, message = "User not found"),
             @ApiResponse(code = 400, message = "Error while applying roles")})
@@ -112,7 +113,7 @@ public class RoleController {
 
         logger.info("Setting roles {} of user {}", rolesToApply, username);
 
-        // Check if requesting user is legal representive
+        // Check if requesting user is legal representative
         OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
         if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
