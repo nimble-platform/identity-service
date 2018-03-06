@@ -76,4 +76,4 @@ node ('nimble-jenkins-slave') {
 ////            sh 'kubectl apply -f kubernetes/deploy.yml -n prod --validate=false'
 //        }
 //    }
-}
+//}
