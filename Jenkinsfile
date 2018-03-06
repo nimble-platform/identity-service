@@ -28,8 +28,8 @@ node ('nimble-jenkins-slave') {
         sh 'kubectl apply -f kubernetes/keycloak-svc.yml -n prod --validate=false'
         sh 'kubectl apply -f kubernetes/keycloak-deploy.yml -n prod --validate=false'
 
-        sh 'kubectl apply -f kubernetes/deploy.yaml -n prod --validate=false'
-        sh 'kubectl apply -f kubernetes/svc.yaml -n prod --validate=false'
+        sh 'kubectl apply -f kubernetes/deploy.yml -n prod --validate=false'
+        sh 'kubectl apply -f kubernetes/svc.yml -n prod --validate=false'
     }
 
     stage ('Print-deploy logs') {
