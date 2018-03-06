@@ -13,7 +13,7 @@ spring:
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
 #      use-new-id-generator-mappings: true
   datasource:
     driverClassName: org.postgresql.Driver
@@ -61,7 +61,6 @@ spring:
   profiles: kubernetes
 
 nimble:
-  db-credentials-json: ${DB_CREDENTIALS_JSON}
   corsEnabled: true
 
 ---
