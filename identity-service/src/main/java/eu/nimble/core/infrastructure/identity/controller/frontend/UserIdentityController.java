@@ -84,15 +84,15 @@ public class UserIdentityController {
             @ApiResponse(code = 405, message = "User not registered", response = FrontEndUser.class)})
     @RequestMapping(value = "/register/user", produces = {"application/json"}, consumes = {"application/json"}, method = RequestMethod.POST)
     ResponseEntity<FrontEndUser> registerUser(
-            @ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody UserRegistration userRegistation) {
+            @ApiParam(value = "User object that needs to be registered to Nimble.", required = true) @RequestBody UserRegistration userRegistration) {
 
-        FrontEndUser frontEndUser = userRegistation.getUser();
-        Credentials credentials = userRegistation.getCredentials();
+        FrontEndUser frontEndUser = userRegistration.getUser();
+        Credentials credentials = userRegistration.getCredentials();
 
         // validate data
         if (frontEndUser == null || credentials == null
                 || credentials.getUsername() == null || credentials.getUsername().equals(frontEndUser.getEmail()) == false) {
-            logger.info(" Tried to register an invalid user {}", userRegistation.toString());
+            logger.info(" Tried to register an invalid user {}", userRegistration.toString());
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
@@ -239,7 +239,7 @@ public class UserIdentityController {
 
         // inform platform managers
         try {
-            informPlatformMangager(userParty, companyParty);
+            informPlatformManager(userParty, companyParty);
         } catch (Exception ex) {
             logger.error("Could not notify platform managers", ex);
         }
@@ -296,7 +296,7 @@ public class UserIdentityController {
         return uaaUser.getExternalID();
     }
 
-    private void informPlatformMangager(PersonType representative, PartyType company) {
+    private void informPlatformManager(PersonType representative, PartyType company) {
         List<UserRepresentation> managers = keycloakAdmin.getPlatformManagers();
         List<String> emails = managers.stream().map(UserRepresentation::getEmail).collect(Collectors.toList());
 

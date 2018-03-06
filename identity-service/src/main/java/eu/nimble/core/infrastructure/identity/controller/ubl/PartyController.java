@@ -4,7 +4,6 @@ import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
-import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.Api;
@@ -44,6 +43,7 @@ public class PartyController {
     @Autowired
     private IdentityUtils identityUtils;
 
+    @SuppressWarnings("PointlessBooleanExpression")
     @ApiOperation(value = "", notes = "Get Party for Id.", response = PartyType.class, tags = {})
     @RequestMapping(value = "/party/{partyId}", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<PartyType> getParty(
