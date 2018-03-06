@@ -1,6 +1,6 @@
 node ('nimble-jenkins-slave') {
     stage('Download Latest') {
-        git(url: 'https://github.com/nimble-platform/registration-service.git', branch: 'k8s-integration')
+        git(url: 'https://github.com/nimble-platform/identity-service.git', branch: 'k8s-integration')
     }
 
     stage ('Build docker image') {
