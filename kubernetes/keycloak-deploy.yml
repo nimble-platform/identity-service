@@ -2,41 +2,40 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    app: nimble-platform
+    app: keycloak
     name: keycloak
   name: keycloak
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nimble-platform
+      app: keycloak
       name: keycloak
   strategy:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
     type: RollingUpdate
-  revisionHistoryLimit: 5
+  revisionHistoryLimit: 2
   template:
     metadata:
       labels:
-        app: nimble-platform
+        app: keycloak
         name: keycloak
     spec:
       containers:
-        - image: jboss/keycloak-postgres:3.2.0.Final
+        - image: jboss/keycloak-postgres:3.4.0.Final
           imagePullPolicy: Always
           name: keycloak
           ports:
           - containerPort: 8080
             protocol: TCP
-          - containerPort: 9990
-            protocol: TCP
-          - containerPort: 8443
-            protocol: TCP
           resources:
             requests:
               cpu: 200m
+              memory: 128Mi
+            limits:
+              cpu: 400m
               memory: 256Mi
           env:
             - name: KEYCLOAK_LOGLEVEL
@@ -78,21 +77,3 @@ spec:
                 secretKeyRef:
                   name: keycloak-secret
                   key: postgres-database
-
----
-
-kind: Service
-metadata:
-  name: keycloak
-  labels:
-    app: nimble-platform
-    name: keycloak
-spec:
-  ports:
-    - name: http
-      protocol: TCP
-      port: 8080
-      targetPort: 9990
-  selector:
-    app: nimble-platform
-    name: keycloak

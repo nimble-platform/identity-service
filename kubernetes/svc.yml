@@ -1,0 +1,16 @@
+---
+kind: Service
+metadata:
+  name: identity-service
+  labels:
+    app: identity-service
+    name: identity-service
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 9096
+      targetPort: 9096
+  selector:
+    app: identity-service
+    name: identity-service

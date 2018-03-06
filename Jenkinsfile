@@ -8,9 +8,9 @@ node ('nimble-jenkins-slave') {
     stage ('Build docker image') {
         sh 'mvn clean install -DskipTests'
 
-        sh 'cat identity-service/pom.xml'
+//        sh 'cat identity-service/pom.xml'
         sh ''' sed -i 's/IMAGE_TAG/'"$BUILD_NUMBER"'/g' identity-service/pom.xml '''
-        sh 'cat identity-service/pom.xml'
+//        sh 'cat identity-service/pom.xml'
 
         sh 'mvn -f identity-service/pom.xml docker:build'
 
@@ -23,17 +23,19 @@ node ('nimble-jenkins-slave') {
         }
     }
 
-  //  stage ('Deploy') {
- //       sh ''' sed -i 's/IMAGE_TAG/'"$BUILD_NUMBER"'/g' kubernetes/deploy.yaml '''
- //       //sh 'kubectl create -f kubernetes/deploy.yaml -n prod --validate=false'
-  //      sh 'kubectl apply -f kubernetes/deploy.yaml -n prod --validate=false'
- //       sh 'kubectl apply -f kubernetes/svc.yaml -n prod --validate=false'
-  //  }
+    stage ('Deploy') {
+        sh ''' sed -i 's/IMAGE_TAG/'"$BUILD_NUMBER"'/g' kubernetes/deploy.yaml '''
+        sh 'kubectl apply -f kubernetes/keycloak-svc.yml -n prod --validate=false'
+        sh 'kubectl apply -f kubernetes/keycloak-deploy.yml -n prod --validate=false'
 
- //   stage ('Print-deploy logs') {
- //       sh 'sleep 60'
- //       sh 'kubectl  -n prod logs deploy/registration-service -c registration-service'
- //   }
+        sh 'kubectl apply -f kubernetes/deploy.yaml -n prod --validate=false'
+        sh 'kubectl apply -f kubernetes/svc.yaml -n prod --validate=false'
+    }
+
+    stage ('Print-deploy logs') {
+        sh 'sleep 60'
+        sh 'kubectl  -n prod logs deploy/identity-service -c identity-service'
+    }
 }
 
 

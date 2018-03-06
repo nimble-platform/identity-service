@@ -2,29 +2,30 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    app: nimble-platform
+    app: identity-service
     name: identity-service
   name: identity-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nimble-platform
+      app: identity-service
       name: identity-service
   strategy:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
     type: RollingUpdate
-  revisionHistoryLimit: 5
+  revisionHistoryLimit: 2
   template:
     metadata:
       labels:
-        app: nimble-platform
+        app: identity-service
         name: identity-service
     spec:
       containers:
-      - image: nimbleplatform/identity-service:latest
+#      can be overwritten with "-set spec.template.spec.containers[0].image=image_url"
+      - image: nimbleplatform/identity-service:IMAGE_TAG
         imagePullPolicy: Always
         name: identity-service
         ports:
@@ -34,32 +35,120 @@ spec:
         resources:
           requests:
             cpu: 200m
-            memory: 256Mi
+            memory: 128Mi
+          limits:
+            cpu: 400m
+            memory: 512Mi
         env:
           - name: SPRING_PROFILES_ACTIVE
-            value: kubernetes
+            value: "kubernetes"
           - name: DISCOVERY_ENABLED
             value: "false"
-          - name: DB_CREDENTIALS_JSON
+          - name: FRONTEND_URL
+            valueFrom:
+              configMapKeyRef:
+                name: identity-service-configmap
+                key: frontend_url
+
+            # database connection
+          - name: POSTGRES_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: identity-service-configmap
+                key: postgres_host
+          - name: POSTGRES_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: identity-service-configmap
+                key: postgres_port
+          - name: POSTGRES_DB
+            valueFrom:
+              configMapKeyRef:
+                name: identity-service-configmap
+                key: postgres_db
+          - name: POSTGRES_USER
+            valueFrom:
+              configMapKeyRef:
+                name: identity-service-configmap
+                key: postgres_user
+          - name: POSTGRES_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: binding-nimble-identity-db-prod
-                key: binding
+                name: identity-service-secret
+                key: postgres-password
 
----
+            # mail server
+          - name: SMTP_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: identity-service-configmap
+                key: smtp_host
+          - name: SMTP_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: identity-service-configmap
+                key: smtp_port
+          - name: SMTP_DEFAULT_FROM
+            valueFrom:
+              configMapKeyRef:
+                name: identity-service-configmap
+                key: smtp_default_from
+          - name: SMTP_USERNAME
+            valueFrom:
+              configMapKeyRef:
+                name: identity-service-configmap
+                key: smtp_username
+          - name: SMTP_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: identity-service-secret
+                key: smpt-password
 
-kind: Service
-metadata:
-  name: identity-service
-  labels:
-    app: nimble-platform
-    name: identity-service
-spec:
-  ports:
-    - name: http
-      protocol: TCP
-      port: 9096
-      targetPort: 9096
-  selector:
-    app: nimble-platform
-    name: identity-service
+            # Keycloak
+          - name: KEYCLOAK_URL
+            valueFrom:
+              configMapKeyRef:
+                name: identity-service-configmap
+                key: keycloak_url
+          - name: KEYCLOAK_REALM
+            valueFrom:
+              configMapKeyRef:
+                name: identity-service-configmap
+                key: keycloak_realm
+          - name: KEYCLOAK_ADMIN_USERNAME
+            valueFrom:
+              configMapKeyRef:
+                name: identity-service-configmap
+                key: keycloak_admin_username
+          - name: KEYCLOAK_ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: identity-service-secret
+                key: keycloak_admin_password
+          - name: KEYCLOAK_ADMIN_CLIENT_ID
+            valueFrom:
+              configMapKeyRef:
+                name: identity-service-configmap
+                key: keycloak_admin_client_id
+          - name: KEYCLOAK_ADMIN_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: identity-service-secret
+                key: keycloak-admin-client-secret
+
+            # OAuth2 settings
+          - name: OAUTH_CLIENT_ID
+            valueFrom:
+              configMapKeyRef:
+                name: identity-service-configmap
+                key: oauth_client_id
+          - name: OAUTH_CLIENT_ACCESSTOKEN_URI
+            valueFrom:
+              configMapKeyRef:
+                name: identity-service-configmap
+                key: oauth_client_accesstoken_uri
+          - name: OAUTH_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: identity-service-secret
+                key: oauth-client-secret
