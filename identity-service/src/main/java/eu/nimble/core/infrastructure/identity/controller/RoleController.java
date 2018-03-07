@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 @Api(value = "user roles", description = "Services for managing roles on the platform.")
 public class RoleController {
 
-
     private static final Logger logger = LoggerFactory.getLogger(RoleController.class);
 
     @Autowired
@@ -136,10 +135,9 @@ public class RoleController {
                 keycloakAdmin.removeRole(targetUser.getExternalID(), role);
             for (String role : rolesToAdd)
                 keycloakAdmin.addRole(targetUser.getExternalID(), role);
+            return new ResponseEntity<>("Changed " + rolesToAdd.size() + rolesToRemove.size() + "roles", HttpStatus.OK);
         } catch (NotFoundException ex) {
             return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
         }
-
-        return new ResponseEntity<>(HttpStatus.OK);
     }
 }
