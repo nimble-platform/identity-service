@@ -29,6 +29,8 @@ spring:
     password: ${SMTP_PASSWORD:}
     smtp.auth: true
     properties.mail.smtp.starttls.enable: true
+  jackson:
+    default-property-inclusion: NON_NULL
 
 logstash:
   uri: ${LOGSTASH_URI:localhost:5000}

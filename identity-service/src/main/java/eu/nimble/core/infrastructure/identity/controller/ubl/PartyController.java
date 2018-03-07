@@ -45,7 +45,7 @@ public class PartyController {
 
     @SuppressWarnings("PointlessBooleanExpression")
     @ApiOperation(value = "", notes = "Get Party for Id.", response = PartyType.class, tags = {})
-    @RequestMapping(value = "/party/{partyId}", produces = {"application/json"}, method = RequestMethod.GET)
+    @RequestMapping(value = "/party/{partyId}", method = RequestMethod.GET)
     ResponseEntity<PartyType> getParty(
             @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long partyId,
             @RequestHeader(value = "Authorization") String bearer) throws IOException {
