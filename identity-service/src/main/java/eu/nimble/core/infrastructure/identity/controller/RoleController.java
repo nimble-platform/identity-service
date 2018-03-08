@@ -135,7 +135,7 @@ public class RoleController {
                 keycloakAdmin.removeRole(targetUser.getExternalID(), role);
             for (String role : rolesToAdd)
                 keycloakAdmin.addRole(targetUser.getExternalID(), role);
-            return new ResponseEntity<>("Changed " + (rolesToAdd.size() + rolesToRemove.size()) + "roles", HttpStatus.OK);
+            return new ResponseEntity<>("Changed " + (rolesToAdd.size() + rolesToRemove.size()) + " roles", HttpStatus.OK);
         } catch (NotFoundException ex) {
             return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
         }
