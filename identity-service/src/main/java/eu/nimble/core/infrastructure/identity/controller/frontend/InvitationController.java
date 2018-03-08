@@ -5,13 +5,13 @@ import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.repository.*;
+import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.h2.jdbc.JdbcSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,10 +26,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Controller
 public class InvitationController {
@@ -51,32 +48,22 @@ public class InvitationController {
     @Autowired
     private IdentityUtils identityUtils;
 
+    @Autowired
+    private KeycloakAdmin keycloakAdmin;
+
     @ApiOperation(value = "", notes = "Send inviation to user.", response = ResponseEntity.class, tags = {})
     @RequestMapping(value = "/send_invitation", produces = {"application/json"}, method = RequestMethod.POST)
     ResponseEntity<?> sendInvitation(
             @ApiParam(value = "Invitation object.", required = true) @Valid @RequestBody UserInvitation invitation,
             @RequestHeader(value = "Authorization") String bearer,
-            HttpServletRequest request) throws IOException, URISyntaxException {
+            HttpServletRequest request) throws IOException {
 
         OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
         if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>("Only legal representatives are allowd to invite users", HttpStatus.UNAUTHORIZED);
 
-        // Todo: check if company ID matches with user
-
-        // collect store invitation
-        String email = invitation.getEmail();
+        String emailInvitee = invitation.getEmail();
         String companyId = invitation.getCompanyId();
-        UaaUser sender = uaaUserRepository.findByExternalID(userDetails.getUserId());
-        UserInvitation userInvitation = new UserInvitation(email, companyId, sender);
-
-        try {
-            // saving invitation with duplicate check
-            userInvitationRepository.save(userInvitation);
-        } catch (Exception ex) {
-            logger.info("Impossible to register user {} twice for company {}", email, companyId);
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
 
         // obtain sending company and user
         Optional<PartyType> parties = partyRepository.findByHjid(Long.parseLong(companyId)).stream().findFirst();
@@ -85,13 +72,52 @@ public class InvitationController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         PartyType company = parties.get();
+
+        // collect information of sending user
+        UaaUser sender = uaaUserRepository.findByExternalID(userDetails.getUserId());
         PersonType sendingPerson = sender.getUBLPerson();
         String senderName = sendingPerson.getFirstName() + " " + sendingPerson.getFamilyName();
 
-        // send invitation
-        emailService.sendInvite(email, senderName, company.getName());
 
-        logger.info("Invitation sent: {} ({}, {}) -> {}", senderName, company.getName(), companyId, email);
+        // check if user is already registered
+        Optional<UaaUser> potentialInvitee = uaaUserRepository.findByUsername(emailInvitee).stream().findFirst();
+        if (potentialInvitee.isPresent()) {
+
+            UaaUser invitee = potentialInvitee.get();
+
+            // check if user is already part of a copmany
+            List<PartyType> companiesOfInvitee = partyRepository.findByPerson(invitee.getUBLPerson());
+            if (companiesOfInvitee.isEmpty() == false) {
+                return new ResponseEntity<>(HttpStatus.CONFLICT);
+            }
+
+            // send information
+            emailService.informInviteExistingCompany(emailInvitee, senderName, company.getName());
+
+            // add existing user to company
+            company.getPerson().add(potentialInvitee.get().getUBLPerson());
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Existing user added to company");
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        }
+
+        // collect store invitation
+        List<String> userRoleIDs = invitation.getRoleIDs() == null ? new ArrayList() : invitation.getRoleIDs();
+        UserInvitation userInvitation = new UserInvitation(emailInvitee, companyId, userRoleIDs, sender);
+
+        try {
+            // saving invitation with duplicate check
+            userInvitationRepository.save(userInvitation);
+        } catch (Exception ex) {
+            logger.info("Impossible to register user {} twice for company {}", emailInvitee, companyId);
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        // send invitation
+        emailService.sendInvite(emailInvitee, senderName, company.getName());
+
+        logger.info("Invitation sent FROM {} ({}, {}) TO {}", senderName, company.getName(), companyId, emailInvitee);
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
@@ -99,7 +125,7 @@ public class InvitationController {
 
     @ApiOperation(value = "", notes = "Get pending invitations.", response = UserInvitation.class, responseContainer = "List", tags = {})
     @RequestMapping(value = "/invitations", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<?> pendingInvitations(@RequestHeader(value = "Authorization") String bearer) throws IOException, URISyntaxException {
+    ResponseEntity<?> pendingInvitations(@RequestHeader(value = "Authorization") String bearer) throws IOException{
         UaaUser user = identityUtils.getUserfromBearer(bearer);
 
         Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(user);
@@ -110,6 +136,19 @@ public class InvitationController {
         PartyType company = companyOpt.get();
 
         List<UserInvitation> pendingInvitations = userInvitationRepository.findByCompanyId(company.getID());
+
+        // update roles
+        for( UserInvitation invitation : pendingInvitations) {
+            if (invitation.getPending() == false) {
+                String username = invitation.getEmail();
+                UaaUser uaaUser = uaaUserRepository.findOneByUsername(username);
+                if (uaaUser != null) {
+                    Set<String> roles = keycloakAdmin.getUserRoles(uaaUser.getExternalID());
+                    invitation.setRoleIDs(new ArrayList<>(roles));
+                }
+            }
+        }
+
         return new ResponseEntity<>(pendingInvitations, HttpStatus.OK);
     }
 }

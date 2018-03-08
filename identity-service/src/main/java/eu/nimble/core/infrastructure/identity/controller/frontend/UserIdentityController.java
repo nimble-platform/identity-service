@@ -31,10 +31,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -145,7 +142,19 @@ public class UserIdentityController {
 
             // save new state of invitation
             invitation.setPending(false);
+
+            // set roles
+            for (String role : invitation.getRoleIDs()) {
+                try {
+                    keycloakAdmin.addRole(keycloakID, role);
+                }
+                catch (Exception ex) {
+                    logger.error("Error while setting role", ex);
+                }
+            }
+
             userInvitationRepository.save(invitation);
+
 
             logger.info("Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(), newUserParty.getID(), company.getName(), company.getID());
         }
@@ -215,7 +224,7 @@ public class UserIdentityController {
         // adapt role of user and refresh access token
         try {
             String keyCloakId = getKeycloakUserId(userParty);
-            keycloakAdmin.setRole(keyCloakId, KeycloakAdmin.INITIAL_REPRESENTATIVE_ROLE);
+            keycloakAdmin.addRole(keyCloakId, KeycloakAdmin.INITIAL_REPRESENTATIVE_ROLE);
         } catch (Exception e) {
             logger.error("Could not set role for user " + userParty.getID(), e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);

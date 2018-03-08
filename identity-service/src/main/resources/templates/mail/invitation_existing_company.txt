@@ -1,0 +1,9 @@
+Hello,
+
+you have been invited to [(${companyName})] by [(${senderName})].
+
+Please follow the link in order to login to NIMBLE.
+[(${nimbleUrl})]
+
+Sincerely,
+    your NIMBLE platform manager

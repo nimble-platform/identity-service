@@ -13,12 +13,13 @@ import java.util.List;
  * Created by Johannes Innerbichler on 29/05/17.
  * Repository for Uaa Users.
  */
-@SuppressWarnings("unused")
-@RepositoryRestResource(collectionResourceRel = "uaa-user", path = "uaa-hal")
+//@RepositoryRestResource(collectionResourceRel = "uaa-user", path = "uaa-hal")
 public interface UaaUserRepository extends PagingAndSortingRepository<UaaUser, Long> {
     Page<UaaUser> findAll(Pageable pageable);
 
     List<UaaUser> findByUsername(String username);
+
+    UaaUser findOneByUsername(String username);
 
     UaaUser findByExternalID(String externalId);
 

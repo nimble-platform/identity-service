@@ -14,6 +14,12 @@ elif [ "$1" == "docker-push" ]; then
 
     mvn -f identity-service/pom.xml docker:push
 
+elif [ "$1" == "stage" ]; then
+
+    mvn clean install -DskipTests
+    mvn -f identity-service/pom.xml docker:build -DdockerImageTag=staging
+    mvn -f identity-service/pom.xml docker:push -DdockerImageTag=staging
+
 elif [ "$1" == "dev-startdb" ]; then
 #        -v /tmp/postgres:/var/lib/postgresql/data \
     docker run \
