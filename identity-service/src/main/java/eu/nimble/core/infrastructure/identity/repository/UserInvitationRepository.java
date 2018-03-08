@@ -6,11 +6,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @SuppressWarnings("unused")
-//@RepositoryRestResource(collectionResourceRel = "uaa-user", path = "uaa-hal")
 public interface UserInvitationRepository extends PagingAndSortingRepository<UserInvitation, Long> {
     Page<UserInvitation> findAll(Pageable pageable);
 
@@ -19,4 +19,7 @@ public interface UserInvitationRepository extends PagingAndSortingRepository<Use
     List<UserInvitation> findByCompanyId(String companyId);
 
     List<UserInvitation> findBySender(UaaUser sender);
+
+    @Transactional
+    List<UserInvitation> removeByEmail(String email);
 }

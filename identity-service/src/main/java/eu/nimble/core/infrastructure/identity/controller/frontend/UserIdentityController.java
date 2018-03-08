@@ -142,6 +142,7 @@ public class UserIdentityController {
 
             // save new state of invitation
             invitation.setPending(false);
+            userInvitationRepository.save(invitation);
 
             // set roles
             for (String role : invitation.getRoleIDs()) {
@@ -152,9 +153,6 @@ public class UserIdentityController {
                     logger.error("Error while setting role", ex);
                 }
             }
-
-            userInvitationRepository.save(invitation);
-
 
             logger.info("Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(), newUserParty.getID(), company.getName(), company.getID());
         }

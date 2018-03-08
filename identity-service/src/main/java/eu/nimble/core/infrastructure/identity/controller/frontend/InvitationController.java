@@ -12,16 +12,15 @@ import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -51,7 +50,7 @@ public class InvitationController {
     @Autowired
     private KeycloakAdmin keycloakAdmin;
 
-    @ApiOperation(value = "", notes = "Send inviation to user.", response = ResponseEntity.class, tags = {})
+    @ApiOperation(value = "", notes = "Send invitation to user.", response = ResponseEntity.class, tags = {})
     @RequestMapping(value = "/send_invitation", produces = {"application/json"}, method = RequestMethod.POST)
     ResponseEntity<?> sendInvitation(
             @ApiParam(value = "Invitation object.", required = true) @Valid @RequestBody UserInvitation invitation,
@@ -60,7 +59,7 @@ public class InvitationController {
 
         OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
         if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
-            return new ResponseEntity<>("Only legal representatives are allowd to invite users", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>("Only legal representatives are allowed to invite users", HttpStatus.UNAUTHORIZED);
 
         String emailInvitee = invitation.getEmail();
         String companyId = invitation.getCompanyId();
@@ -85,7 +84,7 @@ public class InvitationController {
 
             UaaUser invitee = potentialInvitee.get();
 
-            // check if user is already part of a copmany
+            // check if user is already part of a company
             List<PartyType> companiesOfInvitee = partyRepository.findByPerson(invitee.getUBLPerson());
             if (companiesOfInvitee.isEmpty() == false) {
                 return new ResponseEntity<>(HttpStatus.CONFLICT);
@@ -125,7 +124,7 @@ public class InvitationController {
 
     @ApiOperation(value = "", notes = "Get pending invitations.", response = UserInvitation.class, responseContainer = "List", tags = {})
     @RequestMapping(value = "/invitations", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<?> pendingInvitations(@RequestHeader(value = "Authorization") String bearer) throws IOException{
+    ResponseEntity<?> pendingInvitations(@RequestHeader(value = "Authorization") String bearer) throws IOException {
         UaaUser user = identityUtils.getUserfromBearer(bearer);
 
         Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(user);
@@ -138,7 +137,7 @@ public class InvitationController {
         List<UserInvitation> pendingInvitations = userInvitationRepository.findByCompanyId(company.getID());
 
         // update roles
-        for( UserInvitation invitation : pendingInvitations) {
+        for (UserInvitation invitation : pendingInvitations) {
             if (invitation.getPending() == false) {
                 String username = invitation.getEmail();
                 UaaUser uaaUser = uaaUserRepository.findOneByUsername(username);
@@ -150,5 +149,43 @@ public class InvitationController {
         }
 
         return new ResponseEntity<>(pendingInvitations, HttpStatus.OK);
+    }
+
+
+    @ApiOperation(value = "", notes = "Remove existing invitation.", response = String.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "User removed from company", response = String[].class),
+            @ApiResponse(code = 401, message = "Not authorized"),
+            @ApiResponse(code = 409, message = "User not in company")})
+    @RequestMapping(value = "/invitations", method = RequestMethod.DELETE)
+    ResponseEntity<?> removeInvitation(@ApiParam(value = "Username", required = true) @RequestParam String username,
+                                       @RequestHeader(value = "Authorization") String bearer) throws IOException {
+
+        // check if authorized
+        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+            return new ResponseEntity<>("Only legal representatives are allowed to invite users", HttpStatus.UNAUTHORIZED);
+
+        // delete invitation
+        List<UserInvitation> deletedInvitations = userInvitationRepository.removeByEmail(username);
+        String responseMessage = deletedInvitations.isEmpty() ? "" : "Removed invitation";
+
+        // remove person from company
+        UaaUser userToRemove = uaaUserRepository.findOneByUsername(username);
+        UaaUser requester = uaaUserRepository.findOneByUsername(identityUtils.getUserDetails(bearer).getUsername());
+        if (userToRemove != null && requester != null) {
+            if (identityUtils.inSameCompany(userToRemove, requester) == false)
+                return new ResponseEntity<>(HttpStatus.CONFLICT);
+
+            // remove from list of persons
+            Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(requester);
+            if (companyOpt.isPresent()) {
+                PartyType company = companyOpt.get();
+                company.getPerson().remove(userToRemove.getUBLPerson());
+                partyRepository.save(company);
+                responseMessage += "\nRemoved from company";
+            }
+        }
+
+        return new ResponseEntity<>(responseMessage, HttpStatus.OK);
     }
 }
