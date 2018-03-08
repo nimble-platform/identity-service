@@ -25,8 +25,8 @@ node ('nimble-jenkins-slave') {
 
     stage ('Deploy') {
         sh ''' sed -i 's/IMAGE_TAG/'"$BUILD_NUMBER"'/g' kubernetes/deploy.yml '''
-        sh 'kubectl apply -f kubernetes/keycloak-svc.yml -n prod --validate=false'
-        sh 'kubectl apply -f kubernetes/keycloak-deploy.yml -n prod --validate=false'
+//        sh 'kubectl apply -f kubernetes/keycloak-svc.yml -n prod --validate=false'
+//        sh 'kubectl apply -f kubernetes/keycloak-deploy.yml -n prod --validate=false'
 
         sh 'kubectl apply -f kubernetes/deploy.yml -n prod --validate=false'
         sh 'kubectl apply -f kubernetes/svc.yml -n prod --validate=false'
