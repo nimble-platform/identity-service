@@ -2,6 +2,7 @@ package eu.nimble.core.infrastructure.identity.uaa;
 
 import com.google.common.collect.Sets;
 import eu.nimble.core.infrastructure.identity.controller.frontend.UserIdentityController;
+import org.apache.commons.lang.WordUtils;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
@@ -180,5 +181,9 @@ public class KeycloakAdmin {
         for (String role : rolesToAdd)
             addRole(userID, role);
         return rolesToAdd.size() + rolesToRemove.size();
+    }
+
+    public static List<String> prettfiyRoleIDs(List<String> roleIDs) {
+        return roleIDs.stream().map(r -> WordUtils.capitalize(r.replace("_", " "))).collect(Collectors.toList());
     }
 }

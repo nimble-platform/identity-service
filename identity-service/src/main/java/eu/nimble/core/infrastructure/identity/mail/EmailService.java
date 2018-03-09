@@ -16,7 +16,9 @@ import org.thymeleaf.context.Context;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class EmailService {
@@ -38,24 +40,26 @@ public class EmailService {
     @Value("${nimble.frontend.url}")
     private String frontendUrl;
 
-    public void sendInvite(String toEmail, String senderName, String companyName) throws UnsupportedEncodingException {
+    public void sendInvite(String toEmail, String senderName, String companyName, Collection<String> roles) throws UnsupportedEncodingException {
         String invitationUrl = frontendUrl + "/#/user-mgmt/registration/?email=" + URLEncoder.encode(toEmail, "UTF-8");
 
         Context context = new Context();
         context.setVariable("senderName", senderName);
         context.setVariable("companyName", companyName);
         context.setVariable("invitationUrl", invitationUrl);
+        context.setVariable("roles", roles);
 
         String subject = "Invitation to the NIMBLE platform";
 
         this.send(new String[]{toEmail}, subject, "invitation", context);
     }
 
-    public void informInviteExistingCompany(String toEmail, String senderName, String companyName) {
+    public void informInviteExistingCompany(String toEmail, String senderName, String companyName, Collection<String> roles) {
         Context context = new Context();
         context.setVariable("senderName", senderName);
         context.setVariable("companyName", companyName);
         context.setVariable("nimbleUrl", frontendUrl);
+        context.setVariable("roles", roles);
 
         String subject = "Invitation to " + companyName;
 

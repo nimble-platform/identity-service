@@ -78,7 +78,7 @@ public class InvitationController {
         String senderName = sendingPerson.getFirstName() + " " + sendingPerson.getFamilyName();
 
         // check if user has already been invited
-        if( userInvitationRepository.findByEmail(emailInvitee).isEmpty() == false) {
+        if (userInvitationRepository.findByEmail(emailInvitee).isEmpty() == false) {
             logger.info("Invitation: Impossible to register user {} twice for company {}.", emailInvitee, companyId);
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
@@ -87,6 +87,8 @@ public class InvitationController {
         List<String> userRoleIDs = invitation.getRoleIDs() == null ? new ArrayList() : invitation.getRoleIDs();
         UserInvitation userInvitation = new UserInvitation(emailInvitee, companyId, userRoleIDs, sender);
         userInvitationRepository.save(userInvitation);
+
+        List<String> prettifedRoles = KeycloakAdmin.prettfiyRoleIDs(userRoleIDs);
 
         // check if user is already registered
         Optional<UaaUser> potentialInvitee = uaaUserRepository.findByUsername(emailInvitee).stream().findFirst();
@@ -104,8 +106,8 @@ public class InvitationController {
             // ToDo: let user accept invitation
 
             // send information
-            emailService.informInviteExistingCompany(emailInvitee, senderName, company.getName());
-            logger.info("Invitation: User {} is already on the platform (without company). Invite from {} into {} sent.",
+            emailService.informInviteExistingCompany(emailInvitee, senderName, company.getName(), prettifedRoles);
+            logger.info("Invitation: User {} is already on the platform (without company). Invite from {} ({}) sent.",
                     emailInvitee, sender.getUsername(), company.getName());
 
             // add existing user to company
@@ -124,7 +126,7 @@ public class InvitationController {
         }
 
         // send invitation
-        emailService.sendInvite(emailInvitee, senderName, company.getName());
+        emailService.sendInvite(emailInvitee, senderName, company.getName(), prettifedRoles);
 
         logger.info("Invitation sent FROM {} ({}, {}) TO {}", senderName, company.getName(), companyId, emailInvitee);
 
@@ -180,7 +182,7 @@ public class InvitationController {
         List<UserInvitation> deletedInvitations = userInvitationRepository.removeByEmail(username);
         String responseMessage = deletedInvitations.isEmpty() ? "" : "Removed invitation";
 
-        if( deletedInvitations.isEmpty() == false)
+        if (deletedInvitations.isEmpty() == false)
             logger.info("Removed invitation of user {}.", username);
 
         // remove person from company

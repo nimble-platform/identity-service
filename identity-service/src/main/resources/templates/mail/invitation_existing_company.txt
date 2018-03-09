@@ -5,5 +5,9 @@ you have been invited to [(${companyName})] by [(${senderName})].
 Please follow the link in order to login to NIMBLE.
 [(${nimbleUrl})]
 
+You have the following roles:
+[# th:each="role : ${roles}"]
+ - [( ${role} )]
+[/]
 Sincerely,
     your NIMBLE platform manager
