@@ -127,15 +127,8 @@ public class RoleController {
 
         try {
             // setting proper set of roles
-            Set<String> currentRoles = keycloakAdmin.getUserRoles(targetUser.getExternalID());
-            Set<String> rolesToRemove = Sets.difference(currentRoles, rolesToApply);
-            Set<String> rolesToAdd = Sets.difference(rolesToApply, currentRoles);
-            logger.info("Applying new roles to user {}: add: {}, remove: {}", username, rolesToAdd, rolesToRemove);
-            for (String role : rolesToRemove)
-                keycloakAdmin.removeRole(targetUser.getExternalID(), role);
-            for (String role : rolesToAdd)
-                keycloakAdmin.addRole(targetUser.getExternalID(), role);
-            return new ResponseEntity<>("Changed " + (rolesToAdd.size() + rolesToRemove.size()) + " roles", HttpStatus.OK);
+            int numChangeRoles = keycloakAdmin.applyRoles(targetUser.getExternalID(), rolesToApply);
+            return new ResponseEntity<>("Changed " + numChangeRoles + " roles", HttpStatus.OK);
         } catch (NotFoundException ex) {
             return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
         }

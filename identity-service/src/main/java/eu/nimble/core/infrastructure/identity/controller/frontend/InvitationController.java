@@ -67,7 +67,7 @@ public class InvitationController {
         // obtain sending company and user
         Optional<PartyType> parties = partyRepository.findByHjid(Long.parseLong(companyId)).stream().findFirst();
         if (parties.isPresent() == false) {
-            logger.info("Requested party with Id {} not found", companyId);
+            logger.info("Invitation: Requested party with Id {} not found", companyId);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         PartyType company = parties.get();
@@ -76,7 +76,6 @@ public class InvitationController {
         UaaUser sender = uaaUserRepository.findByExternalID(userDetails.getUserId());
         PersonType sendingPerson = sender.getUBLPerson();
         String senderName = sendingPerson.getFirstName() + " " + sendingPerson.getFamilyName();
-
 
         // check if user is already registered
         Optional<UaaUser> potentialInvitee = uaaUserRepository.findByUsername(emailInvitee).stream().findFirst();
@@ -87,11 +86,14 @@ public class InvitationController {
             // check if user is already part of a company
             List<PartyType> companiesOfInvitee = partyRepository.findByPerson(invitee.getUBLPerson());
             if (companiesOfInvitee.isEmpty() == false) {
+                logger.info("Invitation: User {} is already member of another company.", emailInvitee);
                 return new ResponseEntity<>(HttpStatus.CONFLICT);
             }
 
             // send information
             emailService.informInviteExistingCompany(emailInvitee, senderName, company.getName());
+            logger.info("Invitation: User {} is already on the platform (without company). Invite from {} into {} sent.",
+                    emailInvitee, sender.getUsername(), company.getName());
 
             // add existing user to company
             company.getPerson().add(potentialInvitee.get().getUBLPerson());
@@ -109,7 +111,7 @@ public class InvitationController {
             // saving invitation with duplicate check
             userInvitationRepository.save(userInvitation);
         } catch (Exception ex) {
-            logger.info("Impossible to register user {} twice for company {}", emailInvitee, companyId);
+            logger.info("Invitation: Impossible to register user {} twice for company {}.", emailInvitee, companyId);
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
@@ -129,7 +131,7 @@ public class InvitationController {
 
         Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(user);
         if (companyOpt.isPresent() == false) {
-            logger.error("Requested party for user {} not found", user.getUsername());
+            logger.info("Pending Invitations: Requested party for user {} not found.", user.getUsername());
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         PartyType company = companyOpt.get();
@@ -154,7 +156,7 @@ public class InvitationController {
 
     @ApiOperation(value = "", notes = "Remove existing invitation.", response = String.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "User removed from company", response = String[].class),
+            @ApiResponse(code = 200, message = "User removed from company", response = String.class),
             @ApiResponse(code = 401, message = "Not authorized"),
             @ApiResponse(code = 409, message = "User not in company")})
     @RequestMapping(value = "/invitations", method = RequestMethod.DELETE)
@@ -165,27 +167,41 @@ public class InvitationController {
         if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>("Only legal representatives are allowed to invite users", HttpStatus.UNAUTHORIZED);
 
+        logger.info("Requesting removal of company membership of user {}.", username);
+
         // delete invitation
         List<UserInvitation> deletedInvitations = userInvitationRepository.removeByEmail(username);
         String responseMessage = deletedInvitations.isEmpty() ? "" : "Removed invitation";
 
+        if( deletedInvitations.isEmpty() == false)
+            logger.info("Removed invitation of user {}.", username);
+
         // remove person from company
         UaaUser userToRemove = uaaUserRepository.findOneByUsername(username);
         UaaUser requester = uaaUserRepository.findOneByUsername(identityUtils.getUserDetails(bearer).getUsername());
-        if (userToRemove != null && requester != null) {
+        if (userToRemove != null && requester != null &&
+                userToRemove.getUsername().equals(requester.getUsername()) == false) {  // user cannot remove itself
             if (identityUtils.inSameCompany(userToRemove, requester) == false)
                 return new ResponseEntity<>(HttpStatus.CONFLICT);
+
 
             // remove from list of persons
             Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(requester);
             if (companyOpt.isPresent()) {
+
+                // remove roles of user
+                keycloakAdmin.applyRoles(userToRemove.getExternalID(), Collections.emptySet());
+
                 PartyType company = companyOpt.get();
                 company.getPerson().remove(userToRemove.getUBLPerson());
                 partyRepository.save(company);
                 responseMessage += "\nRemoved from company";
+
+                logger.info(requester.getUsername() + " removed " + userToRemove.getUsername() + " from company " + company.getName());
             }
         }
 
+        responseMessage = responseMessage.isEmpty() ? "No changes" : responseMessage;
         return new ResponseEntity<>(responseMessage, HttpStatus.OK);
     }
 }

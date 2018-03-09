@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.uaa;
 
+import com.google.common.collect.Sets;
 import eu.nimble.core.infrastructure.identity.controller.frontend.UserIdentityController;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.keycloak.OAuth2Constants;
@@ -166,5 +167,18 @@ public class KeycloakAdmin {
         }
         String path = location.getPath();
         return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    public int applyRoles(String userID, Set<String> rolesToApply) {
+        // setting proper set of roles
+        Set<String> currentRoles = getUserRoles(userID);
+        Set<String> rolesToRemove = Sets.difference(currentRoles, rolesToApply);
+        Set<String> rolesToAdd = Sets.difference(rolesToApply, currentRoles);
+        logger.info("Applying new roles to user {}: add: {}, remove: {}", userID, rolesToAdd, rolesToRemove);
+        for (String role : rolesToRemove)
+            removeRole(userID, role);
+        for (String role : rolesToAdd)
+            addRole(userID, role);
+        return rolesToAdd.size() + rolesToRemove.size();
     }
 }
