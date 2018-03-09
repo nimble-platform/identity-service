@@ -298,6 +298,6 @@ public class UserIdentityController {
         List<UserRepresentation> managers = keycloakAdmin.getPlatformManagers();
         List<String> emails = managers.stream().map(UserRepresentation::getEmail).collect(Collectors.toList());
 
-        emailService.notifiyPlatformManagersNewCompany(emails, representative, company);
+        emailService.notifyPlatformManagersNewCompany(emails, representative, company);
     }
 }

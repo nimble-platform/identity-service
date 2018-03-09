@@ -62,7 +62,7 @@ public class EmailService {
         this.send(new String[]{toEmail}, subject, "invitation_existing_company", context);
     }
 
-    public void notifiyPlatformManagersNewCompany(List<String> emails, PersonType representative, PartyType company) {
+    public void notifyPlatformManagersNewCompany(List<String> emails, PersonType representative, PartyType company) {
 
         Context context = new Context();
 

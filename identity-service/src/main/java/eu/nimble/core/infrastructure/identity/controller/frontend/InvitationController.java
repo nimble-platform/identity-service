@@ -77,6 +77,17 @@ public class InvitationController {
         PersonType sendingPerson = sender.getUBLPerson();
         String senderName = sendingPerson.getFirstName() + " " + sendingPerson.getFamilyName();
 
+        // check if user has already been invited
+        if( userInvitationRepository.findByEmail(emailInvitee).isEmpty() == false) {
+            logger.info("Invitation: Impossible to register user {} twice for company {}.", emailInvitee, companyId);
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        // saving invitation
+        List<String> userRoleIDs = invitation.getRoleIDs() == null ? new ArrayList() : invitation.getRoleIDs();
+        UserInvitation userInvitation = new UserInvitation(emailInvitee, companyId, userRoleIDs, sender);
+        userInvitationRepository.save(userInvitation);
+
         // check if user is already registered
         Optional<UaaUser> potentialInvitee = uaaUserRepository.findByUsername(emailInvitee).stream().findFirst();
         if (potentialInvitee.isPresent()) {
@@ -90,6 +101,8 @@ public class InvitationController {
                 return new ResponseEntity<>(HttpStatus.CONFLICT);
             }
 
+            // ToDo: let user accept invitation
+
             // send information
             emailService.informInviteExistingCompany(emailInvitee, senderName, company.getName());
             logger.info("Invitation: User {} is already on the platform (without company). Invite from {} into {} sent.",
@@ -98,21 +111,16 @@ public class InvitationController {
             // add existing user to company
             company.getPerson().add(potentialInvitee.get().getUBLPerson());
 
+            // set request roles to user
+            keycloakAdmin.applyRoles(invitee.getExternalID(), new HashSet<>(userRoleIDs));
+
+            // update invitation
+            userInvitation.setPending(false);
+            userInvitationRepository.save(userInvitation);
+
             Map<String, String> response = new HashMap<>();
             response.put("message", "Existing user added to company");
             return new ResponseEntity<>(response, HttpStatus.CREATED);
-        }
-
-        // collect store invitation
-        List<String> userRoleIDs = invitation.getRoleIDs() == null ? new ArrayList() : invitation.getRoleIDs();
-        UserInvitation userInvitation = new UserInvitation(emailInvitee, companyId, userRoleIDs, sender);
-
-        try {
-            // saving invitation with duplicate check
-            userInvitationRepository.save(userInvitation);
-        } catch (Exception ex) {
-            logger.info("Invitation: Impossible to register user {} twice for company {}.", emailInvitee, companyId);
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
         // send invitation
@@ -122,7 +130,6 @@ public class InvitationController {
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
-
 
     @ApiOperation(value = "", notes = "Get pending invitations.", response = UserInvitation.class, responseContainer = "List", tags = {})
     @RequestMapping(value = "/invitations", produces = {"application/json"}, method = RequestMethod.GET)
