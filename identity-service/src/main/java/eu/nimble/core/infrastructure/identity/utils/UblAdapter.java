@@ -3,7 +3,9 @@ package eu.nimble.core.infrastructure.identity.utils;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
+import eu.nimble.service.model.ubl.commonbasiccomponents.QuantityType;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -64,6 +66,15 @@ public class UblAdapter {
         DeliveryTerms dtoDeliveryTerms = new DeliveryTerms();
         dtoDeliveryTerms.setSpecialTerms(ublDeliveryTerms.getSpecialTerms());
 
+        // adapt address
+        if (ublDeliveryTerms.getDeliveryLocation() != null)
+            dtoDeliveryTerms.setDeliveryAddress(adaptAddress(ublDeliveryTerms.getDeliveryLocation().getAddress()));
+
+        // adapt delivery period
+        if (ublDeliveryTerms.getEstimatedDeliveryPeriod() != null)
+            if (ublDeliveryTerms.getEstimatedDeliveryPeriod().getDurationMeasure() != null)
+                dtoDeliveryTerms.setEstimatedDeliveryTime(ublDeliveryTerms.getEstimatedDeliveryPeriod().getDurationMeasure().getValue().intValue());
+
         return dtoDeliveryTerms;
     }
 
@@ -75,7 +86,21 @@ public class UblAdapter {
         DeliveryTermsType ublDeliveryTerms = new DeliveryTermsType();
         ublDeliveryTerms.setSpecialTerms(dtoDeliveryTerms.getSpecialTerms());
 
-        // ToDo: create GregorianCalender and add 'EstimatedDeliveryTime'.
+        // adapt address
+        AddressType deliveryAddress = adaptAddress(dtoDeliveryTerms.getDeliveryAddress());
+        LocationType deliveryLocation = new LocationType();
+        deliveryLocation.setAddress(deliveryAddress);
+        ublDeliveryTerms.setDeliveryLocation(deliveryLocation);
+
+        // adapt delivery time
+        if (dtoDeliveryTerms.getEstimatedDeliveryTime() != null) {
+            QuantityType deliveryTimeQuantity = new QuantityType();
+            deliveryTimeQuantity.setValue(new BigDecimal(dtoDeliveryTerms.getEstimatedDeliveryTime()));
+            deliveryTimeQuantity.setUnitCode("Days");
+            PeriodType deliveryPeriod = new PeriodType();
+            deliveryPeriod.setDurationMeasure(deliveryTimeQuantity);
+            ublDeliveryTerms.setEstimatedDeliveryPeriod(deliveryPeriod);
+        }
 
         return ublDeliveryTerms;
     }

@@ -71,7 +71,7 @@ public class CompanySettingsController {
         PartyType party = partyOptional.get();
         logger.debug("Changing settings for party with Id {}", party.getHjid());
 
-        // setdelivery terms
+        // set delivery terms
         DeliveryTermsType deliveryTerms = UblAdapter.adaptDeliveryTerms(newSettings.getDeliveryTerms());
         party.setDeliveryTerms(UblUtils.toModifyableList(deliveryTerms));
 

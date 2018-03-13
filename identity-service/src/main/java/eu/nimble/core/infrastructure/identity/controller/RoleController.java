@@ -1,6 +1,5 @@
 package eu.nimble.core.infrastructure.identity.controller;
 
-import com.google.common.collect.Sets;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
