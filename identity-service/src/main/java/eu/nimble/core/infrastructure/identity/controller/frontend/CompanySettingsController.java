@@ -18,6 +18,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
 
 /**
@@ -82,6 +85,11 @@ public class CompanySettingsController {
         // set address
         AddressType companyAddress = UblAdapter.adaptAddress(newSettings.getAddress());
         party.setPostalAddress(companyAddress);
+
+        // set miscellaneous
+        party.setWebsiteURI(newSettings.getWebsite());
+        party.setPartyTaxScheme(Collections.singletonList(UblAdapter.adaptTaxSchema(newSettings.getVatNumber())));
+        party.setQualityIndicator(Collections.singletonList(UblAdapter.adaptQualityIndicator(newSettings.getVerificationInformation())));
 
         partyRepository.save(party);
 
