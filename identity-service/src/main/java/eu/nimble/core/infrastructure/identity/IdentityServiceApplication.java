@@ -1,6 +1,5 @@
 package eu.nimble.core.infrastructure.identity;
 
-import eu.nimble.core.infrastructure.identity.controller.frontend.CompanySettingsController;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.ActivityDataLineType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
@@ -45,7 +44,7 @@ public class IdentityServiceApplication extends SpringBootServletInitializer {
             public void addCorsMappings(CorsRegistry registry) {
                 if (corsEnabled.equals("true")) {
                     logger.info("Enabling CORS...");
-                    registry.addMapping("/**").allowedOrigins("*");
+                    registry.addMapping("/**").allowedMethods("HEAD", "GET", "PUT", "POST", "DELETE", "PATCH");
                 }
             }
         };

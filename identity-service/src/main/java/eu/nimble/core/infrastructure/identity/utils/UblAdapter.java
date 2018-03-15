@@ -3,8 +3,12 @@ package eu.nimble.core.infrastructure.identity.utils;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
+import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
+import eu.nimble.service.model.ubl.commonbasiccomponents.QuantityType;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Created by Johannes Innerbichler on 04/07/17.
@@ -12,13 +16,16 @@ import java.util.List;
 @SuppressWarnings("WeakerAccess")
 public class UblAdapter {
 
-    public static CompanySettings adaptCompanySettings(PartyType partyType) {
+    public static CompanySettings adaptCompanySettings(PartyType party) {
         CompanySettings settings = new CompanySettings();
-        settings.setName(partyType.getName());
-        settings.setAddress(adaptAddress(partyType.getPostalAddress()));
-        partyType.getPaymentMeans().stream().findFirst().ifPresent(means -> settings.setPaymentMeans(adaptPaymentMeans(means)));
-        partyType.getDeliveryTerms().stream().findFirst()
+        settings.setName(party.getName());
+        settings.setWebsite(party.getWebsiteURI());
+        settings.setAddress(adaptAddress(party.getPostalAddress()));
+        party.getPaymentMeans().stream().findFirst().ifPresent(means -> settings.setPaymentMeans(adaptPaymentMeans(means)));
+        party.getDeliveryTerms().stream().findFirst()
                 .ifPresent(deliveryTermsType -> settings.setDeliveryTerms(adaptDeliveryTerms(deliveryTermsType)));
+        settings.setVerificationInformation(adaptQualityIndicator(party));
+        settings.setVatNumber(adaptVatNumber(party));
 
         return settings;
     }
@@ -64,6 +71,15 @@ public class UblAdapter {
         DeliveryTerms dtoDeliveryTerms = new DeliveryTerms();
         dtoDeliveryTerms.setSpecialTerms(ublDeliveryTerms.getSpecialTerms());
 
+        // adapt address
+        if (ublDeliveryTerms.getDeliveryLocation() != null)
+            dtoDeliveryTerms.setDeliveryAddress(adaptAddress(ublDeliveryTerms.getDeliveryLocation().getAddress()));
+
+        // adapt delivery period
+        if (ublDeliveryTerms.getEstimatedDeliveryPeriod() != null)
+            if (ublDeliveryTerms.getEstimatedDeliveryPeriod().getDurationMeasure() != null)
+                dtoDeliveryTerms.setEstimatedDeliveryTime(ublDeliveryTerms.getEstimatedDeliveryPeriod().getDurationMeasure().getValue().intValue());
+
         return dtoDeliveryTerms;
     }
 
@@ -75,7 +91,21 @@ public class UblAdapter {
         DeliveryTermsType ublDeliveryTerms = new DeliveryTermsType();
         ublDeliveryTerms.setSpecialTerms(dtoDeliveryTerms.getSpecialTerms());
 
-        // ToDo: create GregorianCalender and add 'EstimatedDeliveryTime'.
+        // adapt address
+        AddressType deliveryAddress = adaptAddress(dtoDeliveryTerms.getDeliveryAddress());
+        LocationType deliveryLocation = new LocationType();
+        deliveryLocation.setAddress(deliveryAddress);
+        ublDeliveryTerms.setDeliveryLocation(deliveryLocation);
+
+        // adapt delivery time
+        if (dtoDeliveryTerms.getEstimatedDeliveryTime() != null) {
+            QuantityType deliveryTimeQuantity = new QuantityType();
+            deliveryTimeQuantity.setValue(new BigDecimal(dtoDeliveryTerms.getEstimatedDeliveryTime()));
+            deliveryTimeQuantity.setUnitCode("Days");
+            PeriodType deliveryPeriod = new PeriodType();
+            deliveryPeriod.setDurationMeasure(deliveryTimeQuantity);
+            ublDeliveryTerms.setEstimatedDeliveryPeriod(deliveryPeriod);
+        }
 
         return ublDeliveryTerms;
     }
@@ -136,10 +166,60 @@ public class UblAdapter {
     public static PartyType adaptCompanyRegistration(CompanyRegistration registration, PersonType admin) {
 
         PartyType companyParty = new PartyType();
+
+        // adapt VAT number
+        companyParty.getPartyTaxScheme().add(adaptTaxSchema(registration.getVatNumber()));
+
+        // adapt verification information
+        QualityIndicatorType qualityIndicatorType = adaptQualityIndicator(registration.getVerificationInformation());
+        companyParty.getQualityIndicator().add(qualityIndicatorType);
+
+        companyParty.setWebsiteURI(registration.getWebsite());
         companyParty.setName(registration.getName());
         companyParty.getPerson().add(admin);
         companyParty.setPostalAddress(adaptAddress(registration.getAddress()));
 
         return companyParty;
+    }
+
+    public static QualityIndicatorType adaptQualityIndicator(String verificationInformation) {
+        QualityIndicatorType qualityIndicatorType = new QualityIndicatorType();
+        qualityIndicatorType.setQualityParameter(verificationInformation);
+        return qualityIndicatorType;
+    }
+
+    public static String adaptQualityIndicator(PartyType party) {
+        if (party == null)
+            return null;
+        Optional<QualityIndicatorType> verificationInformationOpt = party.getQualityIndicator().stream().findFirst();
+        if (verificationInformationOpt.isPresent())
+            return verificationInformationOpt.get().getQualityParameter();
+        return null;
+    }
+
+    public static PartyTaxSchemeType adaptTaxSchema(String vatNumber) {
+        CodeType codeType = new CodeType();
+        codeType.setName("VAT");
+        codeType.setValue(vatNumber);
+        TaxSchemeType taxScheme = new TaxSchemeType();
+        taxScheme.setTaxTypeCode(codeType);
+        PartyTaxSchemeType partyTaxSchemeType = new PartyTaxSchemeType();
+        partyTaxSchemeType.setTaxScheme(taxScheme);
+        return partyTaxSchemeType;
+    }
+
+    public static String adaptVatNumber(PartyType partyType) {
+
+        if (partyType == null)
+            return null;
+
+        String vatNumber = null;
+        Optional<PartyTaxSchemeType> partyTaxSchemeOpt = partyType.getPartyTaxScheme().stream().findFirst();
+        if (partyTaxSchemeOpt.isPresent()) {
+            PartyTaxSchemeType partyTaxScheme = partyTaxSchemeOpt.get();
+            if (partyTaxScheme.getTaxScheme() != null && partyTaxScheme.getTaxScheme().getTaxTypeCode() != null)
+                vatNumber = partyTaxScheme.getTaxScheme().getTaxTypeCode().getValue();
+        }
+        return vatNumber;
     }
 }

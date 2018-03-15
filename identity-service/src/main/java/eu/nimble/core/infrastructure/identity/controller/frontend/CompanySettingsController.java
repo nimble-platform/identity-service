@@ -4,10 +4,7 @@ import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.AddressType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.DeliveryTermsType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PaymentMeansType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -18,7 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Created by Johannes Innerbichler on 04/07/17.
@@ -71,7 +68,7 @@ public class CompanySettingsController {
         PartyType party = partyOptional.get();
         logger.debug("Changing settings for party with Id {}", party.getHjid());
 
-        // setdelivery terms
+        // set delivery terms
         DeliveryTermsType deliveryTerms = UblAdapter.adaptDeliveryTerms(newSettings.getDeliveryTerms());
         party.setDeliveryTerms(UblUtils.toModifyableList(deliveryTerms));
 
@@ -82,6 +79,15 @@ public class CompanySettingsController {
         // set address
         AddressType companyAddress = UblAdapter.adaptAddress(newSettings.getAddress());
         party.setPostalAddress(companyAddress);
+
+        // set miscellaneous
+        party.setWebsiteURI(newSettings.getWebsite());
+        List<PartyTaxSchemeType> partyTaxSchemes = new ArrayList<>();
+        partyTaxSchemes.add(UblAdapter.adaptTaxSchema(newSettings.getVatNumber()));
+        party.setPartyTaxScheme(partyTaxSchemes);
+        List<QualityIndicatorType> qualityIndicators = new ArrayList<>();
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(newSettings.getVerificationInformation()));
+        party.setQualityIndicator(qualityIndicators);
 
         partyRepository.save(party);
 

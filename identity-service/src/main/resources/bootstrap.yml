@@ -14,7 +14,7 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
-      use-new-id-generator-mappings: true
+#      use-new-id-generator-mappings: true
   datasource:
     driverClassName: org.postgresql.Driver
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:identityDB}
@@ -29,6 +29,8 @@ spring:
     password: ${SMTP_PASSWORD:}
     smtp.auth: true
     properties.mail.smtp.starttls.enable: true
+  jackson:
+    default-property-inclusion: NON_NULL
 
 logstash:
   uri: ${LOGSTASH_URI:localhost:5000}
@@ -71,16 +73,24 @@ spring:
   jpa:
     properties:
       hibernate:
-        temp.use_jdbc_metadata_defaults: false
+        temp:
+          use_jdbc_metadata_defaults: false
         show_sql: false
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: create
+      ddl-auto: none
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
   datasource:
+    name: identitydb
     driverClassName: org.h2.Driver
-    url: jdbc:h2:file:~/identity_h2;AUTO_SERVER=TRUE
-    username: dev
-    password:
+#    url: jdbc:h2:mem:test;DB_CLOSE_DELAY=-1
+    url: jdbc:h2:file:~/identitydb;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1;
+    initialize: false
+    username: sa
+    password: sa
   mail:
     debug: true  # prints email to log output
     host: localhost # in-v3.mailjet.com

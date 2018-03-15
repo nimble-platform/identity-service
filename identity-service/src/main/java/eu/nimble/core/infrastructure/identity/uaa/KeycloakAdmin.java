@@ -1,5 +1,8 @@
 package eu.nimble.core.infrastructure.identity.uaa;
 
+import com.google.common.collect.Sets;
+import eu.nimble.core.infrastructure.identity.controller.frontend.UserIdentityController;
+import org.apache.commons.lang.WordUtils;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
@@ -11,6 +14,8 @@ import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,17 +23,23 @@ import javax.annotation.PostConstruct;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.net.URI;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
+@SuppressWarnings("Convert2MethodRef")
 @Service
 public class KeycloakAdmin {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserIdentityController.class);
 
     public static final String NIMBLE_USER_ROLE = "nimble_user";
     public static final String INITIAL_REPRESENTATIVE_ROLE = "initial_representative";
     public static final String LEGAL_REPRESENTATIVE_ROLE = "legal_representative";
     public static final String PLATFORM_MANAGER_ROLE = "platform_manager";
+
+    public static final List<String> NON_USER_ROLES = Arrays.asList("platform_manager", "uma_authorization",
+            "offline_access", "admin", "create-realm",
+            "create-realm", "nimble_user", "initial_representative");
 
     @Autowired
     private KeycloakConfig config;
@@ -88,17 +99,41 @@ public class KeycloakAdmin {
         // send verification mail
 //        createdUser.sendVerifyEmail();
 
-        setRole(userId, NIMBLE_USER_ROLE);
+        addRole(userId, NIMBLE_USER_ROLE);
 
         return createdUser.toRepresentation().getId();
     }
 
-    public void setRole(String userId, String role) {
+    public Map<String, String> getRoles() {
+        RealmResource realmResource = this.keycloak.realm(config.getRealm());
+
+        return realmResource.roles().list().stream()
+                .filter(r -> NON_USER_ROLES.contains(r.getName()) == false)
+                .collect(Collectors.toMap(r -> r.getId(), r -> r.getName()));
+    }
+
+    public Set<String> getUserRoles(String userId) {
+        UserResource userResource = fetchUserResource(userId);
+        return userResource.roles().realmLevel().listAll().stream()
+                .map(r -> r.getName())
+                .filter(role -> NON_USER_ROLES.contains(role) == false)
+                .collect(Collectors.toSet());
+    }
+
+    public void addRole(String userId, String role) {
         UserResource userResource = fetchUserResource(userId);
 
         RealmResource realmResource = this.keycloak.realm(config.getRealm());
         RoleRepresentation roleRepresentation = realmResource.roles().get(role).toRepresentation();
         userResource.roles().realmLevel().add(Collections.singletonList(roleRepresentation));
+    }
+
+    public void removeRole(String userId, String role) {
+        UserResource userResource = fetchUserResource(userId);
+
+        RealmResource realmResource = this.keycloak.realm(config.getRealm());
+        RoleRepresentation roleRepresentation = realmResource.roles().get(role).toRepresentation();
+        userResource.roles().realmLevel().remove(Collections.singletonList(roleRepresentation));
     }
 
     public List<UserRepresentation> getPlatformManagers() {
@@ -108,7 +143,8 @@ public class KeycloakAdmin {
 
         Optional<GroupRepresentation> platformManagerGroup = groups.stream().filter(g -> "Platform Manager".equals(g.getName())).findFirst();
         if (platformManagerGroup.isPresent() == false) {
-            // ToDo: handle this case
+            logger.warn("No platform managers found!");
+            return new ArrayList<>();  // empty list as fallback
         }
         return realmResource.groups().group(platformManagerGroup.get().getId()).members();
     }
@@ -132,5 +168,22 @@ public class KeycloakAdmin {
         }
         String path = location.getPath();
         return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    public int applyRoles(String userID, Set<String> rolesToApply) {
+        // setting proper set of roles
+        Set<String> currentRoles = getUserRoles(userID);
+        Set<String> rolesToRemove = Sets.difference(currentRoles, rolesToApply);
+        Set<String> rolesToAdd = Sets.difference(rolesToApply, currentRoles);
+        logger.info("Applying new roles to user {}: add: {}, remove: {}", userID, rolesToAdd, rolesToRemove);
+        for (String role : rolesToRemove)
+            removeRole(userID, role);
+        for (String role : rolesToAdd)
+            addRole(userID, role);
+        return rolesToAdd.size() + rolesToRemove.size();
+    }
+
+    public static List<String> prettfiyRoleIDs(List<String> roleIDs) {
+        return roleIDs.stream().map(r -> WordUtils.capitalize(r.replace("_", " "))).collect(Collectors.toList());
     }
 }
