@@ -1,6 +1,5 @@
 package eu.nimble.core.infrastructure.identity.controller;
 
-import eu.nimble.core.infrastructure.identity.controller.frontend.UserIdentityController;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
@@ -10,8 +9,6 @@ import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;

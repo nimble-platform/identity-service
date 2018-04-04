@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Created by Johannes Innerbichler on 26/04/17.
@@ -78,6 +79,33 @@ public class PartyController {
 
         logger.debug("Returning requested party with Id {0}", party.getHjid());
         return new ResponseEntity<>(party, HttpStatus.FOUND);
+    }
+
+    @SuppressWarnings("PointlessBooleanExpression")
+    @ApiOperation(value = "", notes = "Get Party for Id.", response = PartyType.class, tags = {})
+    @RequestMapping(value = "/parties/{partyIds}", method = RequestMethod.GET)
+    ResponseEntity<?> getParty(
+            @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable List<Long> partyIds) {
+
+        logger.debug("Requesting parties with Ids {0}", partyIds);
+
+        // search relevant parties
+        List<PartyType> parties = new ArrayList<>();
+        for (Long partyId : partyIds) {
+            Optional<PartyType> party = partyRepository.findByHjid(partyId).stream().findFirst();
+
+            // check if party was found
+            if (party.isPresent() == false) {
+                String message = String.format("Requested party with Id %s not found", partyId);
+                logger.info(message);
+                return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
+            }
+
+            parties.add(party.get());
+        }
+
+        logger.debug("Returning requested parties with Ids {0}", partyIds);
+        return new ResponseEntity<>(parties, HttpStatus.FOUND);
     }
 
     @SuppressWarnings("PointlessBooleanExpression")
