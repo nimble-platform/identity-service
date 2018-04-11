@@ -78,7 +78,7 @@ public class PartyController {
             party.setPerson(new ArrayList<>());
 
         logger.debug("Returning requested party with Id {0}", party.getHjid());
-        return new ResponseEntity<>(party, HttpStatus.FOUND);
+        return new ResponseEntity<>(party, HttpStatus.OK);
     }
 
     @SuppressWarnings("PointlessBooleanExpression")
@@ -105,7 +105,7 @@ public class PartyController {
         }
 
         logger.debug("Returning requested parties with Ids {0}", partyIds);
-        return new ResponseEntity<>(parties, HttpStatus.FOUND);
+        return new ResponseEntity<>(parties, HttpStatus.OK);
     }
 
     @SuppressWarnings("PointlessBooleanExpression")
@@ -151,7 +151,7 @@ public class PartyController {
 
         HttpHeaders responseHeaders = new HttpHeaders();
         responseHeaders.setContentType(MediaType.TEXT_XML);
-        return new ResponseEntity<>(xmlParty, responseHeaders, HttpStatus.FOUND);
+        return new ResponseEntity<>(xmlParty, responseHeaders, HttpStatus.OK);
     }
 
     @ApiOperation(value = "", notes = "Get Party for person ID.", response = PartyType.class, tags = {})
