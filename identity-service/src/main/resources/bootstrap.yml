@@ -60,15 +60,6 @@ nimble:
 ---
 
 spring:
-  profiles: kubernetes
-
-nimble:
-  db-credentials-json: ${DB_CREDENTIALS_JSON}
-  corsEnabled: true
-
----
-
-spring:
   profiles: local_dev
   jpa:
     properties:
