@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
@@ -33,10 +33,10 @@ spec:
           resources:
             requests:
               cpu: 200m
-              memory: 128Mi
+              memory: 256Mi
             limits:
               cpu: 400m
-              memory: 256Mi
+              memory: 512Mi
           env:
             - name: KEYCLOAK_LOGLEVEL
               value: DEBUG
