@@ -35,6 +35,11 @@ spring:
 logstash:
   uri: ${LOGSTASH_URI:localhost:5000}
 
+management:
+  info:
+    git:
+      mode: full
+
 nimble:
   corsEnabled: false
   uaa:
