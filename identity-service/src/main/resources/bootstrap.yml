@@ -21,6 +21,7 @@ spring:
     username: ${POSTGRES_USER:root}
     password: ${POSTGRES_PASSWORD:changeme}
     maxActive: 5
+    maxIdle: 5
   mail:
     debug: false  # disable printing email to log output
     host: ${SMTP_HOST:localhost}
