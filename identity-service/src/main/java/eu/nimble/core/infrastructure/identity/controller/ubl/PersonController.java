@@ -47,6 +47,6 @@ public class PersonController {
         PersonType person = foundPersons.get(0);
 
         logger.debug("Returning requested person with Id {}", person.getHjid());
-        return new ResponseEntity<>(person, HttpStatus.FOUND);
+        return new ResponseEntity<>(person, HttpStatus.OK);
     }
 }

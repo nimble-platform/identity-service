@@ -12,6 +12,7 @@ import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
+import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.DeliveryTermsType;
@@ -31,13 +32,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.WebApplicationException;
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -286,6 +293,35 @@ public class UserIdentityController {
         logger.info("User " + credentials.getUsername() + " successfully logged in.");
 
         return new ResponseEntity<>(frontEndUser, HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "", notes = "Get user info", response = Map.class, tags = {})
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Found user", response = Map.class),
+            @ApiResponse(code = 404, message = "User not found", response = Map.class)})
+    @RequestMapping(value = "/user-info", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<?> getUserInfo(@RequestHeader(value = "Authorization") String bearer) throws IOException {
+
+        OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
+
+        String username = userDetails.getUsername();
+        Optional<UaaUser> potentialUaaUser = uaaUserRepository.findByUsername(username).stream().findFirst();
+
+        if (potentialUaaUser.isPresent()) {
+            Map<String, String> userInfo = new HashMap<>();
+            UaaUser uaaUser = potentialUaaUser.get();
+            PersonType personType = uaaUser.getUBLPerson();
+            userInfo.put("ublPersonID", personType.getID());
+            Optional<PartyType> potentialPartyType = partyRepository.findByPerson(personType).stream().findFirst();
+            if (potentialPartyType.isPresent()) {
+                PartyType partyType = potentialPartyType.get();
+                userInfo.put("ublPartyID", partyType.getID());
+            }
+
+            return ResponseEntity.ok(userInfo);
+        }
+
+        return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
     }
 
     private String getKeycloakUserId(PersonType ublPerson) throws Exception {

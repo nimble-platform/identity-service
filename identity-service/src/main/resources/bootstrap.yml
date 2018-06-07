@@ -13,13 +13,15 @@ spring:
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
 #      use-new-id-generator-mappings: true
   datasource:
     driverClassName: org.postgresql.Driver
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:identityDB}
     username: ${POSTGRES_USER:root}
     password: ${POSTGRES_PASSWORD:changeme}
+    maxActive: 5
+    maxIdle: 5
   mail:
     debug: false  # disable printing email to log output
     host: ${SMTP_HOST:localhost}
@@ -56,15 +58,6 @@ nimble:
       accessTokenUri: ${OAUTH_CLIENT_ACCESSTOKEN_URI}
   frontend:
     url: ${FRONTEND_URL:http://localhost:9092}
-
----
-
-spring:
-  profiles: kubernetes
-
-nimble:
-  db-credentials-json: ${DB_CREDENTIALS_JSON}
-  corsEnabled: true
 
 ---
 
