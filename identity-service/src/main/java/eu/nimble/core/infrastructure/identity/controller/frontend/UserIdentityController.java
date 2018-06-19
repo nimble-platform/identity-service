@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.controller.frontend;
 
+import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.controller.frontend.dto.CompanyRegistrationResponse;
 import eu.nimble.core.infrastructure.identity.controller.frontend.dto.UserRegistration;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
@@ -32,10 +33,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -84,6 +82,9 @@ public class UserIdentityController {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private IdentityUtils identityUtils;
 
     @ApiOperation(value = "Register a new user to the nimble.", response = FrontEndUser.class, tags = {})
     @ApiResponses(value = {
@@ -323,6 +324,24 @@ public class UserIdentityController {
 
         return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
     }
+
+    @ApiOperation(value = "", notes = "Set welcome info flag")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Changed flag"),
+            @ApiResponse(code = 404, message = "User not found")})
+    @RequestMapping(value = "/set-welcome-info/{flag}", produces = {"application/json"}, method = RequestMethod.POST)
+    ResponseEntity<?> setShowWelcomeInfoFlag(
+            @ApiParam(value = "Show welcome info flag", required = true) @PathVariable Boolean flag,
+            @RequestHeader(value = "Authorization") String bearer) throws IOException {
+
+        UaaUser user = identityUtils.getUserfromBearer(bearer);
+        user.setShowWelcomeInfo(flag);
+        uaaUserRepository.save(user);
+
+        return ResponseEntity.ok().build();
+    }
+
+
 
     private String getKeycloakUserId(PersonType ublPerson) throws Exception {
         List<UaaUser> potentialUser = uaaUserRepository.findByUblPerson(ublPerson);

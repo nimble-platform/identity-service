@@ -143,6 +143,7 @@ public class UblAdapter {
         PersonType ublPerson = uaaUser.getUBLPerson();
         frontEndUser.setFirstname(ublPerson.getFirstName());
         frontEndUser.setLastname(ublPerson.getFamilyName());
+        frontEndUser.setShowWelcomeInfo(uaaUser.getShowWelcomeInfo());
         if (ublPerson.getContact() != null)
             frontEndUser.setEmail(ublPerson.getContact().getElectronicMail());
         frontEndUser.setUserID(ublPerson.getHjid());

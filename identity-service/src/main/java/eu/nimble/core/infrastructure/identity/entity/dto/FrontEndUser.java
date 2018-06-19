@@ -25,6 +25,8 @@ public class FrontEndUser {
 
     private String accessToken = null;
 
+    private Boolean showWelcomeInfo = false;
+
     public String getCompanyName() {
         return companyName;
     }
@@ -113,6 +115,14 @@ public class FrontEndUser {
         this.accessToken = accessToken;
     }
 
+    public Boolean getShowWelcomeInfo() {
+        return showWelcomeInfo;
+    }
+
+    public void setShowWelcomeInfo(Boolean showWelcomeInfo) {
+        this.showWelcomeInfo = showWelcomeInfo;
+    }
+
     @Override
     public String toString() {
         return "FrontEndUser{" +
@@ -123,8 +133,10 @@ public class FrontEndUser {
                 ", dateOfBirth=" + dateOfBirth +
                 ", placeOBirth='" + placeOBirth + '\'' +
                 ", phoneNumber='" + phoneNumber + '\'' +
-                ", userID='" + userID + '\'' +
+                ", userID=" + userID +
                 ", companyID='" + companyID + '\'' +
+                ", companyName='" + companyName + '\'' +
+                ", showWelcomeInfo=" + showWelcomeInfo +
                 '}';
     }
 }
