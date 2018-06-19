@@ -32,7 +32,7 @@ public class UaaUser implements Serializable {
         this.username = username;
         this.ublPerson = ublPerson;
         this.externalID = externalID;
-        this.showWelcomeInfo = false;
+        this.showWelcomeInfo = true;
     }
 
     public String getUsername() {

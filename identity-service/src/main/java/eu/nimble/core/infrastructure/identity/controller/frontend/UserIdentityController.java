@@ -341,8 +341,6 @@ public class UserIdentityController {
         return ResponseEntity.ok().build();
     }
 
-
-
     private String getKeycloakUserId(PersonType ublPerson) throws Exception {
         List<UaaUser> potentialUser = uaaUserRepository.findByUblPerson(ublPerson);
         UaaUser uaaUser = potentialUser.stream().findFirst().orElseThrow(() -> new Exception("Invalid user mapping"));
