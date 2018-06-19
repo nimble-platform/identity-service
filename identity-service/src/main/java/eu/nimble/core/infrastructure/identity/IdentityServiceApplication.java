@@ -1,7 +1,6 @@
 package eu.nimble.core.infrastructure.identity;
 
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.ActivityDataLineType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
@@ -27,7 +26,7 @@ import java.net.URISyntaxException;
 @Configuration
 @EnableDiscoveryClient
 @SpringBootApplication
-@EntityScan(basePackageClasses = {UaaUser.class, PartyType.class, PersonType.class, ActivityDataLineType.class, CodeType.class})
+@EntityScan(basePackageClasses = {UaaUser.class, PartyType.class, PersonType.class, CodeType.class})
 @EnableAutoConfiguration
 public class IdentityServiceApplication extends SpringBootServletInitializer {
 
