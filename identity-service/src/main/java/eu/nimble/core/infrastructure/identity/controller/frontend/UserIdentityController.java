@@ -180,9 +180,9 @@ public class UserIdentityController {
             HttpServletResponse response, HttpServletRequest request) {
 
         // update token
-        String refreshToken = (String) httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY);
-        if (refreshToken == null)
-            return new ResponseEntity<>("Refresh token not found in session", HttpStatus.UNAUTHORIZED);
+//        String refreshToken = (String) httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY);
+//        if (refreshToken == null)
+//            return new ResponseEntity<>("Refresh token not found in session", HttpStatus.UNAUTHORIZED);
 
         Address companyAddress = company.getAddress();
         if (companyAddress == null || company.getName() == null)
@@ -236,11 +236,11 @@ public class UserIdentityController {
         }
 
         // update token
-        OAuth2AccessToken updatedToken = oAuthClient.refreshToken(refreshToken);
-        httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, updatedToken.getRefreshToken().getValue());
+//        OAuth2AccessToken updatedToken = oAuthClient.refreshToken(refreshToken);
+//        httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, updatedToken.getRefreshToken().getValue());
 
-        // set new access token
-        company.setAccessToken(updatedToken.getValue());
+//        // set new access token
+//        company.setAccessToken(updatedToken.getValue());
 
         // inform platform managers
         try {

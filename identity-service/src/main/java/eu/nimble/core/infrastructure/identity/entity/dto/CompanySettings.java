@@ -1,5 +1,8 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by Johannes Innerbichler on 04/07/17.
  */
@@ -12,6 +15,8 @@ public class CompanySettings {
     private Address address;
     private PaymentMeans paymentMeans;
     private DeliveryTerms deliveryTerms;
+    private Integer ppapCompatibilityLevel;
+    private List<CompanyCertificate> certificates = new ArrayList();
 
     public String getVatNumber() {
         return vatNumber;
@@ -67,5 +72,21 @@ public class CompanySettings {
 
     public void setDeliveryTerms(DeliveryTerms deliveryTerms) {
         this.deliveryTerms = deliveryTerms;
+    }
+
+    public Integer getPpapCompatibilityLevel() {
+        return ppapCompatibilityLevel;
+    }
+
+    public void setPpapCompatibilityLevel(Integer ppapCompatibilityLevel) {
+        this.ppapCompatibilityLevel = ppapCompatibilityLevel;
+    }
+
+    public List<CompanyCertificate> getCertificates() {
+        return certificates;
+    }
+
+    public void setCertificates(List<CompanyCertificate> certificates) {
+        this.certificates = certificates;
     }
 }

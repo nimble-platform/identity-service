@@ -3,12 +3,16 @@ package eu.nimble.core.infrastructure.identity.utils;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
+import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.QuantityType;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Created by Johannes Innerbichler on 04/07/17.
@@ -26,6 +30,9 @@ public class UblAdapter {
                 .ifPresent(deliveryTermsType -> settings.setDeliveryTerms(adaptDeliveryTerms(deliveryTermsType)));
         settings.setVerificationInformation(adaptQualityIndicator(party));
         settings.setVatNumber(adaptVatNumber(party));
+        if (party.getPpapCompatibilityLevel() != null)
+            settings.setPpapCompatibilityLevel(party.getPpapCompatibilityLevel().intValue());
+        settings.setCertificates(UblAdapter.adaptCertificates(party.getCertificate()));
 
         return settings;
     }
@@ -206,6 +213,38 @@ public class UblAdapter {
         PartyTaxSchemeType partyTaxSchemeType = new PartyTaxSchemeType();
         partyTaxSchemeType.setTaxScheme(taxScheme);
         return partyTaxSchemeType;
+    }
+
+    public static CertificateType adaptCertificate(MultipartFile certFile, String name, String type, PartyType issuer) throws IOException {
+
+        CodeType codeType = new CodeType();
+        codeType.setName(name);
+
+        BinaryObjectType certificateBinary = new BinaryObjectType();
+        certificateBinary.setValue(certFile.getBytes());
+        certificateBinary.setFileName(certFile.getOriginalFilename());
+        certificateBinary.setMimeCode(certFile.getContentType());
+        AttachmentType attachmentType = new AttachmentType();
+        attachmentType.setEmbeddedDocumentBinaryObject(certificateBinary);
+        DocumentReferenceType documentReferenceType = new DocumentReferenceType();
+        documentReferenceType.setAttachment(attachmentType);
+
+        CertificateType certificateType = new CertificateType();
+//        certificateType.setIssuerParty(issuer);
+        certificateType.setCertificateType(type);
+        certificateType.setCertificateTypeCode(codeType);
+        certificateType.getDocumentReference().add(documentReferenceType);
+
+        return certificateType;
+    }
+
+    public static List<CompanyCertificate> adaptCertificates(List<CertificateType> certificateTypes) {
+        return certificateTypes.stream()
+                .map(certificateType ->
+                        new CompanyCertificate(certificateType.getCertificateTypeCode().getName(),
+                                certificateType.getCertificateType(),
+                                certificateType.getHjid().toString()))
+                .collect(Collectors.toList());
     }
 
     public static String adaptVatNumber(PartyType partyType) {
