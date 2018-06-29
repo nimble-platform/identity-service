@@ -19,10 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -34,6 +31,9 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * Created by Johannes Innerbichler on 26/04/17.
@@ -171,5 +171,20 @@ public class PartyController {
         HttpHeaders responseHeaders = new HttpHeaders();
         responseHeaders.setContentType(MediaType.TEXT_XML);
         return new ResponseEntity<>(xmlParty, responseHeaders, HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "", notes = "Get all party ids", response = String.class, responseContainer = "Set")
+    @RequestMapping(value = "/party/all", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<Set<String>> getAllPartyIds(
+            @ApiParam(value = "Excluded ids") @RequestParam(value = "exclude", required = false) List<String> exclude) {
+
+        Set<String> partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
+                .map(PartyType::getID)
+                .collect(Collectors.toSet());
+
+        if (exclude != null)
+            partyIds.removeAll(exclude);
+
+        return ResponseEntity.ok(partyIds);
     }
 }
