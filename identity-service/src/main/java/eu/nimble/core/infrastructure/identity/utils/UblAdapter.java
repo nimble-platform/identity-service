@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -33,6 +34,10 @@ public class UblAdapter {
         if (party.getPpapCompatibilityLevel() != null)
             settings.setPpapCompatibilityLevel(party.getPpapCompatibilityLevel().intValue());
         settings.setCertificates(UblAdapter.adaptCertificates(party.getCertificate()));
+        Set<String> preferredProductCategories = party.getPreferredItemClassificationCode().stream()
+                .map(CodeType::getValue)
+                .collect(Collectors.toSet());
+        settings.setPreferredProductCategories(preferredProductCategories);
 
         return settings;
     }
@@ -261,5 +266,14 @@ public class UblAdapter {
                 vatNumber = partyTaxScheme.getTaxScheme().getTaxTypeCode().getValue();
         }
         return vatNumber;
+    }
+
+    public static List<CodeType> adaptPreferredCategories(Set<String> categoryCodes) {
+        return categoryCodes.stream()
+                .map(category -> {
+                    CodeType code = new CodeType();
+                    code.setValue(category);
+                    return code;
+                }).collect(Collectors.toList());
     }
 }

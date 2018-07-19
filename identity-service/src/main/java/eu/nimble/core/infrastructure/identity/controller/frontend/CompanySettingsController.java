@@ -2,16 +2,14 @@ package eu.nimble.core.infrastructure.identity.controller.frontend;
 
 import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
-import eu.nimble.core.infrastructure.identity.entity.dto.CompanyCertificate;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.repository.CertificateRepository;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
-import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
-import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
+import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -20,18 +18,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -105,6 +103,10 @@ public class CompanySettingsController {
 
         // set default PPAP level
         party.setPpapCompatibilityLevel(BigDecimal.valueOf(newSettings.getPpapCompatibilityLevel()));
+
+        // set preferred product categories
+        List<CodeType> preferredProductCategories = UblAdapter.adaptPreferredCategories(newSettings.getPreferredProductCategories());
+        party.setPreferredItemClassificationCode(preferredProductCategories);
 
         // set miscellaneous
         party.setWebsiteURI(newSettings.getWebsite());

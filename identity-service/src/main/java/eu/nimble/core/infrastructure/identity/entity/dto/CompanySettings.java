@@ -1,7 +1,9 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by Johannes Innerbichler on 04/07/17.
@@ -17,6 +19,7 @@ public class CompanySettings {
     private DeliveryTerms deliveryTerms;
     private Integer ppapCompatibilityLevel;
     private List<CompanyCertificate> certificates = new ArrayList();
+    private Set<String> preferredProductCategories = new HashSet<>();
 
     public String getVatNumber() {
         return vatNumber;
@@ -88,5 +91,13 @@ public class CompanySettings {
 
     public void setCertificates(List<CompanyCertificate> certificates) {
         this.certificates = certificates;
+    }
+
+    public Set<String> getPreferredProductCategories() {
+        return preferredProductCategories;
+    }
+
+    public void setPreferredProductCategories(Set<String> preferredProductCategories) {
+        this.preferredProductCategories = preferredProductCategories;
     }
 }
