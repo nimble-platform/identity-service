@@ -38,7 +38,7 @@ logstash:
   uri: ${LOGSTASH_URI:localhost:5000}
 
 nimble:
-  corsEnabled: false
+  corsEnabled: ${CORS_ENBALED:false}
   uaa:
     url: ${UAA_URI:http://localhost:9090}
     clientid: ${UAA_CLIENT_ID:sultans}

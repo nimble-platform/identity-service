@@ -90,12 +90,12 @@ public class CompanySettingsController {
         logger.debug("Changing settings for party with Id {}", party.getHjid());
 
         // set delivery terms
-        DeliveryTermsType deliveryTerms = UblAdapter.adaptDeliveryTerms(newSettings.getDeliveryTerms());
-        party.setDeliveryTerms(UblUtils.toModifyableList(deliveryTerms));
+        List<DeliveryTermsType> deliveryTerms = newSettings.getDeliveryTerms().stream().map(UblAdapter::adaptDeliveryTerms).collect(Collectors.toList());
+        party.setDeliveryTerms(deliveryTerms);
 
         // set payment means
-        PaymentMeansType paymentMeansType = UblAdapter.adaptPaymentMeans(newSettings.getPaymentMeans());
-        party.setPaymentMeans(UblUtils.toModifyableList(paymentMeansType));
+        List<PaymentMeansType> paymentMeans = newSettings.getPaymentMeans().stream().map(UblAdapter::adaptPaymentMeans).collect(Collectors.toList());
+        party.setPaymentMeans(paymentMeans);
 
         // set address
         AddressType companyAddress = UblAdapter.adaptAddress(newSettings.getAddress());

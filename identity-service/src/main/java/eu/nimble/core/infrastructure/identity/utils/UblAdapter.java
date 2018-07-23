@@ -26,18 +26,36 @@ public class UblAdapter {
         settings.setName(party.getName());
         settings.setWebsite(party.getWebsiteURI());
         settings.setAddress(adaptAddress(party.getPostalAddress()));
-        party.getPaymentMeans().stream().findFirst().ifPresent(means -> settings.setPaymentMeans(adaptPaymentMeans(means)));
-        party.getDeliveryTerms().stream().findFirst()
-                .ifPresent(deliveryTermsType -> settings.setDeliveryTerms(adaptDeliveryTerms(deliveryTermsType)));
+
+        // set payment means
+        List<PaymentMeans> paymentMeans = party.getPaymentMeans().stream()
+                .map(UblAdapter::adaptPaymentMeans)
+                .collect(Collectors.toList());
+        settings.setPaymentMeans(paymentMeans);
+
+        // set delivery terms
+        List<DeliveryTerms> deliveryTerms = party.getDeliveryTerms().stream()
+                .map(UblAdapter::adaptDeliveryTerms)
+                .collect(Collectors.toList());
+        settings.setDeliveryTerms(deliveryTerms);
+
         settings.setVerificationInformation(adaptQualityIndicator(party));
         settings.setVatNumber(adaptVatNumber(party));
         if (party.getPpapCompatibilityLevel() != null)
             settings.setPpapCompatibilityLevel(party.getPpapCompatibilityLevel().intValue());
         settings.setCertificates(UblAdapter.adaptCertificates(party.getCertificate()));
+
+        // set preferred product categories
         Set<String> preferredProductCategories = party.getPreferredItemClassificationCode().stream()
                 .map(CodeType::getValue)
                 .collect(Collectors.toSet());
         settings.setPreferredProductCategories(preferredProductCategories);
+
+        // set industry indicators
+        List<String> cnae = party.getCNAE().stream().map(CodeType::getValue).collect(Collectors.toList());
+        settings.setCnae(cnae);
+        List<String> industrySectors = party.getIndustrySector().stream().map(CodeType::getValue).collect(Collectors.toList());
+        settings.setIndustrySectors(industrySectors);
 
         return settings;
     }
@@ -205,9 +223,7 @@ public class UblAdapter {
         if (party == null)
             return null;
         Optional<QualityIndicatorType> verificationInformationOpt = party.getQualityIndicator().stream().findFirst();
-        if (verificationInformationOpt.isPresent())
-            return verificationInformationOpt.get().getQualityParameter();
-        return null;
+        return verificationInformationOpt.map(QualityIndicatorType::getQualityParameter).orElse(null);
     }
 
     public static PartyTaxSchemeType adaptTaxSchema(String vatNumber) {

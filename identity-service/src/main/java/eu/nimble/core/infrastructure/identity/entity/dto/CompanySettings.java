@@ -1,5 +1,7 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -15,11 +17,13 @@ public class CompanySettings {
     private String verificationInformation;
     private String website;
     private Address address;
-    private PaymentMeans paymentMeans;
-    private DeliveryTerms deliveryTerms;
+    private List<PaymentMeans> paymentMeans = new ArrayList<>();
+    private List<DeliveryTerms> deliveryTerms = new ArrayList<>();
     private Integer ppapCompatibilityLevel;
-    private List<CompanyCertificate> certificates = new ArrayList();
+    private List<CompanyCertificate> certificates = new ArrayList<>();
     private Set<String> preferredProductCategories = new HashSet<>();
+    private List<String> cnae  = new ArrayList<>();
+    private List<String> industrySectors = new ArrayList<>();
 
     public String getVatNumber() {
         return vatNumber;
@@ -45,11 +49,11 @@ public class CompanySettings {
         this.website = website;
     }
 
-    public PaymentMeans getPaymentMeans() {
+    public List<PaymentMeans> getPaymentMeans() {
         return paymentMeans;
     }
 
-    public void setPaymentMeans(PaymentMeans paymentMeans) {
+    public void setPaymentMeans(List<PaymentMeans> paymentMeans) {
         this.paymentMeans = paymentMeans;
     }
 
@@ -69,11 +73,11 @@ public class CompanySettings {
         this.name = name;
     }
 
-    public DeliveryTerms getDeliveryTerms() {
+    public List<DeliveryTerms> getDeliveryTerms() {
         return deliveryTerms;
     }
 
-    public void setDeliveryTerms(DeliveryTerms deliveryTerms) {
+    public void setDeliveryTerms(List<DeliveryTerms> deliveryTerms) {
         this.deliveryTerms = deliveryTerms;
     }
 
@@ -99,5 +103,21 @@ public class CompanySettings {
 
     public void setPreferredProductCategories(Set<String> preferredProductCategories) {
         this.preferredProductCategories = preferredProductCategories;
+    }
+
+    public List<String> getCnae() {
+        return cnae;
+    }
+
+    public void setCnae(List<String> cnae) {
+        this.cnae = cnae;
+    }
+
+    public List<String> getIndustrySectors() {
+        return industrySectors;
+    }
+
+    public void setIndustrySectors(List<String> industrySectors) {
+        this.industrySectors = industrySectors;
     }
 }
