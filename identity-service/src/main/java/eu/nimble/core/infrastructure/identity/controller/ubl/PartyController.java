@@ -186,7 +186,7 @@ public class PartyController {
         if (exclude != null)
             partyIds = partyIds.stream().filter(p -> !exclude.contains(p.getIdentifier())).collect(Collectors.toSet());
 
-g        return ResponseEntity.ok(partyIds);
+        return ResponseEntity.ok(partyIds);
     }
 
     private static class PartyTuple {
