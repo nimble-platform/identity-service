@@ -11,6 +11,7 @@ import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -173,18 +174,36 @@ public class PartyController {
         return new ResponseEntity<>(xmlParty, responseHeaders, HttpStatus.OK);
     }
 
-    @ApiOperation(value = "", notes = "Get all party ids", response = String.class, responseContainer = "Set")
+    @ApiOperation(value = "", notes = "Get all party ids and name. Returns id-name tuples.", response = PartyTuple.class, responseContainer = "Set")
     @RequestMapping(value = "/party/all", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<Set<String>> getAllPartyIds(
+    ResponseEntity<Set<PartyTuple> > getAllPartyIds(
             @ApiParam(value = "Excluded ids") @RequestParam(value = "exclude", required = false) List<String> exclude) {
 
-        Set<String> partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
-                .map(PartyType::getID)
+        Set<PartyTuple> partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
+                .map(p -> new PartyTuple(p.getID(), p.getName()))
                 .collect(Collectors.toSet());
 
         if (exclude != null)
-            partyIds.removeAll(exclude);
+            partyIds = partyIds.stream().filter(p -> !exclude.contains(p.getIdentifier())).collect(Collectors.toSet());
 
-        return ResponseEntity.ok(partyIds);
+g        return ResponseEntity.ok(partyIds);
+    }
+
+    private static class PartyTuple {
+        private String identifier;
+        private String name;
+
+        public PartyTuple(String identifier, String name) {
+            this.identifier = identifier;
+            this.name = name;
+        }
+
+        public String getIdentifier() {
+            return identifier;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 }
