@@ -2,9 +2,7 @@ package eu.nimble.core.infrastructure.identity.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
-import org.hibernate.validator.constraints.NotBlank;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -146,25 +144,25 @@ public class NegotiationSettings implements Serializable {
         private Long id;
 
         @Column
-        private Long start;
+        private Long rangeStart;
 
         @Column
-        private Long end;
+        private Long rangeEnd;
 
-        public Range(long from, long to) {
-            this.start = from;
-            this.end = to;
+        public Range(long start, long end) {
+            this.rangeStart = start;
+            this.rangeEnd = end;
         }
 
         public Range() {
         }
 
-        public long getStart() {
-            return start;
+        public long getRangeStart() {
+            return rangeStart;
         }
 
-        public long getEnd() {
-            return end;
+        public long getRangeEnd() {
+            return rangeEnd;
         }
     }
 }
