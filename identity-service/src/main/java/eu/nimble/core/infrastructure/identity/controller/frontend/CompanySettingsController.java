@@ -1,9 +1,13 @@
 package eu.nimble.core.infrastructure.identity.controller.frontend;
 
+import com.sun.org.apache.xpath.internal.operations.Neg;
 import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
+import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.repository.CertificateRepository;
+import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
@@ -25,6 +29,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.persistence.CascadeType;
+import javax.persistence.ElementCollection;
+import javax.persistence.FetchType;
+import javax.persistence.OneToOne;
+import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -49,6 +59,9 @@ public class CompanySettingsController {
     private CertificateRepository certificateRepository;
 
     @Autowired
+    private NegotiationSettingsRepository negotiationSettingsRepository;
+
+    @Autowired
     private IdentityUtils identityUtils;
 
     @ApiOperation(value = "Retrieve company settings", response = CompanySettings.class)
@@ -67,7 +80,9 @@ public class CompanySettingsController {
 
         logger.debug("Returning requested settings for party with Id {}", party.get().getHjid());
 
-        CompanySettings settings = UblAdapter.adaptCompanySettings(party.get());
+
+        NegotiationSettings negotiationSettings = findOrCreateNegotiationSettings(party.get());
+        CompanySettings settings = UblAdapter.adaptCompanySettings(party.get(), negotiationSettings);
         return new ResponseEntity<>(settings, HttpStatus.OK);
     }
 
@@ -193,5 +208,56 @@ public class CompanySettingsController {
         certificateRepository.delete(certificateId);
 
         return ResponseEntity.ok().build();
+    }
+
+
+    @ApiOperation(value = "Update negotiation settings")
+    @RequestMapping(value = "/negotiation", method = RequestMethod.PUT)
+    ResponseEntity<?> updateNegotiationSettings(
+            @RequestHeader(value = "Authorization") String bearer,
+            @ApiParam(value = "Settings to update.", required = true) @RequestBody NegotiationSettings newSettings) throws IOException {
+
+        // find company
+        UaaUser user = identityUtils.getUserfromBearer(bearer);
+        Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(user);
+        if (companyOpt.isPresent() == false)
+            ResponseEntity.notFound().build();
+        PartyType company = companyOpt.get();
+
+        // query existing settings
+        NegotiationSettings existingSettings = findOrCreateNegotiationSettings(company);
+
+        // update settings
+        newSettings.setCompany(company);
+        newSettings.setId(existingSettings.getId());
+        negotiationSettingsRepository.save(newSettings);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @ApiOperation(value = "Get negotiation settings", response = NegotiationSettings.class)
+    @RequestMapping(value = "/negotiation", method = RequestMethod.GET, produces = "application/json")
+    ResponseEntity<?> getNegotiationSettings(
+            @RequestHeader(value = "Authorization") String bearer) throws IOException {
+
+        // find company
+        UaaUser user = identityUtils.getUserfromBearer(bearer);
+        Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(user);
+        if (companyOpt.isPresent() == false)
+            ResponseEntity.notFound().build();
+        PartyType company = companyOpt.get();
+
+        NegotiationSettings negotiationSettings = findOrCreateNegotiationSettings(company);
+        return ResponseEntity.ok().body(negotiationSettings);
+    }
+
+    private NegotiationSettings findOrCreateNegotiationSettings(PartyType company) {
+        NegotiationSettings negotiationSettings = negotiationSettingsRepository.findOneByCompany(company);
+        if (negotiationSettings == null) {
+            negotiationSettings = new NegotiationSettings();
+            negotiationSettings.setCompany(company);
+            negotiationSettings = negotiationSettingsRepository.save(negotiationSettings);
+        }
+        return negotiationSettings;
     }
 }

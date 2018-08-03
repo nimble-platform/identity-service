@@ -5,9 +5,9 @@ spring:
     name: identity-service
   cloud:
     config:
+      enabled: ${CONFIG_SERVER_ENABLED:true}
       uri: ${CONFIG_SERVER_URI:http://localhost:8888}
       failFast: ${CONFIG_SERVER_FAILFAST:false}
-      enabled: ${CONFIG_SERVER_ENABLED:true}
     discovery:
       enabled: ${DISCOVERY_ENABLED:false}
   jpa:

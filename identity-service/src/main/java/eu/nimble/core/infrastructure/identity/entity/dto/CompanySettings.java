@@ -1,6 +1,6 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -24,6 +24,7 @@ public class CompanySettings {
     private Set<String> preferredProductCategories = new HashSet<>();
     private List<String> cnae  = new ArrayList<>();
     private List<String> industrySectors = new ArrayList<>();
+    private NegotiationSettings negotiationSettings;
 
     public String getVatNumber() {
         return vatNumber;
@@ -119,5 +120,13 @@ public class CompanySettings {
 
     public void setIndustrySectors(List<String> industrySectors) {
         this.industrySectors = industrySectors;
+    }
+
+    public NegotiationSettings getNegotiationSettings() {
+        return negotiationSettings;
+    }
+
+    public void setNegotiationSettings(NegotiationSettings negotiationSettings) {
+        this.negotiationSettings = negotiationSettings;
     }
 }

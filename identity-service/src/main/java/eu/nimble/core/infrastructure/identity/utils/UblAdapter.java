@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.utils;
 
+import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("WeakerAccess")
 public class UblAdapter {
 
-    public static CompanySettings adaptCompanySettings(PartyType party) {
+    public static CompanySettings adaptCompanySettings(PartyType party, NegotiationSettings negotiationSettings) {
         CompanySettings settings = new CompanySettings();
         settings.setName(party.getName());
         settings.setWebsite(party.getWebsiteURI());
@@ -56,6 +57,8 @@ public class UblAdapter {
         settings.setCnae(cnae);
         List<String> industrySectors = party.getIndustrySector().stream().map(CodeType::getValue).collect(Collectors.toList());
         settings.setIndustrySectors(industrySectors);
+
+        settings.setNegotiationSettings(negotiationSettings);
 
         return settings;
     }
