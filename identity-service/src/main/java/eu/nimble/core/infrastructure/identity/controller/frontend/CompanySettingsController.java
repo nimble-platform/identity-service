@@ -117,7 +117,8 @@ public class CompanySettingsController {
         party.setPostalAddress(companyAddress);
 
         // set default PPAP level
-        party.setPpapCompatibilityLevel(BigDecimal.valueOf(newSettings.getPpapCompatibilityLevel()));
+        int ppapLevel = newSettings.getPpapCompatibilityLevel() != null ? newSettings.getPpapCompatibilityLevel() : 0;
+        party.setPpapCompatibilityLevel(BigDecimal.valueOf(ppapLevel));
 
         // set preferred product categories
         List<CodeType> preferredProductCategories = UblAdapter.adaptPreferredCategories(newSettings.getPreferredProductCategories());
