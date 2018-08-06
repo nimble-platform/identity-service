@@ -180,11 +180,6 @@ public class UserIdentityController {
             @RequestHeader(value = "Authorization") String bearer,
             HttpServletResponse response, HttpServletRequest request) {
 
-        // update token
-        String refreshToken = (String) httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY);
-        if (refreshToken == null)
-            return new ResponseEntity<>("Refresh token not found in session", HttpStatus.UNAUTHORIZED);
-
         Address companyAddress = company.getAddress();
         if (companyAddress == null || company.getName() == null)
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -235,13 +230,6 @@ public class UserIdentityController {
             logger.error("Could not set role for user " + userParty.getID(), e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        // update token
-        OAuth2AccessToken updatedToken = oAuthClient.refreshToken(refreshToken);
-        httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, updatedToken.getRefreshToken().getValue());
-
-        // set new access token
-        company.setAccessToken(updatedToken.getValue());
 
         // inform platform managers
         try {

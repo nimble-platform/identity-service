@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/company-settings")
+@SuppressWarnings("SpringJavaAutowiredFieldsWarningInspection")
 @Api(value = "company-settings", description = "API for handling settings of companies.")
 public class CompanySettingsController {
 
@@ -243,9 +244,12 @@ public class CompanySettingsController {
 
         // find company
         UaaUser user = identityUtils.getUserfromBearer(bearer);
+        if( user == null )
+            return ResponseEntity.notFound().build();
+
         Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(user);
         if (companyOpt.isPresent() == false)
-            ResponseEntity.notFound().build();
+            return ResponseEntity.notFound().build();
         PartyType company = companyOpt.get();
 
         NegotiationSettings negotiationSettings = findOrCreateNegotiationSettings(company);

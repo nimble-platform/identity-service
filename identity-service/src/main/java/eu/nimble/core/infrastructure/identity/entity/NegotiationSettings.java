@@ -2,6 +2,7 @@ package eu.nimble.core.infrastructure.identity.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 
 import javax.persistence.*;
@@ -26,20 +27,20 @@ public class NegotiationSettings implements Serializable {
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private PartyType company;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Range deliveryPeriodRange;
+    @ElementCollection(targetClass=Range.class)
+    private List<Range> deliveryPeriodRanges = new ArrayList<>();
 
     @ElementCollection(targetClass=String.class)
-    private List<String> validDeliveryPeriodUnits = new ArrayList<>();
+    private List<String> deliveryPeriodUnits = new ArrayList<>();
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Range warrantyPeriodRange;
+    @ElementCollection(targetClass=Range.class)
+    private List<Range> warrantyPeriodRange = new ArrayList<>();
 
     @ElementCollection(targetClass=String.class)
     private List<String> warrantyPeriodUnits = new ArrayList<>();
 
     @ElementCollection(targetClass=String.class)
-    private List<String> validIncoterms = new ArrayList<>();
+    private List<String> incoterms = new ArrayList<>();
 
     @ElementCollection(targetClass=String.class)
     private List<String> paymentTerms = new ArrayList<>();
@@ -47,15 +48,14 @@ public class NegotiationSettings implements Serializable {
     @ElementCollection(targetClass=String.class)
     private List<String> paymentMeans = new ArrayList<>();
 
-    public NegotiationSettings(PartyType company, Range deliveryPeriodRange, List<String> validDeliveryPeriodUnits, Range warrantyPeriodRange,
-                               List<String> warrantyPeriodUnits, List<String> validIncoterms, List<String> paymentTerms,
-                               List<String> paymentMeans) {
+    public NegotiationSettings(PartyType company, List<Range> deliveryPeriodRanges, List<String> deliveryPeriodUnits, List<Range> warrantyPeriodRange,
+                               List<String> warrantyPeriodUnits, List<String> incoterms, List<String> paymentTerms, List<String> paymentMeans) {
         this.company = company;
-        this.deliveryPeriodRange = deliveryPeriodRange;
-        this.validDeliveryPeriodUnits = validDeliveryPeriodUnits;
+        this.deliveryPeriodRanges = deliveryPeriodRanges;
+        this.deliveryPeriodUnits = deliveryPeriodUnits;
         this.warrantyPeriodRange = warrantyPeriodRange;
         this.warrantyPeriodUnits = warrantyPeriodUnits;
-        this.validIncoterms = validIncoterms;
+        this.incoterms = incoterms;
         this.paymentTerms = paymentTerms;
         this.paymentMeans = paymentMeans;
     }
@@ -79,27 +79,27 @@ public class NegotiationSettings implements Serializable {
         this.company = company;
     }
 
-    public Range getDeliveryPeriodRange() {
-        return deliveryPeriodRange;
+    public List<Range> getDeliveryPeriodRanges() {
+        return deliveryPeriodRanges;
     }
 
-    public void setDeliveryPeriodRange(Range deliveryPeriodRange) {
-        this.deliveryPeriodRange = deliveryPeriodRange;
+    public void setDeliveryPeriodRanges(List<Range> deliveryPeriodRanges) {
+        this.deliveryPeriodRanges = deliveryPeriodRanges;
     }
 
-    public List<String> getValidDeliveryPeriodUnits() {
-        return validDeliveryPeriodUnits;
+    public List<String> getDeliveryPeriodUnits() {
+        return deliveryPeriodUnits;
     }
 
-    public void setValidDeliveryPeriodUnits(List<String> validDeliveryPeriodUnits) {
-        this.validDeliveryPeriodUnits = validDeliveryPeriodUnits;
+    public void setDeliveryPeriodUnits(List<String> deliveryPeriodUnits) {
+        this.deliveryPeriodUnits = deliveryPeriodUnits;
     }
 
-    public Range getWarrantyPeriodRange() {
+    public List<Range> getWarrantyPeriodRange() {
         return warrantyPeriodRange;
     }
 
-    public void setWarrantyPeriodRange(Range warrantyPeriodRange) {
+    public void setWarrantyPeriodRange(List<Range> warrantyPeriodRange) {
         this.warrantyPeriodRange = warrantyPeriodRange;
     }
 
@@ -111,12 +111,12 @@ public class NegotiationSettings implements Serializable {
         this.warrantyPeriodUnits = warrantyPeriodUnits;
     }
 
-    public List<String> getValidIncoterms() {
-        return validIncoterms;
+    public List<String> getIncoterms() {
+        return incoterms;
     }
 
-    public void setValidIncoterms(List<String> validIncoterms) {
-        this.validIncoterms = validIncoterms;
+    public void setIncoterms(List<String> incoterms) {
+        this.incoterms = incoterms;
     }
 
     public List<String> getPaymentTerms() {
@@ -144,9 +144,11 @@ public class NegotiationSettings implements Serializable {
         private Long id;
 
         @Column
+        @JsonProperty("start")
         private Long rangeStart;
 
         @Column
+        @JsonProperty("end")
         private Long rangeEnd;
 
         public Range(long start, long end) {
