@@ -150,7 +150,7 @@ public class CompanySettingsController {
         company.getCertificate().add(certificate);
         partyRepository.save(company);
 
-        return ResponseEntity.ok().body(company.getCertificate());
+        return ResponseEntity.ok().build();
     }
 
 
