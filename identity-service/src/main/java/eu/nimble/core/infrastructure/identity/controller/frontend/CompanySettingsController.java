@@ -26,6 +26,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.transaction.Transactional;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -153,7 +154,7 @@ public class CompanySettingsController {
         return ResponseEntity.ok().build();
     }
 
-
+    @Transactional
     @ApiOperation(value = "Certificate download")
     @RequestMapping(value = "/certificate/{certificateId}", method = RequestMethod.GET)
     ResponseEntity<?> downloadCertificate(
