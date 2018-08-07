@@ -1,16 +1,13 @@
 package eu.nimble.core.infrastructure.identity.controller.frontend;
 
-import com.sun.org.apache.xpath.internal.operations.Neg;
 import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
-import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.repository.CertificateRepository;
 import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
-import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
@@ -29,12 +26,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.persistence.CascadeType;
-import javax.persistence.ElementCollection;
-import javax.persistence.FetchType;
-import javax.persistence.OneToOne;
-import javax.servlet.http.HttpServletRequest;
-import javax.validation.Valid;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -150,10 +141,7 @@ public class CompanySettingsController {
 //            return new ResponseEntity<>("Only legal representatives are allowed add certificates", HttpStatus.UNAUTHORIZED);
 
         UaaUser user = identityUtils.getUserfromBearer(bearer);
-        Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(user);
-        if (companyOpt.isPresent() == false)
-            ResponseEntity.notFound().build();
-        PartyType company = companyOpt.get();
+        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(CompanyNotFoundException::new);
 
         // create new certificate
         CertificateType certificate = UblAdapter.adaptCertificate(file, name, type, company);
@@ -194,10 +182,7 @@ public class CompanySettingsController {
             @ApiParam(value = "Id of certificate.", required = true) @PathVariable Long certificateId) throws IOException {
 
         UaaUser user = identityUtils.getUserfromBearer(bearer);
-        Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(user);
-        if (companyOpt.isPresent() == false)
-            ResponseEntity.notFound().build();
-        PartyType company = companyOpt.get();
+        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(CompanyNotFoundException::new);
 
         // update list of certificates
         List<CertificateType> filteredCerts = company.getCertificate().stream()
@@ -221,10 +206,7 @@ public class CompanySettingsController {
 
         // find company
         UaaUser user = identityUtils.getUserfromBearer(bearer);
-        Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(user);
-        if (companyOpt.isPresent() == false)
-            ResponseEntity.notFound().build();
-        PartyType company = companyOpt.get();
+        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(CompanyNotFoundException::new);
 
         // query existing settings
         NegotiationSettings existingSettings = findOrCreateNegotiationSettings(company);
@@ -238,20 +220,11 @@ public class CompanySettingsController {
     }
 
     @ApiOperation(value = "Get negotiation settings", response = NegotiationSettings.class)
-    @RequestMapping(value = "/negotiation", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/negotiation/{companyID}", method = RequestMethod.GET, produces = "application/json")
     ResponseEntity<?> getNegotiationSettings(
-            @RequestHeader(value = "Authorization") String bearer) throws IOException {
+            @ApiParam(value = "Id of company to retrieve settings from.", required = true) @PathVariable Long companyID) {
 
-        // find company
-        UaaUser user = identityUtils.getUserfromBearer(bearer);
-        if( user == null )
-            return ResponseEntity.notFound().build();
-
-        Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(user);
-        if (companyOpt.isPresent() == false)
-            return ResponseEntity.notFound().build();
-        PartyType company = companyOpt.get();
-
+        PartyType company = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(CompanyNotFoundException::new);
         NegotiationSettings negotiationSettings = findOrCreateNegotiationSettings(company);
         return ResponseEntity.ok().body(negotiationSettings);
     }
@@ -264,5 +237,9 @@ public class CompanySettingsController {
             negotiationSettings = negotiationSettingsRepository.save(negotiationSettings);
         }
         return negotiationSettings;
+    }
+
+    @ResponseStatus(code = HttpStatus.NOT_FOUND, reason = "company not found")
+    private static class CompanyNotFoundException extends RuntimeException {
     }
 }
