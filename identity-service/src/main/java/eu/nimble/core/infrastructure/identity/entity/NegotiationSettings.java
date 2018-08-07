@@ -34,7 +34,7 @@ public class NegotiationSettings implements Serializable {
     private List<String> deliveryPeriodUnits = new ArrayList<>();
 
     @ElementCollection(targetClass=Range.class)
-    private List<Range> warrantyPeriodRange = new ArrayList<>();
+    private List<Range> warrantyPeriodRanges = new ArrayList<>();
 
     @ElementCollection(targetClass=String.class)
     private List<String> warrantyPeriodUnits = new ArrayList<>();
@@ -53,7 +53,7 @@ public class NegotiationSettings implements Serializable {
         this.company = company;
         this.deliveryPeriodRanges = deliveryPeriodRanges;
         this.deliveryPeriodUnits = deliveryPeriodUnits;
-        this.warrantyPeriodRange = warrantyPeriodRange;
+        this.warrantyPeriodRanges = warrantyPeriodRange;
         this.warrantyPeriodUnits = warrantyPeriodUnits;
         this.incoterms = incoterms;
         this.paymentTerms = paymentTerms;
@@ -95,12 +95,12 @@ public class NegotiationSettings implements Serializable {
         this.deliveryPeriodUnits = deliveryPeriodUnits;
     }
 
-    public List<Range> getWarrantyPeriodRange() {
-        return warrantyPeriodRange;
+    public List<Range> getWarrantyPeriodRanges() {
+        return warrantyPeriodRanges;
     }
 
-    public void setWarrantyPeriodRange(List<Range> warrantyPeriodRange) {
-        this.warrantyPeriodRange = warrantyPeriodRange;
+    public void setWarrantyPeriodRanges(List<Range> warrantyPeriodRanges) {
+        this.warrantyPeriodRanges = warrantyPeriodRanges;
     }
 
     public List<String> getWarrantyPeriodUnits() {
