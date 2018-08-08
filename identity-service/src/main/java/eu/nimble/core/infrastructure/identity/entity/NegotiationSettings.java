@@ -16,6 +16,7 @@ import java.util.List;
  */
 @Entity
 @JsonInclude
+@SuppressWarnings("unused")
 public class NegotiationSettings implements Serializable {
 
     @Id
@@ -24,28 +25,30 @@ public class NegotiationSettings implements Serializable {
     private Long id;
 
     @JsonIgnore
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private PartyType company;
 
-    @ElementCollection(targetClass=Range.class)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "negotiation_settings_id")
     private List<Range> deliveryPeriodRanges = new ArrayList<>();
 
-    @ElementCollection(targetClass=String.class)
+    @ElementCollection(targetClass = String.class)
     private List<String> deliveryPeriodUnits = new ArrayList<>();
 
-    @ElementCollection(targetClass=Range.class)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "negotiation_settings_id")
     private List<Range> warrantyPeriodRanges = new ArrayList<>();
 
-    @ElementCollection(targetClass=String.class)
+    @ElementCollection(targetClass = String.class)
     private List<String> warrantyPeriodUnits = new ArrayList<>();
 
-    @ElementCollection(targetClass=String.class)
+    @ElementCollection(targetClass = String.class)
     private List<String> incoterms = new ArrayList<>();
 
-    @ElementCollection(targetClass=String.class)
+    @ElementCollection(targetClass = String.class)
     private List<String> paymentTerms = new ArrayList<>();
 
-    @ElementCollection(targetClass=String.class)
+    @ElementCollection(targetClass = String.class)
     private List<String> paymentMeans = new ArrayList<>();
 
     public NegotiationSettings(PartyType company, List<Range> deliveryPeriodRanges, List<String> deliveryPeriodUnits, List<Range> warrantyPeriodRange,
@@ -133,6 +136,29 @@ public class NegotiationSettings implements Serializable {
 
     public void setPaymentMeans(List<String> paymentMeans) {
         this.paymentMeans = paymentMeans;
+    }
+
+    public void update(NegotiationSettings newSettings) {
+        this.deliveryPeriodRanges.clear();
+        this.deliveryPeriodRanges.addAll(newSettings.getDeliveryPeriodRanges());
+
+        this.deliveryPeriodUnits.clear();
+        this.deliveryPeriodUnits.addAll(newSettings.getDeliveryPeriodUnits());
+
+        this.warrantyPeriodRanges.clear();
+        this.warrantyPeriodRanges.addAll(newSettings.getWarrantyPeriodRanges());
+
+        this.warrantyPeriodUnits.clear();
+        this.warrantyPeriodUnits.addAll(newSettings.getWarrantyPeriodUnits());
+
+        this.incoterms.clear();
+        this.incoterms.addAll(newSettings.getIncoterms());
+
+        this.paymentMeans.clear();
+        this.paymentMeans.addAll(newSettings.getPaymentMeans());
+
+        this.paymentTerms.clear();
+        this.paymentTerms.addAll(newSettings.getPaymentTerms());
     }
 
     @Entity

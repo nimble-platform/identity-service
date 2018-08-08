@@ -23,10 +23,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.transaction.Transactional;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -198,7 +198,6 @@ public class CompanySettingsController {
         return ResponseEntity.ok().build();
     }
 
-
     @ApiOperation(value = "Update negotiation settings")
     @RequestMapping(value = "/negotiation", method = RequestMethod.PUT)
     ResponseEntity<?> updateNegotiationSettings(
@@ -209,13 +208,10 @@ public class CompanySettingsController {
         UaaUser user = identityUtils.getUserfromBearer(bearer);
         PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(CompanyNotFoundException::new);
 
-        // query existing settings
-        NegotiationSettings existingSettings = findOrCreateNegotiationSettings(company);
-
         // update settings
-        newSettings.setCompany(company);
-        newSettings.setId(existingSettings.getId());
-        negotiationSettingsRepository.save(newSettings);
+        NegotiationSettings existingSettings = findOrCreateNegotiationSettings(company);
+        existingSettings.update(newSettings);
+        negotiationSettingsRepository.save(existingSettings);
 
         return ResponseEntity.ok().build();
     }
