@@ -159,11 +159,7 @@ public class CompanySettingsController {
 
     @ApiOperation(value = "Certificate download")
     @RequestMapping(value = "/certificate/{certificateId}", method = RequestMethod.GET)
-    ResponseEntity<?> downloadCertificate(
-            @RequestHeader(value = "Authorization") String bearer,
-            @ApiParam(value = "Id of certificate.", required = true) @PathVariable Long certificateId) {
-
-        // ToDo: check if company is associated with user
+    ResponseEntity<?> downloadCertificate(@ApiParam(value = "Id of certificate.", required = true) @PathVariable Long certificateId) {
 
         CertificateType certificateType = certificateService.queryCertificate(certificateId);
         if (certificateType == null)
