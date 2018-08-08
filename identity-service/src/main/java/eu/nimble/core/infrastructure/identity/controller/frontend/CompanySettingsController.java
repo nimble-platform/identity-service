@@ -7,6 +7,7 @@ import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.repository.CertificateRepository;
 import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
+import eu.nimble.core.infrastructure.identity.service.CertificateService;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
@@ -23,7 +24,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -56,6 +56,9 @@ public class CompanySettingsController {
 
     @Autowired
     private IdentityUtils identityUtils;
+
+    @Autowired
+    private CertificateService certificateService;
 
     @ApiOperation(value = "Retrieve company settings", response = CompanySettings.class)
     @RequestMapping(value = "/{companyID}", produces = {"application/json"}, method = RequestMethod.GET)
@@ -154,7 +157,6 @@ public class CompanySettingsController {
         return ResponseEntity.ok().build();
     }
 
-    @Transactional
     @ApiOperation(value = "Certificate download")
     @RequestMapping(value = "/certificate/{certificateId}", method = RequestMethod.GET)
     ResponseEntity<?> downloadCertificate(
@@ -163,7 +165,7 @@ public class CompanySettingsController {
 
         // ToDo: check if company is associated with user
 
-        CertificateType certificateType = certificateRepository.findOne(certificateId);
+        CertificateType certificateType = certificateService.queryCertificate(certificateId);
         if (certificateType == null)
             return ResponseEntity.notFound().build();
 
