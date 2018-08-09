@@ -1,7 +1,7 @@
 package eu.nimble.core.infrastructure.identity.controller;
 
 
-import eu.nimble.core.infrastructure.identity.entity.statistics.PlatformIdentityStatistics;
+import eu.nimble.core.infrastructure.identity.entity.dto.statistics.PlatformIdentityStatistics;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import io.swagger.annotations.Api;

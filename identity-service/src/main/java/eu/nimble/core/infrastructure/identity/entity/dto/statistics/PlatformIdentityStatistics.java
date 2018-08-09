@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity.entity.statistics;
+package eu.nimble.core.infrastructure.identity.entity.dto.statistics;
 
 public class PlatformIdentityStatistics {
 

@@ -28,14 +28,14 @@ public class NegotiationSettings implements Serializable {
     @OneToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private PartyType company;
 
-    @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "negotiation_settings_id")
     private List<Range> deliveryPeriodRanges = new ArrayList<>();
 
     @ElementCollection(targetClass = String.class)
     private List<String> deliveryPeriodUnits = new ArrayList<>();
 
-    @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "negotiation_settings_id")
     private List<Range> warrantyPeriodRanges = new ArrayList<>();
 
