@@ -1,6 +1,5 @@
 package eu.nimble.core.infrastructure.identity.mail;
 
-import eu.nimble.core.infrastructure.identity.controller.frontend.CompanySettingsController;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.AddressType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
@@ -18,7 +17,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 @Service
 public class EmailService {

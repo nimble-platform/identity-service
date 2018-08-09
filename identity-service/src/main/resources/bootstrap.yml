@@ -14,7 +14,7 @@ spring:
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         temp:
@@ -91,3 +91,22 @@ spring:
 
 nimble:
   corsEnabled: true
+
+---
+
+spring:
+  profiles: test
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+  h2:
+    console:
+      enabled: false
+  datasource:
+    name: channeldb
+    driverClassName: org.h2.Driver
+    url: jdbc:h2:mem:channeldb
+    initialize: false
+    username: sa
+    password:

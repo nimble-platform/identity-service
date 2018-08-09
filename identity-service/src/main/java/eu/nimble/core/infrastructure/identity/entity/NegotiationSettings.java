@@ -28,15 +28,15 @@ public class NegotiationSettings implements Serializable {
     @OneToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private PartyType company;
 
+    @JoinTable
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "negotiation_settings_id")
     private List<Range> deliveryPeriodRanges = new ArrayList<>();
 
     @ElementCollection(targetClass = String.class)
     private List<String> deliveryPeriodUnits = new ArrayList<>();
 
+    @JoinTable
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "negotiation_settings_id")
     private List<Range> warrantyPeriodRanges = new ArrayList<>();
 
     @ElementCollection(targetClass = String.class)

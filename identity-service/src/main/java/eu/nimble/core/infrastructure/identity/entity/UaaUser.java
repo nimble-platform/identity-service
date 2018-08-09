@@ -25,7 +25,7 @@ public class UaaUser implements Serializable {
     @ColumnDefault("false")
     private Boolean showWelcomeInfo = false;
 
-    protected UaaUser() {
+    public UaaUser() {
     }
 
     public UaaUser(String username, PersonType ublPerson, String externalID) {

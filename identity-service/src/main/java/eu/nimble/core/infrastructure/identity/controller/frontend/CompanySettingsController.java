@@ -209,7 +209,9 @@ public class CompanySettingsController {
         // update settings
         NegotiationSettings existingSettings = findOrCreateNegotiationSettings(company);
         existingSettings.update(newSettings);
-        negotiationSettingsRepository.save(existingSettings);
+        existingSettings = negotiationSettingsRepository.save(existingSettings);
+
+        logger.info("Updated negotiation settings {} for company {}", existingSettings.getId(), company.getID());
 
         return ResponseEntity.ok().build();
     }
@@ -221,6 +223,9 @@ public class CompanySettingsController {
 
         PartyType company = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(CompanyNotFoundException::new);
         NegotiationSettings negotiationSettings = findOrCreateNegotiationSettings(company);
+
+        logger.info("Fetched negotiation settings {} for company {}", negotiationSettings.getId(), company.getID());
+
         return ResponseEntity.ok().body(negotiationSettings);
     }
 
