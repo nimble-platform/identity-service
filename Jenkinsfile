@@ -10,7 +10,7 @@ node('nimble-jenkins-slave') {
     }
 
     stage('Build Java') {
-        sh 'mvn clean install -DskipTests'
+        sh 'mvn clean install'
     }
 
     if (env.BRANCH_NAME == 'staging') {
