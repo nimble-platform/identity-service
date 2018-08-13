@@ -5,7 +5,10 @@ import eu.nimble.core.infrastructure.identity.IdentityServiceApplication;
 import eu.nimble.core.infrastructure.identity.IdentityUtilsTestConfiguration;
 import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
-import eu.nimble.core.infrastructure.identity.entity.dto.*;
+import eu.nimble.core.infrastructure.identity.entity.dto.Address;
+import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
+import eu.nimble.core.infrastructure.identity.entity.dto.DeliveryTerms;
+import eu.nimble.core.infrastructure.identity.entity.dto.PaymentMeans;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import org.junit.FixMethodOrder;
@@ -17,22 +20,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.hamcrest.Matchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * Created by Johannes Innerbichler on 09.08.18.
@@ -56,7 +53,6 @@ public class CompanySettingsControllerTests {
     private PartyRepository partyRepository;
 
     @Test
-    @DirtiesContext
     public void testCreateCompanySettings() throws Exception {
 
         // GIVEN: existing company on platform
@@ -119,7 +115,6 @@ public class CompanySettingsControllerTests {
     }
 
     @Test
-    @DirtiesContext
     public void testSimpleAddNegotiationSettings() throws Exception {
 
         // GIVEN + WHEN: existing company on platform
@@ -157,7 +152,6 @@ public class CompanySettingsControllerTests {
     }
 
     @Test
-    @DirtiesContext
     public void testSimpleRemoveNegotiationSettings() throws Exception {
 
         // GIVEN: existing company on platform
@@ -189,7 +183,6 @@ public class CompanySettingsControllerTests {
     }
 
     @Test
-    @DirtiesContext
     public void testSimpleUpdateNegotiationSettings() throws Exception {
 
         // GIVEN: existing company on platform
@@ -217,7 +210,6 @@ public class CompanySettingsControllerTests {
     }
 
     @Test
-    @DirtiesContext
     public void testNoHeaderRequest() throws Exception {
 
         // GIVEN: on existing company on platform
