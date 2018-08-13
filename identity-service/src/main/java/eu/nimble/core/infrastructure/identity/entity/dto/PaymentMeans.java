@@ -11,6 +11,13 @@ public class PaymentMeans {
 
     private String instructionNote;
 
+    public PaymentMeans() {
+    }
+
+    public PaymentMeans(String instructionNote) {
+        this.instructionNote = instructionNote;
+    }
+
     public String getInstructionNote() {
         return instructionNote;
     }

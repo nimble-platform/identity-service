@@ -22,9 +22,29 @@ public class CompanySettings {
     private Integer ppapCompatibilityLevel;
     private List<CompanyCertificate> certificates = new ArrayList<>();
     private Set<String> preferredProductCategories = new HashSet<>();
-    private List<String> cnae  = new ArrayList<>();
     private List<String> industrySectors = new ArrayList<>();
     private NegotiationSettings negotiationSettings;
+
+    public CompanySettings() {
+    }
+
+    public CompanySettings(String name, String vatNumber, String verificationInformation, String website, Address address,
+                           List<PaymentMeans> paymentMeans, List<DeliveryTerms> deliveryTerms, Integer ppapCompatibilityLevel,
+                           List<CompanyCertificate> certificates, Set<String> preferredProductCategories,
+                           List<String> industrySectors, NegotiationSettings negotiationSettings) {
+        this.name = name;
+        this.vatNumber = vatNumber;
+        this.verificationInformation = verificationInformation;
+        this.website = website;
+        this.address = address;
+        this.paymentMeans = paymentMeans;
+        this.deliveryTerms = deliveryTerms;
+        this.ppapCompatibilityLevel = ppapCompatibilityLevel;
+        this.certificates = certificates;
+        this.preferredProductCategories = preferredProductCategories;
+        this.industrySectors = industrySectors;
+        this.negotiationSettings = negotiationSettings;
+    }
 
     public String getVatNumber() {
         return vatNumber;
@@ -104,14 +124,6 @@ public class CompanySettings {
 
     public void setPreferredProductCategories(Set<String> preferredProductCategories) {
         this.preferredProductCategories = preferredProductCategories;
-    }
-
-    public List<String> getCnae() {
-        return cnae;
-    }
-
-    public void setCnae(List<String> cnae) {
-        this.cnae = cnae;
     }
 
     public List<String> getIndustrySectors() {

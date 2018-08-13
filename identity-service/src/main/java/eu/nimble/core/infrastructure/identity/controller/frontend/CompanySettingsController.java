@@ -102,6 +102,8 @@ public class CompanySettingsController {
 
         // set delivery terms
         List<DeliveryTermsType> deliveryTerms = newSettings.getDeliveryTerms().stream().map(UblAdapter::adaptDeliveryTerms).collect(Collectors.toList());
+        if (party.getPurchaseTerms() == null)
+            party.setPurchaseTerms(new TradingPreferences());
         party.getPurchaseTerms().setDeliveryTerms(deliveryTerms);   // ToDo: improve for sales terms
 
         // set payment means

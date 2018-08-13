@@ -5,9 +5,9 @@ import eu.nimble.core.infrastructure.identity.IdentityServiceApplication;
 import eu.nimble.core.infrastructure.identity.IdentityUtilsTestConfiguration;
 import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
+import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
-import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,8 +22,12 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -33,6 +37,7 @@ import static org.hamcrest.Matchers.*;
 /**
  * Created by Johannes Innerbichler on 09.08.18.
  */
+@SuppressWarnings("OptionalGetWithoutIsPresent")
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, classes = IdentityServiceApplication.class)
 @AutoConfigureMockMvc
@@ -50,42 +55,61 @@ public class CompanySettingsControllerTests {
     @Autowired
     private PartyRepository partyRepository;
 
-    public NegotiationSettings init() throws Exception {
+    @Test
+    @DirtiesContext
+    public void testCreateCompanySettings() throws Exception {
+
         // GIVEN: existing company on platform
         PartyType company = identityUtils.getCompanyOfUser(null).get();
         partyRepository.save(company);
 
-        // WHEN: changing negotiation settings of company
-        NegotiationSettings negotiationSettings = new NegotiationSettings();
-        negotiationSettings.getWarrantyPeriodUnits().add("weeks");
-        negotiationSettings.getWarrantyPeriodRanges().add(new NegotiationSettings.Range(5, 6));
-        negotiationSettings.getDeliveryPeriodUnits().add("days");
-        negotiationSettings.getDeliveryPeriodUnits().add("weeks");
-        negotiationSettings.getDeliveryPeriodRanges().add(new NegotiationSettings.Range(1, 3));
-        negotiationSettings.getDeliveryPeriodRanges().add(new NegotiationSettings.Range(2, 4));
-        negotiationSettings.getIncoterms().add("inco_1");
-        negotiationSettings.getIncoterms().add("inco_2");
-        negotiationSettings.getPaymentMeans().add("pm_1");
-        negotiationSettings.getPaymentTerms().add("pt_1");
+        // WHEN: updating company settings
+        CompanySettings companySettings = new CompanySettings();
+        companySettings.setName("company name");
+        companySettings.setVatNumber("vat number");
+        companySettings.setVerificationInformation("verification number");
+        companySettings.setWebsite("website");
+        companySettings.setAddress(new Address("street name", "building number", "city name", "postal code", "country"));
+        companySettings.getPaymentMeans().add(new PaymentMeans("instruction note"));
+        companySettings.getDeliveryTerms().add(new DeliveryTerms("special terms", new Address(), 5));
+        companySettings.setPpapCompatibilityLevel(5);
+        companySettings.getPreferredProductCategories().add("category 1");
+        companySettings.getPreferredProductCategories().add("category 2");
+        companySettings.getIndustrySectors().add("industry sector 1");
+        companySettings.getIndustrySectors().add("industry sector 2");
 
         Gson gson = new Gson();
-        this.mockMvc.perform(put("/company-settings/negotiation")
+        this.mockMvc.perform(put("/company-settings/" + company.getID())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(gson.toJson(negotiationSettings))
-                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
-                .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
+                .content(gson.toJson(companySettings)))
+                .andExpect(status().isAccepted());
 
-        negotiationSettings.setCompany(company);
-        return negotiationSettings;
+        // THEN: getting settings should be updated
+        this.mockMvc.perform(get("/company-settings/" + company.getID()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.vatNumber", is("vat number")))
+                .andExpect(jsonPath("$.verificationInformation", is("verification number")))
+                .andExpect(jsonPath("$.website", is("website")))
+                .andExpect(jsonPath("$.address.streetName", is("street name")))
+                .andExpect(jsonPath("$.address.buildingNumber", is("building number")))
+                .andExpect(jsonPath("$.address.cityName", is("city name")))
+                .andExpect(jsonPath("$.address.postalCode", is("postal code")))
+                .andExpect(jsonPath("$.address.country", is("country")))
+                .andExpect(jsonPath("$.certificates.length()", is(0)))
+                .andExpect(jsonPath("$.preferredProductCategories.length()", is(2)))
+                .andExpect(jsonPath("$.preferredProductCategories", hasItem("category 1")))
+                .andExpect(jsonPath("$.preferredProductCategories", hasItem("category 2")))
+                .andExpect(jsonPath("$.verificationInformation", is("verification number")));
     }
 
     @Test
     @DirtiesContext
     public void testSimpleAddNegotiationSettings() throws Exception {
 
-        // GIVEN: existing company on platform
-        NegotiationSettings negotiationSettings = this.init();
+        // GIVEN + WHEN: existing company on platform
+        NegotiationSettings negotiationSettings = this.initNegotiationSettings();
 
         // THEN: settings should be updated
         this.mockMvc.perform(get("/company-settings/negotiation/" + negotiationSettings.getCompany().getID()))
@@ -123,7 +147,7 @@ public class CompanySettingsControllerTests {
     public void testSimpleRemoveNegotiationSettings() throws Exception {
 
         // GIVEN: existing company on platform
-        NegotiationSettings negotiationSettings = this.init();
+        NegotiationSettings negotiationSettings = this.initNegotiationSettings();
 
         // WHEN: setting empty negotiation settings
         NegotiationSettings emptySettings = new NegotiationSettings();
@@ -155,7 +179,7 @@ public class CompanySettingsControllerTests {
     public void testSimpleUpdateNegotiationSettings() throws Exception {
 
         // GIVEN: existing company on platform
-        NegotiationSettings negotiationSettings = this.init();
+        NegotiationSettings negotiationSettings = this.initNegotiationSettings();
 
         // WHEN: setting update negotiation settings
         negotiationSettings.getWarrantyPeriodUnits().add("new unit");
@@ -177,6 +201,7 @@ public class CompanySettingsControllerTests {
                 .andExpect(jsonPath("$.warrantyPeriodUnits[0]", is("weeks")))
                 .andExpect(jsonPath("$.warrantyPeriodUnits[1]", is("new unit")));
     }
+
     @Test
     @DirtiesContext
     public void testNoHeaderRequest() throws Exception {
@@ -190,7 +215,37 @@ public class CompanySettingsControllerTests {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(gson.toJson(negotiationSettings))
                 .accept(MediaType.APPLICATION_JSON))
-        // THEN: 4xx error should occur
+                // THEN: 4xx error should occur
                 .andExpect(status().is4xxClientError());
+    }
+
+    public NegotiationSettings initNegotiationSettings() throws Exception {
+        // GIVEN: existing company on platform
+        PartyType company = identityUtils.getCompanyOfUser(null).get();
+        partyRepository.save(company);
+
+        // WHEN: changing negotiation settings of company
+        NegotiationSettings negotiationSettings = new NegotiationSettings();
+        negotiationSettings.getWarrantyPeriodUnits().add("weeks");
+        negotiationSettings.getWarrantyPeriodRanges().add(new NegotiationSettings.Range(5, 6));
+        negotiationSettings.getDeliveryPeriodUnits().add("days");
+        negotiationSettings.getDeliveryPeriodUnits().add("weeks");
+        negotiationSettings.getDeliveryPeriodRanges().add(new NegotiationSettings.Range(1, 3));
+        negotiationSettings.getDeliveryPeriodRanges().add(new NegotiationSettings.Range(2, 4));
+        negotiationSettings.getIncoterms().add("inco_1");
+        negotiationSettings.getIncoterms().add("inco_2");
+        negotiationSettings.getPaymentMeans().add("pm_1");
+        negotiationSettings.getPaymentTerms().add("pt_1");
+
+        Gson gson = new Gson();
+        this.mockMvc.perform(put("/company-settings/negotiation")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(gson.toJson(negotiationSettings))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        negotiationSettings.setCompany(company);
+        return negotiationSettings;
     }
 }

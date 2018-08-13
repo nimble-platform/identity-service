@@ -13,6 +13,15 @@ public class DeliveryTerms {
     private Address deliveryAddress;
     private Integer estimatedDeliveryTime;
 
+    public DeliveryTerms() {
+    }
+
+    public DeliveryTerms(String specialTerms, Address deliveryAddress, Integer estimatedDeliveryTime) {
+        this.specialTerms = specialTerms;
+        this.deliveryAddress = deliveryAddress;
+        this.estimatedDeliveryTime = estimatedDeliveryTime;
+    }
+
     public String getSpecialTerms() {
         return specialTerms;
     }
