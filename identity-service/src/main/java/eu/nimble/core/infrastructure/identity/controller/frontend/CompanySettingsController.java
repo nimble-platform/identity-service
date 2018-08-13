@@ -102,11 +102,11 @@ public class CompanySettingsController {
 
         // set delivery terms
         List<DeliveryTermsType> deliveryTerms = newSettings.getDeliveryTerms().stream().map(UblAdapter::adaptDeliveryTerms).collect(Collectors.toList());
-        party.setDeliveryTerms(deliveryTerms);
+        party.getPurchaseTerms().setDeliveryTerms(deliveryTerms);   // ToDo: improve for sales terms
 
         // set payment means
         List<PaymentMeansType> paymentMeans = newSettings.getPaymentMeans().stream().map(UblAdapter::adaptPaymentMeans).collect(Collectors.toList());
-        party.setPaymentMeans(paymentMeans);
+        party.getPurchaseTerms().setPaymentMeans(paymentMeans);   // ToDo: improve for sales terms
 
         // set address
         AddressType companyAddress = UblAdapter.adaptAddress(newSettings.getAddress());

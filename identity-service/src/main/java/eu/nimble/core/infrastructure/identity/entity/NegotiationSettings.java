@@ -3,6 +3,7 @@ package eu.nimble.core.infrastructure.identity.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.annotations.SerializedName;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 
 import javax.persistence.*;
@@ -16,7 +17,7 @@ import java.util.List;
  */
 @Entity
 @JsonInclude
-@SuppressWarnings("unused")
+@Table(uniqueConstraints = {@UniqueConstraint(columnNames = {"id", "company_hjid"})})
 public class NegotiationSettings implements Serializable {
 
     @Id
@@ -25,7 +26,8 @@ public class NegotiationSettings implements Serializable {
     private Long id;
 
     @JsonIgnore
-    @OneToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+    @OneToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
+    @JoinColumn(unique = true)
     private PartyType company;
 
     @JoinTable
@@ -171,10 +173,12 @@ public class NegotiationSettings implements Serializable {
 
         @Column
         @JsonProperty("start")
+        @SerializedName("start")
         private Long rangeStart;
 
         @Column
         @JsonProperty("end")
+        @SerializedName("end")
         private Long rangeEnd;
 
         public Range(long start, long end) {

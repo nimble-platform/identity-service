@@ -29,16 +29,20 @@ public class UblAdapter {
         settings.setAddress(adaptAddress(party.getPostalAddress()));
 
         // set payment means
-        List<PaymentMeans> paymentMeans = party.getPaymentMeans().stream()
-                .map(UblAdapter::adaptPaymentMeans)
-                .collect(Collectors.toList());
-        settings.setPaymentMeans(paymentMeans);
+        if (party.getPurchaseTerms() != null) {
+            List<PaymentMeans> paymentMeans = party.getPurchaseTerms().getPaymentMeans().stream()  // ToDo: improve for sales terms
+                    .map(UblAdapter::adaptPaymentMeans)
+                    .collect(Collectors.toList());
+            settings.setPaymentMeans(paymentMeans);
+        }
 
         // set delivery terms
-        List<DeliveryTerms> deliveryTerms = party.getDeliveryTerms().stream()
-                .map(UblAdapter::adaptDeliveryTerms)
-                .collect(Collectors.toList());
-        settings.setDeliveryTerms(deliveryTerms);
+        if (party.getPurchaseTerms() != null) {
+            List<DeliveryTerms> deliveryTerms = party.getPurchaseTerms().getDeliveryTerms().stream()  // ToDo: improve for sales terms
+                    .map(UblAdapter::adaptDeliveryTerms)
+                    .collect(Collectors.toList());
+            settings.setDeliveryTerms(deliveryTerms);
+        }
 
         settings.setVerificationInformation(adaptQualityIndicator(party));
         settings.setVatNumber(adaptVatNumber(party));
@@ -53,8 +57,8 @@ public class UblAdapter {
         settings.setPreferredProductCategories(preferredProductCategories);
 
         // set industry indicators
-        List<String> cnae = party.getCNAE().stream().map(CodeType::getValue).collect(Collectors.toList());
-        settings.setCnae(cnae);
+//        List<String> cnae = party.getCNAE().stream().map(CodeType::getValue).collect(Collectors.toList());
+//        settings.setCnae(cnae);
         List<String> industrySectors = party.getIndustrySector().stream().map(CodeType::getValue).collect(Collectors.toList());
         settings.setIndustrySectors(industrySectors);
 
