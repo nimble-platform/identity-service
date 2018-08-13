@@ -75,6 +75,8 @@ public class CompanySettingsControllerTests {
         companySettings.setPpapCompatibilityLevel(5);
         companySettings.getPreferredProductCategories().add("category 1");
         companySettings.getPreferredProductCategories().add("category 2");
+        companySettings.getRecentlyUsedProductCategories().add("category 3");
+        companySettings.getRecentlyUsedProductCategories().add("category 4");
         companySettings.getIndustrySectors().add("industry sector 1");
         companySettings.getIndustrySectors().add("industry sector 2");
 
@@ -104,8 +106,12 @@ public class CompanySettingsControllerTests {
                 .andExpect(jsonPath("$.deliveryTerms.length()", is(1)))
                 .andExpect(jsonPath("$.deliveryTerms[0].specialTerms", is("special terms")))
                 .andExpect(jsonPath("$.deliveryTerms[0].estimatedDeliveryTime", is(5)))
+                .andExpect(jsonPath("$.preferredProductCategories.length()", is(2)))
                 .andExpect(jsonPath("$.preferredProductCategories", hasItem("category 1")))
                 .andExpect(jsonPath("$.preferredProductCategories", hasItem("category 2")))
+                .andExpect(jsonPath("$.recentlyUsedProductCategories.length()", is(2)))
+                .andExpect(jsonPath("$.recentlyUsedProductCategories", hasItem("category 3")))
+                .andExpect(jsonPath("$.recentlyUsedProductCategories", hasItem("category 4")))
                 .andExpect(jsonPath("$.verificationInformation", is("verification number")))
                 .andExpect(jsonPath("$.industrySectors.length()", is(2)))
                 .andExpect(jsonPath("$.industrySectors[0]", is("industry sector 1")))

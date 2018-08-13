@@ -22,6 +22,7 @@ public class CompanySettings {
     private Integer ppapCompatibilityLevel;
     private List<CompanyCertificate> certificates = new ArrayList<>();
     private Set<String> preferredProductCategories = new HashSet<>();
+    private Set<String> recentlyUsedProductCategories = new HashSet<>();
     private List<String> industrySectors = new ArrayList<>();
     private NegotiationSettings negotiationSettings;
 
@@ -30,7 +31,7 @@ public class CompanySettings {
 
     public CompanySettings(String name, String vatNumber, String verificationInformation, String website, Address address,
                            List<PaymentMeans> paymentMeans, List<DeliveryTerms> deliveryTerms, Integer ppapCompatibilityLevel,
-                           List<CompanyCertificate> certificates, Set<String> preferredProductCategories,
+                           List<CompanyCertificate> certificates, Set<String> preferredProductCategories, Set<String> recentlyUsedProductCategories,
                            List<String> industrySectors, NegotiationSettings negotiationSettings) {
         this.name = name;
         this.vatNumber = vatNumber;
@@ -42,6 +43,7 @@ public class CompanySettings {
         this.ppapCompatibilityLevel = ppapCompatibilityLevel;
         this.certificates = certificates;
         this.preferredProductCategories = preferredProductCategories;
+        this.recentlyUsedProductCategories = recentlyUsedProductCategories;
         this.industrySectors = industrySectors;
         this.negotiationSettings = negotiationSettings;
     }
@@ -124,6 +126,14 @@ public class CompanySettings {
 
     public void setPreferredProductCategories(Set<String> preferredProductCategories) {
         this.preferredProductCategories = preferredProductCategories;
+    }
+
+    public Set<String> getRecentlyUsedProductCategories() {
+        return recentlyUsedProductCategories;
+    }
+
+    public void setRecentlyUsedProductCategories(Set<String> recentlyUsedProductCategories) {
+        this.recentlyUsedProductCategories = recentlyUsedProductCategories;
     }
 
     public List<String> getIndustrySectors() {

@@ -119,8 +119,12 @@ public class CompanySettingsController {
         party.setPpapCompatibilityLevel(BigDecimal.valueOf(ppapLevel));
 
         // set preferred product categories
-        List<CodeType> preferredProductCategories = UblAdapter.adaptPreferredCategories(newSettings.getPreferredProductCategories());
+        List<CodeType> preferredProductCategories = UblAdapter.adaptProductCategories(newSettings.getPreferredProductCategories());
         party.setPreferredItemClassificationCode(preferredProductCategories);
+
+        // set recently used product categories
+        List<CodeType> recentlyUsedProductCategories = UblAdapter.adaptProductCategories(newSettings.getRecentlyUsedProductCategories());
+        party.setMostRecentItemsClassificationCode(recentlyUsedProductCategories);
 
         // set industry sector
         List<CodeType> industrySectors = UblAdapter.adaptIndustrySectors(newSettings.getIndustrySectors());

@@ -57,9 +57,12 @@ public class UblAdapter {
                 .collect(Collectors.toSet());
         settings.setPreferredProductCategories(preferredProductCategories);
 
-        // set industry indicators
-//        List<String> cnae = party.getCNAE().stream().map(CodeType::getValue).collect(Collectors.toList());
-//        settings.setCnae(cnae);
+        // set recently used product categories
+        Set<String> recentlyUsedProductCategories = party.getMostRecentItemsClassificationCode().stream()
+                .map(CodeType::getValue)
+                .collect(Collectors.toSet());
+        settings.setRecentlyUsedProductCategories(recentlyUsedProductCategories);
+
         List<String> industrySectors = party.getIndustrySector().stream().map(CodeType::getValue).collect(Collectors.toList());
         settings.setIndustrySectors(industrySectors);
 
@@ -292,7 +295,7 @@ public class UblAdapter {
         return vatNumber;
     }
 
-    public static List<CodeType> adaptPreferredCategories(Set<String> categoryCodes) {
+    public static List<CodeType> adaptProductCategories(Set<String> categoryCodes) {
         return categoryCodes.stream()
                 .map(category -> {
                     CodeType code = new CodeType();
