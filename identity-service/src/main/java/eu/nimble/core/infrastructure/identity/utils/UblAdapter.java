@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -296,6 +297,15 @@ public class UblAdapter {
                 .map(category -> {
                     CodeType code = new CodeType();
                     code.setValue(category);
+                    return code;
+                }).collect(Collectors.toList());
+    }
+
+    public static List<CodeType> adaptIndustrySectors(List<String> industrySectors) {
+        return industrySectors.stream()
+                .map(sector -> {
+                    CodeType code = new CodeType();
+                    code.setValue(sector);
                     return code;
                 }).collect(Collectors.toList());
     }

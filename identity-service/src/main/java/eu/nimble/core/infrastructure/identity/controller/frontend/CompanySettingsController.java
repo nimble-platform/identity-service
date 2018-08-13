@@ -122,6 +122,10 @@ public class CompanySettingsController {
         List<CodeType> preferredProductCategories = UblAdapter.adaptPreferredCategories(newSettings.getPreferredProductCategories());
         party.setPreferredItemClassificationCode(preferredProductCategories);
 
+        // set industry sector
+        List<CodeType> industrySectors = UblAdapter.adaptIndustrySectors(newSettings.getIndustrySectors());
+        party.setIndustrySector(industrySectors);
+
         // set miscellaneous
         party.setWebsiteURI(newSettings.getWebsite());
         List<PartyTaxSchemeType> partyTaxSchemes = new ArrayList<>();

@@ -99,9 +99,17 @@ public class CompanySettingsControllerTests {
                 .andExpect(jsonPath("$.address.country", is("country")))
                 .andExpect(jsonPath("$.certificates.length()", is(0)))
                 .andExpect(jsonPath("$.preferredProductCategories.length()", is(2)))
+                .andExpect(jsonPath("$.paymentMeans.length()", is(1)))
+                .andExpect(jsonPath("$.paymentMeans.[0].instructionNote", is("instruction note")))
+                .andExpect(jsonPath("$.deliveryTerms.length()", is(1)))
+                .andExpect(jsonPath("$.deliveryTerms[0].specialTerms", is("special terms")))
+                .andExpect(jsonPath("$.deliveryTerms[0].estimatedDeliveryTime", is(5)))
                 .andExpect(jsonPath("$.preferredProductCategories", hasItem("category 1")))
                 .andExpect(jsonPath("$.preferredProductCategories", hasItem("category 2")))
-                .andExpect(jsonPath("$.verificationInformation", is("verification number")));
+                .andExpect(jsonPath("$.verificationInformation", is("verification number")))
+                .andExpect(jsonPath("$.industrySectors.length()", is(2)))
+                .andExpect(jsonPath("$.industrySectors[0]", is("industry sector 1")))
+                .andExpect(jsonPath("$.industrySectors[1]", is("industry sector 2")));
     }
 
     @Test
