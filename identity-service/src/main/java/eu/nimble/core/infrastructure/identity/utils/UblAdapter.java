@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("WeakerAccess")
 public class UblAdapter {
 
-    public static CompanySettings adaptCompanySettings(PartyType party, NegotiationSettings negotiationSettings) {
+    public static CompanySettings adaptCompanySettings(PartyType party) {
         CompanySettings settings = new CompanySettings();
         settings.setName(party.getName());
         settings.setWebsite(party.getWebsiteURI());
@@ -65,8 +65,6 @@ public class UblAdapter {
 
         List<String> industrySectors = party.getIndustrySector().stream().map(CodeType::getValue).collect(Collectors.toList());
         settings.setIndustrySectors(industrySectors);
-
-        settings.setNegotiationSettings(negotiationSettings);
 
         return settings;
     }

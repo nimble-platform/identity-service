@@ -1,7 +1,5 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
-import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -24,7 +22,6 @@ public class CompanySettings {
     private Set<String> preferredProductCategories = new HashSet<>();
     private Set<String> recentlyUsedProductCategories = new HashSet<>();
     private List<String> industrySectors = new ArrayList<>();
-    private NegotiationSettings negotiationSettings;
 
     public CompanySettings() {
     }
@@ -32,7 +29,7 @@ public class CompanySettings {
     public CompanySettings(String name, String vatNumber, String verificationInformation, String website, Address address,
                            List<PaymentMeans> paymentMeans, List<DeliveryTerms> deliveryTerms, Integer ppapCompatibilityLevel,
                            List<CompanyCertificate> certificates, Set<String> preferredProductCategories, Set<String> recentlyUsedProductCategories,
-                           List<String> industrySectors, NegotiationSettings negotiationSettings) {
+                           List<String> industrySectors) {
         this.name = name;
         this.vatNumber = vatNumber;
         this.verificationInformation = verificationInformation;
@@ -45,7 +42,6 @@ public class CompanySettings {
         this.preferredProductCategories = preferredProductCategories;
         this.recentlyUsedProductCategories = recentlyUsedProductCategories;
         this.industrySectors = industrySectors;
-        this.negotiationSettings = negotiationSettings;
     }
 
     public String getVatNumber() {
@@ -142,13 +138,5 @@ public class CompanySettings {
 
     public void setIndustrySectors(List<String> industrySectors) {
         this.industrySectors = industrySectors;
-    }
-
-    public NegotiationSettings getNegotiationSettings() {
-        return negotiationSettings;
-    }
-
-    public void setNegotiationSettings(NegotiationSettings negotiationSettings) {
-        this.negotiationSettings = negotiationSettings;
     }
 }

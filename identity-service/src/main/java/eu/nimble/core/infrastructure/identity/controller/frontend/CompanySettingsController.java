@@ -77,8 +77,7 @@ public class CompanySettingsController {
         logger.debug("Returning requested settings for party with Id {}", party.get().getHjid());
 
 
-        NegotiationSettings negotiationSettings = findOrCreateNegotiationSettings(party.get());
-        CompanySettings settings = UblAdapter.adaptCompanySettings(party.get(), negotiationSettings);
+        CompanySettings settings = UblAdapter.adaptCompanySettings(party.get());
         return new ResponseEntity<>(settings, HttpStatus.OK);
     }
 
