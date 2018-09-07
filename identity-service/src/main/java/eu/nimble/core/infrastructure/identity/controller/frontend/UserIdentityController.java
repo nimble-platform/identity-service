@@ -200,14 +200,14 @@ public class UserIdentityController {
         deliveryTermsRepository.save(blankDeliveryTerms);
         blankDeliveryTerms.setID(UblUtils.identifierType(blankDeliveryTerms.getHjid()));
         deliveryTermsRepository.save(blankDeliveryTerms);
-        companyParty.getPurchaseTerms().getDeliveryTerms().add(blankDeliveryTerms);    // ToDo: improve for sales terms
+//        companyParty.getPurchaseTerms().getDeliveryTerms().add(blankDeliveryTerms);    // ToDo: improve for sales terms
 
         // create payment means
         PaymentMeansType paymentMeans = UblUtils.emptyUBLObject(new PaymentMeansType());
         paymentMeansRepository.save(paymentMeans);
         paymentMeans.setID(UblUtils.identifierType(paymentMeans.getHjid()));
         paymentMeansRepository.save(paymentMeans);
-        companyParty.getPurchaseTerms().getPaymentMeans().add(paymentMeans);   // ToDo: improve for sales terms
+//        companyParty.getPurchaseTerms().getPaymentMeans().add(paymentMeans);   // ToDo: improve for sales terms
 
         // update id of company
         companyParty.setID(UblUtils.identifierType(companyParty.getHjid()));
