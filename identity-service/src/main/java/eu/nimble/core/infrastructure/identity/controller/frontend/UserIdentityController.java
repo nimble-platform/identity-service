@@ -37,10 +37,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.WebApplicationException;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
@@ -200,14 +197,18 @@ public class UserIdentityController {
         deliveryTermsRepository.save(blankDeliveryTerms);
         blankDeliveryTerms.setID(UblUtils.identifierType(blankDeliveryTerms.getHjid()));
         deliveryTermsRepository.save(blankDeliveryTerms);
-//        companyParty.getPurchaseTerms().getDeliveryTerms().add(blankDeliveryTerms);    // ToDo: improve for sales terms
 
         // create payment means
         PaymentMeansType paymentMeans = UblUtils.emptyUBLObject(new PaymentMeansType());
         paymentMeansRepository.save(paymentMeans);
         paymentMeans.setID(UblUtils.identifierType(paymentMeans.getHjid()));
         paymentMeansRepository.save(paymentMeans);
-//        companyParty.getPurchaseTerms().getPaymentMeans().add(paymentMeans);   // ToDo: improve for sales terms
+
+        // create purchase terms
+        TradingPreferences purchaseTerms = new TradingPreferences();
+        purchaseTerms.setDeliveryTerms(Collections.singletonList(blankDeliveryTerms));   // ToDo: improve for sales terms
+        purchaseTerms.setPaymentMeans(Collections.singletonList(paymentMeans));   // ToDo: improve for sales terms
+        companyParty.setPurchaseTerms(purchaseTerms);
 
         // update id of company
         companyParty.setID(UblUtils.identifierType(companyParty.getHjid()));
