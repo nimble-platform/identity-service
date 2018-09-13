@@ -239,7 +239,7 @@ public class CompanySettingsController {
     }
 
     private NegotiationSettings findOrCreateNegotiationSettings(PartyType company) {
-        NegotiationSettings negotiationSettings = negotiationSettingsRepository.findOneByCompany(company);
+        NegotiationSettings negotiationSettings = negotiationSettingsRepository.findByCompany(company).stream().findFirst().orElse(null);
         if (negotiationSettings == null) {
             negotiationSettings = new NegotiationSettings();
             negotiationSettings.setCompany(company);

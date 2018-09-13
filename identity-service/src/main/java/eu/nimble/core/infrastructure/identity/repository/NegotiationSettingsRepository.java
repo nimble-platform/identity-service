@@ -4,6 +4,8 @@ import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
+import java.util.List;
+
 /**
  * Created by Johannes Innerbichler on 02.08.18.
  */
@@ -11,4 +13,7 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 public interface NegotiationSettingsRepository extends PagingAndSortingRepository<NegotiationSettings, Long> {
 
     NegotiationSettings findOneByCompany(PartyType company);
+
+    List<NegotiationSettings> findByCompany(PartyType company);
+
 }
