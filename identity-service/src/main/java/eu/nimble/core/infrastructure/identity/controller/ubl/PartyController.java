@@ -6,7 +6,6 @@ import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.CertificateType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.Api;
@@ -35,6 +34,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+
+import static eu.nimble.core.infrastructure.identity.controller.IdentityUtils.removeBinaries;
 
 /**
  * Created by Johannes Innerbichler on 26/04/17.
@@ -108,7 +109,7 @@ public class PartyController {
 
 
         // remove binaries for response
-        parties.forEach(PartyController::removeBinaries);
+        parties.forEach(IdentityUtils::removeBinaries);
 
         logger.debug("Returning requested parties with Ids {0}", partyIds);
         return new ResponseEntity<>(parties, HttpStatus.OK);
@@ -132,7 +133,7 @@ public class PartyController {
         List<PartyType> parties = partyRepository.findByPerson(person);
 
         // remove binaries for response
-        parties.forEach(PartyController::removeBinaries);
+        parties.forEach(IdentityUtils::removeBinaries);
 
         return new ResponseEntity<>(parties, HttpStatus.OK);
     }
@@ -214,12 +215,5 @@ public class PartyController {
         public String getName() {
             return name;
         }
-    }
-
-    public static PartyType removeBinaries(PartyType partyType) {
-        for(CertificateType cert : partyType.getCertificate()) {
-            cert.setDocumentReference(null);
-        }
-        return partyType;
     }
 }

@@ -5,6 +5,7 @@ import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.CertificateType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,5 +56,12 @@ public class IdentityUtils {
             return false;
 
         return requestingCompany.get().getID().equals(targetCompany.get().getID());
+    }
+
+    public static PartyType removeBinaries(PartyType partyType) {
+        for(CertificateType cert : partyType.getCertificate()) {
+            cert.setDocumentReference(null);
+        }
+        return partyType;
     }
 }

@@ -2,6 +2,10 @@ package eu.nimble.core.infrastructure.identity.repository;
 
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
@@ -12,7 +16,7 @@ import java.util.List;
  * Repository for parties.
  */
 //@RepositoryRestResource(collectionResourceRel = "party", path = "party-hal")
-public interface PartyRepository extends PagingAndSortingRepository<PartyType, Long> {
+public interface PartyRepository extends PagingAndSortingRepository<PartyType, Long>, JpaSpecificationExecutor<PartyType> {
 
     List<PartyType> findByHjid(Long hijd);
 
