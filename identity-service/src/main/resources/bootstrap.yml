@@ -5,6 +5,7 @@ spring:
     name: identity-service
   cloud:
     config:
+      enabled: ${CONFIG_SERVER_ENABLED:true}
       uri: ${CONFIG_SERVER_URI:http://localhost:8888}
       failFast: ${CONFIG_SERVER_FAILFAST:false}
     discovery:
@@ -13,8 +14,12 @@ spring:
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: none
-#      use-new-id-generator-mappings: true
+      ddl-auto: update
+    properties:
+      hibernate:
+        temp:
+          use_jdbc_metadata_defaults: false
+    generate-ddl: true
   datasource:
     driverClassName: org.postgresql.Driver
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:identityDB}
@@ -38,7 +43,7 @@ logstash:
   uri: ${LOGSTASH_URI:localhost:5000}
 
 nimble:
-  corsEnabled: false
+  corsEnabled: ${CORS_ENBALED:false}
   uaa:
     url: ${UAA_URI:http://localhost:9090}
     clientid: ${UAA_CLIENT_ID:sultans}
@@ -64,14 +69,9 @@ nimble:
 spring:
   profiles: local_dev
   jpa:
-    properties:
-      hibernate:
-        temp:
-          use_jdbc_metadata_defaults: false
-        show_sql: false
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
   h2:
     console:
       enabled: true
@@ -80,8 +80,8 @@ spring:
     name: identitydb
     driverClassName: org.h2.Driver
 #    url: jdbc:h2:mem:test;DB_CLOSE_DELAY=-1
-    url: jdbc:h2:file:~/identitydb;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1;
-    initialize: false
+    url: jdbc:h2:file:~/identitydb;
+    initialize: true
     username: sa
     password: sa
   mail:
@@ -91,3 +91,22 @@ spring:
 
 nimble:
   corsEnabled: true
+
+---
+
+spring:
+  profiles: test
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+  h2:
+    console:
+      enabled: false
+  datasource:
+    name: channeldb
+    driverClassName: org.h2.Driver
+    url: jdbc:h2:mem:channeldb
+    initialize: false
+    username: sa
+    password:

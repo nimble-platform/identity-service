@@ -9,6 +9,10 @@ node('nimble-jenkins-slave') {
         sh 'git submodule update'
     }
 
+    stage('Run Tests') {
+        sh 'mvn clean test'
+    }
+
     stage('Build Java') {
         sh 'mvn clean install -DskipTests'
     }

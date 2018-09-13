@@ -1,6 +1,7 @@
 package eu.nimble.core.infrastructure.identity.entity;
 
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.io.Serializable;
 import javax.persistence.*;
@@ -21,16 +22,17 @@ public class UaaUser implements Serializable {
     @OneToOne
     private PersonType ublPerson;
 
-    protected UaaUser() {
-        // no-args constructor required by JPA spec
+    @ColumnDefault("false")
+    private Boolean showWelcomeInfo = false;
 
-        // this one is protected since it shouldn't be used directly
+    public UaaUser() {
     }
 
     public UaaUser(String username, PersonType ublPerson, String externalID) {
         this.username = username;
         this.ublPerson = ublPerson;
         this.externalID = externalID;
+        this.showWelcomeInfo = true;
     }
 
     public String getUsername() {
@@ -43,5 +45,13 @@ public class UaaUser implements Serializable {
 
     public PersonType getUBLPerson() {
         return this.ublPerson;
+    }
+
+    public Boolean getShowWelcomeInfo() {
+        return showWelcomeInfo;
+    }
+
+    public void setShowWelcomeInfo(Boolean showWelcomeInfo) {
+        this.showWelcomeInfo = showWelcomeInfo;
     }
 }

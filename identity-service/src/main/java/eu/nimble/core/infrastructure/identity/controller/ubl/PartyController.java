@@ -6,9 +6,9 @@ import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.CertificateType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
-import eu.nimble.utility.Configuration;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -20,10 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -35,6 +32,9 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * Created by Johannes Innerbichler on 26/04/17.
@@ -77,6 +77,8 @@ public class PartyController {
         if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             party.setPerson(new ArrayList<>());
 
+        removeBinaries(party);
+
         logger.debug("Returning requested party with Id {0}", party.getHjid());
         return new ResponseEntity<>(party, HttpStatus.OK);
     }
@@ -104,7 +106,34 @@ public class PartyController {
             parties.add(party.get());
         }
 
+
+        // remove binaries for response
+        parties.forEach(PartyController::removeBinaries);
+
         logger.debug("Returning requested parties with Ids {0}", partyIds);
+        return new ResponseEntity<>(parties, HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "", notes = "Get Party for person ID.", response = PartyType.class, tags = {})
+    @RequestMapping(value = "/party_by_person/{personId}", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<List<PartyType>> getPartyByPersonID(
+            @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long personId) {
+
+        // search for persons
+        List<PersonType> foundPersons = personRepository.findByHjid(personId);
+
+        // check if person was found
+        if (foundPersons.isEmpty()) {
+            logger.info("Requested person with Id {} not found", personId);
+            return new ResponseEntity<>(new ArrayList<>(), HttpStatus.OK);
+        }
+
+        PersonType person = foundPersons.get(0);
+        List<PartyType> parties = partyRepository.findByPerson(person);
+
+        // remove binaries for response
+        parties.forEach(PartyController::removeBinaries);
+
         return new ResponseEntity<>(parties, HttpStatus.OK);
     }
 
@@ -141,7 +170,7 @@ public class PartyController {
         marsh.setProperty("jaxb.formatted.output", true);
         marsh.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
         @SuppressWarnings("unchecked")
-        JAXBElement element = new JAXBElement(new QName(Configuration.UBL_CAC_NS, "Party"), party.getClass(), party);
+        JAXBElement element = new JAXBElement(new QName("urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2", "Party"), party.getClass(), party);
         marsh.marshal(element, serializedCatalogueWriter);
 
         // log the catalogue to be transformed
@@ -154,23 +183,43 @@ public class PartyController {
         return new ResponseEntity<>(xmlParty, responseHeaders, HttpStatus.OK);
     }
 
-    @ApiOperation(value = "", notes = "Get Party for person ID.", response = PartyType.class, tags = {})
-    @RequestMapping(value = "/party_by_person/{personId}", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<List<PartyType>> getPartyByPersonID(
-            @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long personId) {
+    @ApiOperation(value = "", notes = "Get all party ids and name. Returns id-name tuples.", response = PartyTuple.class, responseContainer = "Set")
+    @RequestMapping(value = "/party/all", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<Set<PartyTuple> > getAllPartyIds(
+            @ApiParam(value = "Excluded ids") @RequestParam(value = "exclude", required = false) List<String> exclude) {
 
-        // search for persons
-        List<PersonType> foundPersons = personRepository.findByHjid(personId);
+        Set<PartyTuple> partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
+                .map(p -> new PartyTuple(p.getID(), p.getName()))
+                .collect(Collectors.toSet());
 
-        // check if person was found
-        if (foundPersons.isEmpty()) {
-            logger.info("Requested person with Id {} not found", personId);
-            return new ResponseEntity<>(new ArrayList<>(), HttpStatus.OK);
+        if (exclude != null)
+            partyIds = partyIds.stream().filter(p -> !exclude.contains(p.getIdentifier())).collect(Collectors.toSet());
+
+        return ResponseEntity.ok(partyIds);
+    }
+
+    private static class PartyTuple {
+        private String identifier;
+        private String name;
+
+        public PartyTuple(String identifier, String name) {
+            this.identifier = identifier;
+            this.name = name;
         }
 
-        PersonType person = foundPersons.get(0);
-        List<PartyType> parties = partyRepository.findByPerson(person);
+        public String getIdentifier() {
+            return identifier;
+        }
 
-        return new ResponseEntity<>(parties, HttpStatus.OK);
+        public String getName() {
+            return name;
+        }
+    }
+
+    public static PartyType removeBinaries(PartyType partyType) {
+        for(CertificateType cert : partyType.getCertificate()) {
+            cert.setDocumentReference(null);
+        }
+        return partyType;
     }
 }

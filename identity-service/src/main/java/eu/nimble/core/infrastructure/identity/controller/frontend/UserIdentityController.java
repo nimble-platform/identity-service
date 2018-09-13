@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.controller.frontend;
 
+import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.controller.frontend.dto.CompanyRegistrationResponse;
 import eu.nimble.core.infrastructure.identity.controller.frontend.dto.UserRegistration;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
@@ -15,10 +16,7 @@ import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.DeliveryTermsType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PaymentMeansType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -32,20 +30,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.WebApplicationException;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
@@ -84,6 +76,9 @@ public class UserIdentityController {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private IdentityUtils identityUtils;
 
     @ApiOperation(value = "Register a new user to the nimble.", response = FrontEndUser.class, tags = {})
     @ApiResponses(value = {
@@ -179,11 +174,6 @@ public class UserIdentityController {
             @RequestHeader(value = "Authorization") String bearer,
             HttpServletResponse response, HttpServletRequest request) {
 
-        // update token
-        String refreshToken = (String) httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY);
-        if (refreshToken == null)
-            return new ResponseEntity<>("Refresh token not found in session", HttpStatus.UNAUTHORIZED);
-
         Address companyAddress = company.getAddress();
         if (companyAddress == null || company.getName() == null)
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -207,14 +197,18 @@ public class UserIdentityController {
         deliveryTermsRepository.save(blankDeliveryTerms);
         blankDeliveryTerms.setID(UblUtils.identifierType(blankDeliveryTerms.getHjid()));
         deliveryTermsRepository.save(blankDeliveryTerms);
-        companyParty.getDeliveryTerms().add(blankDeliveryTerms);
 
         // create payment means
         PaymentMeansType paymentMeans = UblUtils.emptyUBLObject(new PaymentMeansType());
         paymentMeansRepository.save(paymentMeans);
         paymentMeans.setID(UblUtils.identifierType(paymentMeans.getHjid()));
         paymentMeansRepository.save(paymentMeans);
-        companyParty.getPaymentMeans().add(paymentMeans);
+
+        // create purchase terms
+        TradingPreferences purchaseTerms = new TradingPreferences();
+        purchaseTerms.setDeliveryTerms(Collections.singletonList(blankDeliveryTerms));   // ToDo: improve for sales terms
+        purchaseTerms.setPaymentMeans(Collections.singletonList(paymentMeans));   // ToDo: improve for sales terms
+        companyParty.setPurchaseTerms(purchaseTerms);
 
         // update id of company
         companyParty.setID(UblUtils.identifierType(companyParty.getHjid()));
@@ -234,13 +228,6 @@ public class UserIdentityController {
             logger.error("Could not set role for user " + userParty.getID(), e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        // update token
-        OAuth2AccessToken updatedToken = oAuthClient.refreshToken(refreshToken);
-        httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, updatedToken.getRefreshToken().getValue());
-
-        // set new access token
-        company.setAccessToken(updatedToken.getValue());
 
         // inform platform managers
         try {
@@ -322,6 +309,22 @@ public class UserIdentityController {
         }
 
         return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+    }
+
+    @ApiOperation(value = "", notes = "Set welcome info flag")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Changed flag"),
+            @ApiResponse(code = 404, message = "User not found")})
+    @RequestMapping(value = "/set-welcome-info/{flag}", produces = {"application/json"}, method = RequestMethod.POST)
+    ResponseEntity<?> setShowWelcomeInfoFlag(
+            @ApiParam(value = "Show welcome info flag", required = true) @PathVariable Boolean flag,
+            @RequestHeader(value = "Authorization") String bearer) throws IOException {
+
+        UaaUser user = identityUtils.getUserfromBearer(bearer);
+        user.setShowWelcomeInfo(flag);
+        uaaUserRepository.save(user);
+
+        return ResponseEntity.ok().build();
     }
 
     private String getKeycloakUserId(PersonType ublPerson) throws Exception {

@@ -1,3 +1,2 @@
-identity-service/src/test/
 kubernetes/keycloak-secret.yml
 *.versionsBackup

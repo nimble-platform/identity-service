@@ -1,14 +1,21 @@
 package eu.nimble.core.infrastructure.identity.utils;
 
+import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
+import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.QuantityType;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by Johannes Innerbichler on 04/07/17.
@@ -21,11 +28,43 @@ public class UblAdapter {
         settings.setName(party.getName());
         settings.setWebsite(party.getWebsiteURI());
         settings.setAddress(adaptAddress(party.getPostalAddress()));
-        party.getPaymentMeans().stream().findFirst().ifPresent(means -> settings.setPaymentMeans(adaptPaymentMeans(means)));
-        party.getDeliveryTerms().stream().findFirst()
-                .ifPresent(deliveryTermsType -> settings.setDeliveryTerms(adaptDeliveryTerms(deliveryTermsType)));
+
+        // set payment means
+        if (party.getPurchaseTerms() != null) {
+            List<PaymentMeans> paymentMeans = party.getPurchaseTerms().getPaymentMeans().stream()  // ToDo: improve for sales terms
+                    .map(UblAdapter::adaptPaymentMeans)
+                    .collect(Collectors.toList());
+            settings.setPaymentMeans(paymentMeans);
+        }
+
+        // set delivery terms
+        if (party.getPurchaseTerms() != null) {
+            List<DeliveryTerms> deliveryTerms = party.getPurchaseTerms().getDeliveryTerms().stream()  // ToDo: improve for sales terms
+                    .map(UblAdapter::adaptDeliveryTerms)
+                    .collect(Collectors.toList());
+            settings.setDeliveryTerms(deliveryTerms);
+        }
+
         settings.setVerificationInformation(adaptQualityIndicator(party));
         settings.setVatNumber(adaptVatNumber(party));
+        if (party.getPpapCompatibilityLevel() != null)
+            settings.setPpapCompatibilityLevel(party.getPpapCompatibilityLevel().intValue());
+        settings.setCertificates(UblAdapter.adaptCertificates(party.getCertificate()));
+
+        // set preferred product categories
+        Set<String> preferredProductCategories = party.getPreferredItemClassificationCode().stream()
+                .map(CodeType::getValue)
+                .collect(Collectors.toSet());
+        settings.setPreferredProductCategories(preferredProductCategories);
+
+        // set recently used product categories
+        Set<String> recentlyUsedProductCategories = party.getMostRecentItemsClassificationCode().stream()
+                .map(CodeType::getValue)
+                .collect(Collectors.toSet());
+        settings.setRecentlyUsedProductCategories(recentlyUsedProductCategories);
+
+        List<String> industrySectors = party.getIndustrySector().stream().map(CodeType::getValue).collect(Collectors.toList());
+        settings.setIndustrySectors(industrySectors);
 
         return settings;
     }
@@ -136,6 +175,7 @@ public class UblAdapter {
         PersonType ublPerson = uaaUser.getUBLPerson();
         frontEndUser.setFirstname(ublPerson.getFirstName());
         frontEndUser.setLastname(ublPerson.getFamilyName());
+        frontEndUser.setShowWelcomeInfo(uaaUser.getShowWelcomeInfo());
         if (ublPerson.getContact() != null)
             frontEndUser.setEmail(ublPerson.getContact().getElectronicMail());
         frontEndUser.setUserID(ublPerson.getHjid());
@@ -192,9 +232,7 @@ public class UblAdapter {
         if (party == null)
             return null;
         Optional<QualityIndicatorType> verificationInformationOpt = party.getQualityIndicator().stream().findFirst();
-        if (verificationInformationOpt.isPresent())
-            return verificationInformationOpt.get().getQualityParameter();
-        return null;
+        return verificationInformationOpt.map(QualityIndicatorType::getQualityParameter).orElse(null);
     }
 
     public static PartyTaxSchemeType adaptTaxSchema(String vatNumber) {
@@ -206,6 +244,38 @@ public class UblAdapter {
         PartyTaxSchemeType partyTaxSchemeType = new PartyTaxSchemeType();
         partyTaxSchemeType.setTaxScheme(taxScheme);
         return partyTaxSchemeType;
+    }
+
+    public static CertificateType adaptCertificate(MultipartFile certFile, String name, String type, PartyType issuer) throws IOException {
+
+        CodeType codeType = new CodeType();
+        codeType.setName(name);
+
+        BinaryObjectType certificateBinary = new BinaryObjectType();
+        certificateBinary.setValue(certFile.getBytes());
+        certificateBinary.setFileName(certFile.getOriginalFilename());
+        certificateBinary.setMimeCode(certFile.getContentType());
+        AttachmentType attachmentType = new AttachmentType();
+        attachmentType.setEmbeddedDocumentBinaryObject(certificateBinary);
+        DocumentReferenceType documentReferenceType = new DocumentReferenceType();
+        documentReferenceType.setAttachment(attachmentType);
+
+        CertificateType certificateType = new CertificateType();
+//        certificateType.setIssuerParty(issuer);
+        certificateType.setCertificateType(type);
+        certificateType.setCertificateTypeCode(codeType);
+        certificateType.getDocumentReference().add(documentReferenceType);
+
+        return certificateType;
+    }
+
+    public static List<CompanyCertificate> adaptCertificates(List<CertificateType> certificateTypes) {
+        return certificateTypes.stream()
+                .map(certificateType ->
+                        new CompanyCertificate(certificateType.getCertificateTypeCode().getName(),
+                                certificateType.getCertificateType(),
+                                certificateType.getHjid().toString()))
+                .collect(Collectors.toList());
     }
 
     public static String adaptVatNumber(PartyType partyType) {
@@ -221,5 +291,23 @@ public class UblAdapter {
                 vatNumber = partyTaxScheme.getTaxScheme().getTaxTypeCode().getValue();
         }
         return vatNumber;
+    }
+
+    public static List<CodeType> adaptProductCategories(Set<String> categoryCodes) {
+        return categoryCodes.stream()
+                .map(category -> {
+                    CodeType code = new CodeType();
+                    code.setValue(category);
+                    return code;
+                }).collect(Collectors.toList());
+    }
+
+    public static List<CodeType> adaptIndustrySectors(List<String> industrySectors) {
+        return industrySectors.stream()
+                .map(sector -> {
+                    CodeType code = new CodeType();
+                    code.setValue(sector);
+                    return code;
+                }).collect(Collectors.toList());
     }
 }
