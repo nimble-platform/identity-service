@@ -84,7 +84,7 @@ public class PartyController {
     }
 
     @SuppressWarnings("PointlessBooleanExpression")
-    @ApiOperation(value = "", notes = "Get multiple parties for Ids.", response = Iterable.class)
+    @ApiOperation(value = "getParties", notes = "Get multiple parties for Ids.", response = Iterable.class)
     @RequestMapping(value = "/parties/{partyIds}", method = RequestMethod.GET)
     ResponseEntity<?> getParty(
             @ApiParam(value = "Ids of parties to retrieve.", required = true) @PathVariable List<Long> partyIds) {

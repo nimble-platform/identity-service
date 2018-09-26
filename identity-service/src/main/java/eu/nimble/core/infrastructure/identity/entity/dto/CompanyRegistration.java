@@ -1,70 +1,25 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+@ApiModel(value = "CompanyRegistration")
 public class CompanyRegistration   {
 
-    private Long userID = null;
+    @ApiModelProperty(value = "Identifier of requesting user", required = true)
+    private Long userID;
 
-    private Long companyID = null; // will be set after successful registration
+    @ApiModelProperty(value = "Identifier of registered company (will be set in response)")
+    private Long companyID;// will be set after successful registration
 
-    private String name = null;
+    @ApiModelProperty(value = "Updated access token after registration")
+    private String accessToken;
 
-    private Address address = null;
+    @ApiModelProperty(value = "General details related to the company")
+    private CompanyDetails details = new CompanyDetails();
 
-    private String accessToken = null;
-
-    private String vatNumber = null;
-
-    private String verificationInformation = null;
-
-    private String website = null;
-
-    public String getVatNumber() {
-        return vatNumber;
-    }
-
-    public void setVatNumber(String vatNumber) {
-        this.vatNumber = vatNumber;
-    }
-
-    public String getVerificationInformation() {
-        return verificationInformation;
-    }
-
-    public void setVerificationInformation(String verificationInformation) {
-        this.verificationInformation = verificationInformation;
-    }
-
-    public String getWebsite() {
-        return website;
-    }
-
-    public void setWebsite(String website) {
-        this.website = website;
-    }
-
-    public String getAccessToken() {
-        return accessToken;
-    }
-
-    public void setAccessToken(String accessToken) {
-        this.accessToken = accessToken;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Address getAddress() {
-        return address;
-    }
-
-    public void setAddress(Address address) {
-        this.address = address;
-    }
+    @ApiModelProperty(value = "Descriptive data of the company")
+    private CompanyDescription description = new CompanyDescription();
 
     public Long getUserID() {
         return userID;
@@ -80,5 +35,29 @@ public class CompanyRegistration   {
 
     public void setCompanyID(Long companyID) {
         this.companyID = companyID;
+    }
+
+    public String getAccessToken() {
+        return accessToken;
+    }
+
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
+    }
+
+    public CompanyDetails getDetails() {
+        return details;
+    }
+
+    public void setDetails(CompanyDetails details) {
+        this.details = details;
+    }
+
+    public CompanyDescription getDescription() {
+        return description;
+    }
+
+    public void setDescription(CompanyDescription description) {
+        this.description = description;
     }
 }

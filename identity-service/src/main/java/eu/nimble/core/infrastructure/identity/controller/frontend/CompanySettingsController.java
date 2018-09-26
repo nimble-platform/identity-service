@@ -135,7 +135,7 @@ public class CompanySettingsController {
         partyTaxSchemes.add(UblAdapter.adaptTaxSchema(newSettings.getVatNumber()));
         party.setPartyTaxScheme(partyTaxSchemes);
         List<QualityIndicatorType> qualityIndicators = new ArrayList<>();
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator(newSettings.getVerificationInformation()));
+//        qualityIndicators.add(UblAdapter.adaptQualityIndicator(newSettings.getVerificationInformation()));  // ToDo: add to QP
         party.setQualityIndicator(qualityIndicators);
 
         partyRepository.save(party);
@@ -157,7 +157,7 @@ public class CompanySettingsController {
         PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(CompanyNotFoundException::new);
 
         // create new certificate
-        CertificateType certificate = UblAdapter.adaptCertificate(file, name, type, company);
+        CertificateType certificate = UblAdapter.adaptCertificate(file, name, type);
 
         // update and store company
         company.getCertificate().add(certificate);
