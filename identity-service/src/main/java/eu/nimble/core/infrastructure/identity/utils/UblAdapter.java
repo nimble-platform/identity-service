@@ -346,6 +346,15 @@ public class UblAdapter {
                 .collect(Collectors.toList());
     }
 
+    public static QualityIndicatorType adaptQualityIndicator(String parameterName, Double value) {
+        QualityIndicatorType qualityIndicator = new QualityIndicatorType();
+        QuantityType quantity = new QuantityType();
+        quantity.setValue(new BigDecimal(value));
+        qualityIndicator.setQuantity(quantity);
+        qualityIndicator.setQualityParameter(parameterName);
+        return qualityIndicator;
+    }
+
     public static String adaptVatNumber(PartyType partyType) {
 
         if (partyType == null)

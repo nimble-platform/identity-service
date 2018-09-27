@@ -6,9 +6,11 @@ import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
+import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.CertificateType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.QualityIndicatorType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -196,6 +198,38 @@ public class PartyController {
             partyIds = partyIds.stream().filter(p -> !exclude.contains(p.getIdentifier())).collect(Collectors.toSet());
 
         return ResponseEntity.ok(partyIds);
+    }
+
+    @ApiOperation(value = "", notes = "Get profile completeness of company.", response = PartyType.class)
+    @RequestMapping(value = "/party/completeness/{partyId}", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<?> getProfileCompleteness(
+            @ApiParam(value = "Id of party to retrieve profile completeness.", required = true) @PathVariable Long partyId
+    ) {
+        // search relevant parties
+        List<PartyType> parties = partyRepository.findByHjid(partyId);
+
+        // check if party was found
+        if (parties.isEmpty()) {
+            logger.info("Requested party with Id {} not found", partyId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        PartyType party = parties.get(0);
+
+        // ToDo: compute completeness
+
+        List<QualityIndicatorType> qualityIndicators = new ArrayList<>();
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator("ProfileCompleteness", 0.4));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator("TrustCompletenessOfCompanyDescription", 0.5));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator("TrustCompletenessOfDetails ", 0.1));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator("TrustCompletenessOfCompCertificates", 0.66));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator("TrustCompletenessOfCompTradeDetails", 0.6));
+        PartyType completenessParty = new PartyType();
+        completenessParty.setQualityIndicator(qualityIndicators);
+        completenessParty.setID(party.getID());
+
+        logger.debug("Returning completeness of party with Id {0}", party.getHjid());
+        return new ResponseEntity<>(completenessParty, HttpStatus.OK);
     }
 
     private static class PartyTuple {
