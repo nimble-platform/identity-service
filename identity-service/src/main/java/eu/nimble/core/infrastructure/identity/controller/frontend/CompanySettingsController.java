@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  * Created by Johannes Innerbichler on 04/07/17.
  */
 @RestController
-@RequestMapping("/ ")
+@RequestMapping("/company-settings")
 @SuppressWarnings("SpringJavaAutowiredFieldsWarningInspection")
 @Api(value = "company-settings", description = "API for handling settings of companies.")
 public class CompanySettingsController {
