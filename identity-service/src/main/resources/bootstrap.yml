@@ -2,7 +2,7 @@ server:
   port: ${PORT:9096}
 spring:
   application:
-    name: identity-service:${APPLICATION_NAME_SUFFIX:}
+    name: identity-service${APPLICATION_NAME_SUFFIX:}
   cloud:
     config:
       enabled: ${CONFIG_SERVER_ENABLED:true}
