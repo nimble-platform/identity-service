@@ -220,10 +220,10 @@ public class PartyController {
 
         List<QualityIndicatorType> qualityIndicators = new ArrayList<>();
         qualityIndicators.add(UblAdapter.adaptQualityIndicator("ProfileCompleteness", 0.4));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator("TrustCompletenessOfCompanyDescription", 0.5));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator("TrustCompletenessOfDetails ", 0.1));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator("TrustCompletenessOfCompCertificates", 0.66));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator("TrustCompletenessOfCompTradeDetails", 0.6));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator("CompletenessOfDetails ", 0.1));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator("CompletenessOfCompanyDescription", 0.5));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator("CompletenessOfCompCertificates", 0.66));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator("CompletenessOfCompTradeDetails", 0.6));
         PartyType completenessParty = new PartyType();
         completenessParty.setQualityIndicator(qualityIndicators);
         completenessParty.setID(party.getID());

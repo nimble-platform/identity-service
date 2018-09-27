@@ -249,6 +249,17 @@ public class CompanySettingsController {
         return ResponseEntity.ok().body(negotiationSettings);
     }
 
+    @ApiOperation(value = "", notes = "Fake changes of company")
+    @RequestMapping(value = "/fake-changes/{partyId}", method = RequestMethod.GET)
+    ResponseEntity<?> kafkaTest(
+            @ApiParam(value = "Id of party to fake changes.", required = true) @PathVariable String partyId,
+            @RequestHeader(value = "Authorization") String bearer) {
+
+        this.kafkaSender.broadcastCompanyUpdate(partyId, bearer);
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
     private NegotiationSettings findOrCreateNegotiationSettings(PartyType company) {
         NegotiationSettings negotiationSettings = negotiationSettingsRepository.findByCompany(company).stream().findFirst().orElse(null);
         if (negotiationSettings == null) {
