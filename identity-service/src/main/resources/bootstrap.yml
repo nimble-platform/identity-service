@@ -2,7 +2,7 @@ server:
   port: ${PORT:9096}
 spring:
   application:
-    name: identity-service
+    name: identity-service:${APPLICATION_NAME_SUFFIX:}
   cloud:
     config:
       enabled: ${CONFIG_SERVER_ENABLED:true}
@@ -38,6 +38,14 @@ spring:
     properties.mail.smtp.starttls.enable: true
   jackson:
     default-property-inclusion: NON_NULL
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    consumer:
+      group-id: identity-service:${KAFKA_CONSUMER_GROUP_ID_SUFFIX:}
+    properties:
+      sasl:
+        jaas:
+          config: ${KAFKA_JAAS_CONFIG}
 
 logstash:
   uri: ${LOGSTASH_URI:localhost:5000}
@@ -63,6 +71,9 @@ nimble:
       accessTokenUri: ${OAUTH_CLIENT_ACCESSTOKEN_URI}
   frontend:
     url: ${FRONTEND_URL:http://localhost:9092}
+  kafka:
+    topics:
+      companyUpdates: ${KAFKA_TOPIC_COMPANY_UPDATES:company-updates}
 
 ---
 
