@@ -4,7 +4,7 @@ node('nimble-jenkins-slave') {
 
     stage('Clone and Update') {
         git(url: 'https://github.com/nimble-platform/identity-service.git', branch: env.BRANCH_NAME)
-        sh 'git submodule init'
+        sh 'git submodule update --recursive'
     }
 
     stage('Run Tests') {
