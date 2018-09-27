@@ -6,6 +6,7 @@ import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.QuantityType;
+import eu.nimble.service.model.ubl.extension.QualityIndicatorParameter;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -346,12 +347,12 @@ public class UblAdapter {
                 .collect(Collectors.toList());
     }
 
-    public static QualityIndicatorType adaptQualityIndicator(String parameterName, Double value) {
+    public static QualityIndicatorType adaptQualityIndicator(QualityIndicatorParameter parameterName, Double value) {
         QualityIndicatorType qualityIndicator = new QualityIndicatorType();
         QuantityType quantity = new QuantityType();
         quantity.setValue(new BigDecimal(value));
         qualityIndicator.setQuantity(quantity);
-        qualityIndicator.setQualityParameter(parameterName);
+        qualityIndicator.setQualityParameter(parameterName.name());
         return qualityIndicator;
     }
 

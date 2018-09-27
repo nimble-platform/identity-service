@@ -38,6 +38,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
+
 /**
  * Created by Johannes Innerbichler on 26/04/17.
  * Controller for retrieving party data.
@@ -219,11 +221,11 @@ public class PartyController {
         // ToDo: compute completeness
 
         List<QualityIndicatorType> qualityIndicators = new ArrayList<>();
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator("ProfileCompleteness", 0.4));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator("CompletenessOfDetails ", 0.1));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator("CompletenessOfCompanyDescription", 0.5));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator("CompletenessOfCompCertificates", 0.66));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator("CompletenessOfCompTradeDetails", 0.6));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(PROFILE_COMPLETENESS, 0.4));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_GENERAL_DETAILS, 0.1));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_DESCRIPTION, 0.5));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_CERTIFICATE_DETAILS, 0.66));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_TRADE_DETAILS, 0.6));
         PartyType completenessParty = new PartyType();
         completenessParty.setQualityIndicator(qualityIndicators);
         completenessParty.setID(party.getID());
