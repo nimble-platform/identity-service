@@ -10,6 +10,7 @@ import eu.nimble.core.infrastructure.identity.entity.dto.CompanyRegistration;
 import eu.nimble.core.infrastructure.identity.entity.dto.Credentials;
 import eu.nimble.core.infrastructure.identity.entity.dto.FrontEndUser;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
+import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
@@ -83,6 +84,9 @@ public class IdentityController {
 
     @Autowired
     private IdentityUtils identityUtils;
+
+    @Autowired
+    private KafkaSender kafkaSender;
 
     @ApiOperation(value = "Register a new user to the nimble.", response = FrontEndUser.class, tags = {})
     @ApiResponses(value = {
@@ -243,6 +247,10 @@ public class IdentityController {
         } catch (Exception ex) {
             logger.error("Could not notify platform managers", ex);
         }
+
+
+        // broadcast changes
+        kafkaSender.broadcastCompanyUpdate(newCompany.getID(), bearer);
 
         return new ResponseEntity<>(companyRegistration, HttpStatus.OK);
     }

@@ -1,13 +1,11 @@
 package eu.nimble.core.infrastructure.identity;
 
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
-import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -20,9 +18,6 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
-import javax.annotation.PostConstruct;
-import java.net.URISyntaxException;
-
 @Configuration
 @EnableDiscoveryClient
 @SpringBootApplication
@@ -33,9 +28,6 @@ public class IdentityServiceApplication extends SpringBootServletInitializer {
 
     @Value("${nimble.corsEnabled}")
     private String corsEnabled;
-
-    @Autowired
-    private KafkaSender kafkaSender;
 
     @Bean
     public WebMvcConfigurer corsConfigurer() {
@@ -53,10 +45,5 @@ public class IdentityServiceApplication extends SpringBootServletInitializer {
 
     public static void main(String[] args) {
         new SpringApplicationBuilder(IdentityServiceApplication.class).web(true).run(args);
-    }
-
-    @PostConstruct
-    public void init(){
-        kafkaSender.broadcastCompanyUpdate("asdfasdf");
     }
 }

@@ -25,8 +25,8 @@ spring:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:identityDB}
     username: ${POSTGRES_USER:root}
     password: ${POSTGRES_PASSWORD:changeme}
-    maxActive: 5
-    maxIdle: 5
+    maxActive: 3
+    maxIdle: 3
   mail:
     debug: false  # disable printing email to log output
     host: ${SMTP_HOST:localhost}

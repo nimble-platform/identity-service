@@ -4,6 +4,7 @@ import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
+import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.CertificateRepository;
 import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
@@ -38,7 +39,7 @@ import java.util.stream.Collectors;
  * Created by Johannes Innerbichler on 04/07/17.
  */
 @RestController
-@RequestMapping("/company-settings")
+@RequestMapping("/ ")
 @SuppressWarnings("SpringJavaAutowiredFieldsWarningInspection")
 @Api(value = "company-settings", description = "API for handling settings of companies.")
 public class CompanySettingsController {
@@ -59,6 +60,9 @@ public class CompanySettingsController {
 
     @Autowired
     private CertificateService certificateService;
+
+    @Autowired
+    private KafkaSender kafkaSender;
 
     @ApiOperation(value = "Retrieve company settings", response = CompanySettings.class)
     @RequestMapping(value = "/{companyID}", produces = {"application/json"}, method = RequestMethod.GET)
@@ -84,6 +88,7 @@ public class CompanySettingsController {
     @ApiOperation(value = "Change company settings")
     @RequestMapping(value = "/{companyID}", consumes = {"application/json"}, method = RequestMethod.PUT)
     ResponseEntity<CompanySettings> setSettings(
+            @RequestHeader(value = "Authorization") String bearer,
             @ApiParam(value = "Id of company to change settings from.", required = true) @PathVariable Long companyID,
             @ApiParam(value = "Settings to update.", required = true) @RequestBody CompanySettings newSettings) {
 
@@ -139,6 +144,9 @@ public class CompanySettingsController {
         party.setQualityIndicator(qualityIndicators);
 
         partyRepository.save(party);
+
+        // broadcast changes
+        kafkaSender.broadcastCompanyUpdate(party.getID(), bearer);
 
         return new ResponseEntity<>(newSettings, HttpStatus.ACCEPTED);
     }
@@ -221,6 +229,9 @@ public class CompanySettingsController {
         existingSettings = negotiationSettingsRepository.save(existingSettings);
 
         logger.info("Updated negotiation settings {} for company {}", existingSettings.getId(), company.getID());
+
+        // broadcast changes
+        kafkaSender.broadcastCompanyUpdate(company.getID(), bearer);
 
         return ResponseEntity.ok().build();
     }
