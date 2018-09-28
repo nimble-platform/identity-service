@@ -252,8 +252,8 @@ public class CompanySettingsController {
     @ApiOperation(value = "", notes = "Fake changes of company")
     @RequestMapping(value = "/fake-changes/{partyId}", method = RequestMethod.GET)
     ResponseEntity<?> kafkaTest(
-            @ApiParam(value = "Id of party to fake changes.", required = true) @PathVariable String partyId,
-            @RequestHeader(value = "Authorization") String bearer) {
+            @RequestHeader(value = "Authorization") String bearer,
+            @ApiParam(value = "Id of party to fake changes.", required = true) @PathVariable String partyId) {
 
         this.kafkaSender.broadcastCompanyUpdate(partyId, bearer);
 
