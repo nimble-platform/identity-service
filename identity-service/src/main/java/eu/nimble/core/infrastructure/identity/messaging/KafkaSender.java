@@ -1,6 +1,6 @@
 package eu.nimble.core.infrastructure.identity.messaging;
 
-import eu.nimble.core.infrastructure.identity.config.KafkaConfig.AuthorizedMessage;
+import eu.nimble.core.infrastructure.identity.config.KafkaConfig.AuthorizedCompanyUpdate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -17,11 +17,11 @@ public class KafkaSender {
     private String companyUpdatesTopic;
 
     @Autowired
-    private KafkaTemplate<String, AuthorizedMessage> kafkaTemplate;
+    private KafkaTemplate<String, AuthorizedCompanyUpdate> kafkaTemplate;
 
     public void broadcastCompanyUpdate(String companyID, String accessToken) {
         accessToken = accessToken.replace("Bearer ", "");
-        AuthorizedMessage update = new AuthorizedMessage(companyID, accessToken);
+        AuthorizedCompanyUpdate update = new AuthorizedCompanyUpdate(companyID, accessToken);
         kafkaTemplate.send(companyUpdatesTopic, update);
         System.out.println("Message: " + update + " sent to topic: " + companyUpdatesTopic);
     }
