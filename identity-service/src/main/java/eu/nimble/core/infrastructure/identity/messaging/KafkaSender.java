@@ -21,7 +21,7 @@ public class KafkaSender {
 
     public void broadcastCompanyUpdate(String companyID, String accessToken) {
         accessToken = accessToken.replace("Bearer ", "");
-        AuthorizedCompanyUpdate update = new AuthorizedCompanyUpdate    (companyID, accessToken);
+        AuthorizedCompanyUpdate update = new AuthorizedCompanyUpdate(companyID, accessToken);
         kafkaTemplate.send(companyUpdatesTopic, update);
         System.out.println("Message: " + update + " sent to topic: " + companyUpdatesTopic);
     }
