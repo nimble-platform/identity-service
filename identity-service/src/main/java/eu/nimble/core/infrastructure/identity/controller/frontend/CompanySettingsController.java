@@ -156,6 +156,7 @@ public class CompanySettingsController {
             @RequestHeader(value = "Authorization") String bearer,
             @RequestParam("file") MultipartFile file,
             @RequestParam("name") String name,
+            @RequestParam("description") String description,
             @RequestParam("type") String type) throws IOException {
 
 //        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
@@ -165,7 +166,7 @@ public class CompanySettingsController {
         PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(CompanyNotFoundException::new);
 
         // create new certificate
-        CertificateType certificate = UblAdapter.adaptCertificate(file, name, type);
+        CertificateType certificate = UblAdapter.adaptCertificate(file, name, type, description);
 
         // update and store company
         company.getCertificate().add(certificate);

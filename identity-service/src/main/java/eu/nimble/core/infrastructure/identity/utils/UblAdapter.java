@@ -20,8 +20,12 @@ import java.util.stream.Collectors;
 @SuppressWarnings("WeakerAccess")
 public class UblAdapter {
 
-    public static CompanySettings adaptCompanySettings(PartyType party) {
-        CompanySettings settings = new CompanySettings();
+    public static final String VAT_TAX_TYPE_CODE = "VAT";
+
+    public static CompanySettingsV2 adaptCompanySettings(PartyType party) {
+        CompanySettingsV2 settings = new CompanySettingsV2();
+
+
         settings.setName(party.getName());
         settings.setWebsite(party.getWebsiteURI());
         settings.setAddress(adaptAddress(party.getPostalAddress()));
@@ -97,6 +101,44 @@ public class UblAdapter {
         ublAddress.setCountry(country);
 
         return ublAddress;
+    }
+
+    public static CompanyDetails adaptCompanyDetails(PartyType party, QualifyingPartyType qualifyingParty) {
+
+        CompanyDetails companyDetails = new CompanyDetails();
+
+        companyDetails.setCompanyLegalName(party.getName());
+        companyDetails.setVatNumber(party.getPartyTaxScheme()
+                .stream()
+                .filter(scheme -> scheme.getTaxScheme().getTaxTypeCode().getValue().equals(VAT_TAX_TYPE_CODE))
+                .map(scheme -> scheme.getTaxScheme().getTaxTypeCode().getValue())
+                .findFirst().orElse(null));
+        companyDetails.setAddress(adaptAddress(party.getPostalAddress()));
+
+        if (qualifyingParty != null) {
+            companyDetails.setVerificationInformation(qualifyingParty.getBusinessIdentityEvidenceID());
+            companyDetails.setBusinessKeywords(qualifyingParty.getBusinessClassificationScheme().getDescription());
+            companyDetails.setYearOfCompanyRegistration(qualifyingParty.getOperatingYearsQuantity().getValue().intValue());
+        }
+
+        return companyDetails;
+    }
+
+    public static CompanyDescription adaptCompanyDescription(PartyType party, QualifyingPartyType qualifyingPartyType) {
+
+        CompanyDescription companyDescription = new CompanyDescription();
+        companyDescription.setWebsite(party.getWebsiteURI());
+        companyDescription.setSocialMediaList(party.getContact().getOtherCommunication()
+                .stream()
+                .map(CommunicationType::getValue)
+                .collect(Collectors.toList()));
+
+        if (qualifyingPartyType != null) {
+            companyDescription.setCompanyStatement(qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().get(0));
+            // ToDo: add events
+        }
+
+        return companyDescription;
     }
 
     public static DeliveryTerms adaptDeliveryTerms(DeliveryTermsType ublDeliveryTerms) {
@@ -293,7 +335,7 @@ public class UblAdapter {
     }
 
     public static PartyTaxSchemeType adaptTaxSchema(String vatNumber) {
-        CodeType codeType = adaptCodeType("VAT", vatNumber);
+        CodeType codeType = adaptCodeType(VAT_TAX_TYPE_CODE, vatNumber);
         TaxSchemeType taxScheme = new TaxSchemeType();
         taxScheme.setTaxTypeCode(codeType);
         PartyTaxSchemeType partyTaxSchemeType = new PartyTaxSchemeType();
@@ -316,7 +358,7 @@ public class UblAdapter {
         return codeType;
     }
 
-    public static CertificateType adaptCertificate(MultipartFile certFile, String name, String type) throws IOException {
+    public static CertificateType adaptCertificate(MultipartFile certFile, String name, String type, String description) throws IOException {
 
         CodeType codeType = adaptCodeType(name, null);
 
@@ -330,7 +372,7 @@ public class UblAdapter {
         documentReferenceType.setAttachment(attachmentType);
 
         CertificateType certificateType = new CertificateType();
-//        certificateType.setIssuerParty(issuer);
+        certificateType.setRemarks(description);
         certificateType.setCertificateType(type);
         certificateType.setCertificateTypeCode(codeType);
         certificateType.getDocumentReference().add(documentReferenceType);
@@ -343,7 +385,8 @@ public class UblAdapter {
                 .map(certificateType ->
                         new CompanyCertificate(certificateType.getCertificateTypeCode().getName(),
                                 certificateType.getCertificateType(),
-                                certificateType.getHjid().toString()))
+                                certificateType.getHjid().toString(),
+                                certificateType.getRemarks()))
                 .collect(Collectors.toList());
     }
 

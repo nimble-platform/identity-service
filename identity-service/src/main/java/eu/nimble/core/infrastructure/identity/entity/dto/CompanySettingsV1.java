@@ -9,7 +9,7 @@ import java.util.Set;
  * Created by Johannes Innerbichler on 04/07/17.
  */
 @SuppressWarnings("unused")
-public class CompanySettings {
+public class CompanySettingsV1 {
     private String name;
     private String vatNumber;
     private String verificationInformation;
@@ -23,10 +23,10 @@ public class CompanySettings {
     private Set<String> recentlyUsedProductCategories = new HashSet<>();
     private List<String> industrySectors = new ArrayList<>();
 
-    public CompanySettings() {
+    public CompanySettingsV1() {
     }
 
-    public CompanySettings(String name, String vatNumber, String verificationInformation, String website, Address address,
+    public CompanySettingsV1(String name, String vatNumber, String verificationInformation, String website, Address address,
                            List<PaymentMeans> paymentMeans, List<DeliveryTerms> deliveryTerms, Integer ppapCompatibilityLevel,
                            List<CompanyCertificate> certificates, Set<String> preferredProductCategories, Set<String> recentlyUsedProductCategories,
                            List<String> industrySectors) {

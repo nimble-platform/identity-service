@@ -13,7 +13,7 @@ import java.util.Set;
 public class CompanySettingsV2 {
 
     @ApiModelProperty(value = "Identifier of company")
-    private Long companyID;// will be set after successful registration
+    private Long companyID;
 
     @ApiModelProperty(value = "General details related to the company")
     private CompanyDetails details = new CompanyDetails();
@@ -21,17 +21,8 @@ public class CompanySettingsV2 {
     @ApiModelProperty(value = "Descriptive data of the company")
     private CompanyDescription description = new CompanyDescription();
 
-    @ApiModelProperty(value = "List of accepted payment means")
-    private List<PaymentMeans> paymentMeans = new ArrayList<>();
-
-    @ApiModelProperty(value = "List of accepted delivery terms")
-    private List<DeliveryTerms> deliveryTerms = new ArrayList<>();
-
-    @ApiModelProperty(value = "List of accepted delivery terms")
-    private Integer ppapCompatibilityLevel;
-
-    @ApiModelProperty(value = "List of company certificates")
-    private List<CompanyCertificate> certificates = new ArrayList<>();
+    @ApiModelProperty(value = "Trade details of the company")
+    private CompanyTradeDetails tradeDetails = new CompanyTradeDetails();
 
     @ApiModelProperty(value = "List of preferred product categories")
     private Set<String> preferredProductCategories = new HashSet<>();
@@ -42,16 +33,13 @@ public class CompanySettingsV2 {
     public CompanySettingsV2() {
     }
 
-    public CompanySettingsV2(Long companyID, CompanyDetails details, CompanyDescription description, List<PaymentMeans> paymentMeans,
-                             List<DeliveryTerms> deliveryTerms, Integer ppapCompatibilityLevel, List<CompanyCertificate> certificates,
-                             Set<String> preferredProductCategories, Set<String> recentlyUsedProductCategories) {
+    public CompanySettingsV2(Long companyID, CompanyDetails details, CompanyDescription description, CompanyTradeDetails tradeDetails,
+                             Integer ppapCompatibilityLevel, Set<String> preferredProductCategories,
+                             Set<String> recentlyUsedProductCategories) {
         this.companyID = companyID;
         this.details = details;
         this.description = description;
-        this.paymentMeans = paymentMeans;
-        this.deliveryTerms = deliveryTerms;
-        this.ppapCompatibilityLevel = ppapCompatibilityLevel;
-        this.certificates = certificates;
+        this.tradeDetails = tradeDetails;
         this.preferredProductCategories = preferredProductCategories;
         this.recentlyUsedProductCategories = recentlyUsedProductCategories;
     }
@@ -80,36 +68,12 @@ public class CompanySettingsV2 {
         this.description = description;
     }
 
-    public List<PaymentMeans> getPaymentMeans() {
-        return paymentMeans;
+    public CompanyTradeDetails getTradeDetails() {
+        return tradeDetails;
     }
 
-    public void setPaymentMeans(List<PaymentMeans> paymentMeans) {
-        this.paymentMeans = paymentMeans;
-    }
-
-    public List<DeliveryTerms> getDeliveryTerms() {
-        return deliveryTerms;
-    }
-
-    public void setDeliveryTerms(List<DeliveryTerms> deliveryTerms) {
-        this.deliveryTerms = deliveryTerms;
-    }
-
-    public Integer getPpapCompatibilityLevel() {
-        return ppapCompatibilityLevel;
-    }
-
-    public void setPpapCompatibilityLevel(Integer ppapCompatibilityLevel) {
-        this.ppapCompatibilityLevel = ppapCompatibilityLevel;
-    }
-
-    public List<CompanyCertificate> getCertificates() {
-        return certificates;
-    }
-
-    public void setCertificates(List<CompanyCertificate> certificates) {
-        this.certificates = certificates;
+    public void setTradeDetails(CompanyTradeDetails tradeDetails) {
+        this.tradeDetails = tradeDetails;
     }
 
     public Set<String> getPreferredProductCategories() {

@@ -2,6 +2,7 @@ package eu.nimble.core.infrastructure.identity.entity.dto;
 
 import io.swagger.annotations.ApiModelProperty;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -25,7 +26,7 @@ public class CompanyDetails {
     private String businessType = null;
 
     @ApiModelProperty(value = "Keywords explaining business objective")
-    private Set<String> businessKeywords;
+    private List<String> businessKeywords;
 
     @ApiModelProperty(value = "Year since company is active")
     private Integer yearOfCompanyRegistration;
@@ -70,11 +71,11 @@ public class CompanyDetails {
         this.businessType = businessType;
     }
 
-    public Set<String> getBusinessKeywords() {
+    public List<String> getBusinessKeywords() {
         return businessKeywords;
     }
 
-    public void setBusinessKeywords(Set<String> businessKeywords) {
+    public void setBusinessKeywords(List<String> businessKeywords) {
         this.businessKeywords = businessKeywords;
     }
 
