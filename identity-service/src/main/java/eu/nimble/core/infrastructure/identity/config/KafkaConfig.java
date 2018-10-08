@@ -83,23 +83,23 @@ public class KafkaConfig {
     }
 
     public static class AuthorizedCompanyUpdate {
-        private String companyID;
+        private String companyId;
         private String accessToken;
 
         public AuthorizedCompanyUpdate() {
         }
 
-        public AuthorizedCompanyUpdate(String companyID, String accessToken) {
-            this.companyID = companyID;
+        public AuthorizedCompanyUpdate(String companyId, String accessToken) {
+            this.companyId = companyId;
             this.accessToken = accessToken;
         }
 
-        public String getCompanyID() {
-            return companyID;
+        public String getCompanyId() {
+            return companyId;
         }
 
-        public void setCompanyID(String companyID) {
-            this.companyID = companyID;
+        public void setCompanyId(String companyID) {
+            this.companyId = companyID;
         }
 
         public String getAccessToken() {
