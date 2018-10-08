@@ -13,7 +13,7 @@ import java.util.Set;
 public class CompanySettingsV2 {
 
     @ApiModelProperty(value = "Identifier of company")
-    private Long companyID;
+    private String companyID;
 
     @ApiModelProperty(value = "General details related to the company")
     private CompanyDetails details = new CompanyDetails();
@@ -33,7 +33,7 @@ public class CompanySettingsV2 {
     public CompanySettingsV2() {
     }
 
-    public CompanySettingsV2(Long companyID, CompanyDetails details, CompanyDescription description, CompanyTradeDetails tradeDetails,
+    public CompanySettingsV2(String companyID, CompanyDetails details, CompanyDescription description, CompanyTradeDetails tradeDetails,
                              Integer ppapCompatibilityLevel, Set<String> preferredProductCategories,
                              Set<String> recentlyUsedProductCategories) {
         this.companyID = companyID;
@@ -44,11 +44,11 @@ public class CompanySettingsV2 {
         this.recentlyUsedProductCategories = recentlyUsedProductCategories;
     }
 
-    public Long getCompanyID() {
+    public String getCompanyID() {
         return companyID;
     }
 
-    public void setCompanyID(Long companyID) {
+    public void setCompanyID(String companyID) {
         this.companyID = companyID;
     }
 

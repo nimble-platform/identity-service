@@ -3,14 +3,15 @@ package eu.nimble.core.infrastructure.identity.controller.frontend;
 import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
-import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
+import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettingsV2;
 import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.CertificateRepository;
 import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.CertificateType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
 import io.swagger.annotations.Api;
@@ -29,8 +30,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -64,9 +63,9 @@ public class CompanySettingsController {
     @Autowired
     private KafkaSender kafkaSender;
 
-    @ApiOperation(value = "Retrieve company settings", response = CompanySettings.class)
+    @ApiOperation(value = "Retrieve company settings", response = CompanySettingsV2.class)
     @RequestMapping(value = "/{companyID}", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<CompanySettings> getSettings(
+    ResponseEntity<CompanySettingsV2> getSettings(
             @ApiParam(value = "Id of company to retrieve settings from.", required = true) @PathVariable Long companyID) {
 
         // search relevant parties
@@ -81,16 +80,16 @@ public class CompanySettingsController {
         logger.debug("Returning requested settings for party with Id {}", party.get().getHjid());
 
 
-        CompanySettings settings = UblAdapter.adaptCompanySettings(party.get());
+        CompanySettingsV2 settings = UblAdapter.changeCompanySettings(party.get());
         return new ResponseEntity<>(settings, HttpStatus.OK);
     }
 
     @ApiOperation(value = "Change company settings")
     @RequestMapping(value = "/{companyID}", consumes = {"application/json"}, method = RequestMethod.PUT)
-    ResponseEntity<CompanySettings> setSettings(
+    ResponseEntity<CompanySettingsV2> setSettings(
             @RequestHeader(value = "Authorization") String bearer,
             @ApiParam(value = "Id of company to change settings from.", required = true) @PathVariable Long companyID,
-            @ApiParam(value = "Settings to update.", required = true) @RequestBody CompanySettings newSettings) {
+            @ApiParam(value = "Settings to update.", required = true) @RequestBody CompanySettingsV2 newSettings) {
 
         // search relevant parties
         Optional<PartyType> partyOptional = partyRepository.findByHjid(companyID).stream().findFirst();
@@ -101,52 +100,33 @@ public class CompanySettingsController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
-        PartyType party = partyOptional.get();
-        logger.debug("Changing settings for party with Id {}", party.getHjid());
+        PartyType existingCompany = partyOptional.get();
+        logger.debug("Changing settings for party with Id {}", existingCompany.getHjid());
+
+        existingCompany = UblAdapter.changeCompanySettings(newSettings, null, existingCompany);
 
         // set delivery terms
-        List<DeliveryTermsType> deliveryTerms = newSettings.getDeliveryTerms().stream().map(UblAdapter::adaptDeliveryTerms).collect(Collectors.toList());
-        if (party.getPurchaseTerms() == null)
-            party.setPurchaseTerms(new TradingPreferences());
-        party.getPurchaseTerms().setDeliveryTerms(deliveryTerms);   // ToDo: improve for sales terms
-
-        // set payment means
-        List<PaymentMeansType> paymentMeans = newSettings.getPaymentMeans().stream().map(UblAdapter::adaptPaymentMeans).collect(Collectors.toList());
-        party.getPurchaseTerms().setPaymentMeans(paymentMeans);   // ToDo: improve for sales terms
-
-        // set address
-        AddressType companyAddress = UblAdapter.adaptAddress(newSettings.getAddress());
-        party.setPostalAddress(companyAddress);
-
-        // set default PPAP level
-        int ppapLevel = newSettings.getPpapCompatibilityLevel() != null ? newSettings.getPpapCompatibilityLevel() : 0;
-        party.setPpapCompatibilityLevel(BigDecimal.valueOf(ppapLevel));
+//        List<DeliveryTermsType> deliveryTerms = newSettings.getDeliveryTerms().stream().map(UblAdapter::adaptDeliveryTerms).collect(Collectors.toList());
+//        if (party.getPurchaseTerms() == null)
+//            party.setPurchaseTerms(new TradingPreferences());
+//        party.getPurchaseTerms().setDeliveryTerms(deliveryTerms);   // ToDo: improve for sales terms
+//
+//        // set payment means
+//        List<PaymentMeansType> paymentMeans = newSettings.getPaymentMeans().stream().map(UblAdapter::adaptPaymentMeans).collect(Collectors.toList());
+//        party.getPurchaseTerms().setPaymentMeans(paymentMeans);   // ToDo: improve for sales terms
 
         // set preferred product categories
         List<CodeType> preferredProductCategories = UblAdapter.adaptProductCategories(newSettings.getPreferredProductCategories());
-        party.setPreferredItemClassificationCode(preferredProductCategories);
+        existingCompany.setPreferredItemClassificationCode(preferredProductCategories);
 
         // set recently used product categories
         List<CodeType> recentlyUsedProductCategories = UblAdapter.adaptProductCategories(newSettings.getRecentlyUsedProductCategories());
-        party.setMostRecentItemsClassificationCode(recentlyUsedProductCategories);
+        existingCompany.setMostRecentItemsClassificationCode(recentlyUsedProductCategories);
 
-        // set industry sector
-        List<CodeType> industrySectors = UblAdapter.adaptIndustrySectors(newSettings.getIndustrySectors());
-        party.setIndustrySector(industrySectors);
-
-        // set miscellaneous
-        party.setWebsiteURI(newSettings.getWebsite());
-        List<PartyTaxSchemeType> partyTaxSchemes = new ArrayList<>();
-        partyTaxSchemes.add(UblAdapter.adaptTaxSchema(newSettings.getVatNumber()));
-        party.setPartyTaxScheme(partyTaxSchemes);
-        List<QualityIndicatorType> qualityIndicators = new ArrayList<>();
-//        qualityIndicators.add(UblAdapter.adaptQualityIndicator(newSettings.getVerificationInformation()));  // ToDo: add to QP
-        party.setQualityIndicator(qualityIndicators);
-
-        partyRepository.save(party);
+        partyRepository.save(existingCompany);
 
         // broadcast changes
-        kafkaSender.broadcastCompanyUpdate(party.getID(), bearer);
+        kafkaSender.broadcastCompanyUpdate(existingCompany.getID(), bearer);
 
         return new ResponseEntity<>(newSettings, HttpStatus.ACCEPTED);
     }
