@@ -76,7 +76,7 @@ public class KafkaConfig {
     }
 
     @Bean
-    public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, AuthorizedCompanyUpdate>> kafkaListenerContainerFactory() {
+    public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, AuthorizedCompanyUpdate>> companyUpdatesKafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, AuthorizedCompanyUpdate> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(companyUpdateConsumerFactory());
         return factory;
