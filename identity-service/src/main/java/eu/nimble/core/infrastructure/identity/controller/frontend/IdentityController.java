@@ -182,8 +182,8 @@ public class IdentityController {
             @RequestHeader(value = "Authorization") String bearer,
             HttpServletResponse response, HttpServletRequest request) {
 
-        Address companyAddress = companyRegistration.getDetails().getAddress();
-        if (companyAddress == null || companyRegistration.getDetails().getCompanyLegalName() == null)
+        Address companyAddress = companyRegistration.getSettings().getDetails().getAddress();
+        if (companyAddress == null || companyRegistration.getSettings().getDetails().getCompanyLegalName() == null)
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
         Optional<PersonType> userPartyOpt = personRepository.findByHjid(companyRegistration.getUserID()).stream().findFirst();
@@ -223,7 +223,7 @@ public class IdentityController {
         partyRepository.save(newCompany);
 
         // create qualifying party
-        QualifyingPartyType qualifyingParty = UblAdapter.adaptQualifyingParty(companyRegistration, newCompany);
+        QualifyingPartyType qualifyingParty = UblAdapter.adaptQualifyingParty(companyRegistration.getSettings(), newCompany);
         qualifyingPartyRepository.save(qualifyingParty);
 
         // add id to response object

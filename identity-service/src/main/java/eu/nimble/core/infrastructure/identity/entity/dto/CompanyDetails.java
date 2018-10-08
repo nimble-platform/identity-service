@@ -2,6 +2,8 @@ package eu.nimble.core.infrastructure.identity.entity.dto;
 
 import io.swagger.annotations.ApiModelProperty;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -25,10 +27,13 @@ public class CompanyDetails {
     private String businessType = null;
 
     @ApiModelProperty(value = "Keywords explaining business objective")
-    private Set<String> businessKeywords;
+    private List<String> businessKeywords;
 
     @ApiModelProperty(value = "Year since company is active")
     private Integer yearOfCompanyRegistration;
+
+    @ApiModelProperty(value = "List of industry sectors in which company is active in.")
+    private List<String> industrySectors = new ArrayList<>();
 
     public String getCompanyLegalName() {
         return companyLegalName;
@@ -70,11 +75,11 @@ public class CompanyDetails {
         this.businessType = businessType;
     }
 
-    public Set<String> getBusinessKeywords() {
+    public List<String> getBusinessKeywords() {
         return businessKeywords;
     }
 
-    public void setBusinessKeywords(Set<String> businessKeywords) {
+    public void setBusinessKeywords(List<String> businessKeywords) {
         this.businessKeywords = businessKeywords;
     }
 
@@ -84,5 +89,13 @@ public class CompanyDetails {
 
     public void setYearOfCompanyRegistration(Integer yearOfCompanyRegistration) {
         this.yearOfCompanyRegistration = yearOfCompanyRegistration;
+    }
+
+    public List<String> getIndustrySectors() {
+        return industrySectors;
+    }
+
+    public void setIndustrySectors(List<String> industrySectors) {
+        this.industrySectors = industrySectors;
     }
 }

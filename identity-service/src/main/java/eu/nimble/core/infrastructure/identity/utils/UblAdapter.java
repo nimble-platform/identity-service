@@ -20,33 +20,39 @@ import java.util.stream.Collectors;
 @SuppressWarnings("WeakerAccess")
 public class UblAdapter {
 
-    public static CompanySettings adaptCompanySettings(PartyType party) {
-        CompanySettings settings = new CompanySettings();
-        settings.setName(party.getName());
-        settings.setWebsite(party.getWebsiteURI());
-        settings.setAddress(adaptAddress(party.getPostalAddress()));
+    public static final String VAT_TAX_TYPE_CODE = "VAT";
 
-        // set payment means
-        if (party.getPurchaseTerms() != null) {
-            List<PaymentMeans> paymentMeans = party.getPurchaseTerms().getPaymentMeans().stream()  // ToDo: improve for sales terms
-                    .map(UblAdapter::adaptPaymentMeans)
-                    .collect(Collectors.toList());
-            settings.setPaymentMeans(paymentMeans);
-        }
+    public static CompanySettingsV2 changeCompanySettings(PartyType party) {
+        CompanySettingsV2 settings = new CompanySettingsV2();
 
-        // set delivery terms
-        if (party.getPurchaseTerms() != null) {
-            List<DeliveryTerms> deliveryTerms = party.getPurchaseTerms().getDeliveryTerms().stream()  // ToDo: improve for sales terms
-                    .map(UblAdapter::adaptDeliveryTerms)
-                    .collect(Collectors.toList());
-            settings.setDeliveryTerms(deliveryTerms);
-        }
+        CompanyDescription companyDescription = adaptCompanyDescription(party, null);
+        CompanyDetails companyDetails = adaptCompanyDetails(party, null);
 
-//        settings.setVerificationInformation(adaptQualityIndicator(party)); // ToDo: refactor!!!!!!
-        settings.setVatNumber(adaptVatNumber(party));
-        if (party.getPpapCompatibilityLevel() != null)
-            settings.setPpapCompatibilityLevel(party.getPpapCompatibilityLevel().intValue());
-        settings.setCertificates(UblAdapter.adaptCertificates(party.getCertificate()));
+        settings.setCompanyID(party.getID());
+        settings.setDescription(companyDescription);
+        settings.setDetails(companyDetails);
+
+//        // set payment means
+//        if (party.getPurchaseTerms() != null) {
+//            List<PaymentMeans> paymentMeans = party.getPurchaseTerms().getPaymentMeans().stream()  // ToDo: improve for sales terms
+//                    .map(UblAdapter::adaptPaymentMeans)
+//                    .collect(Collectors.toList());
+//            settings.setPaymentMeans(paymentMeans);
+//
+//
+//        // set delivery terms
+//        if (party.getPurchaseTerms() != null) {
+//            List<DeliveryTerms> deliveryTerms = party.getPurchaseTerms().getDeliveryTerms().stream()  // ToDo: improve for sales terms
+//                    .map(UblAdapter::adaptDeliveryTerms)
+//                    .collect(Collectors.toList());
+//            settings.setDeliveryTerms(deliveryTerms);
+//        }
+//
+////        settings.setVerificationInformation(adaptQualityIndicator(party)); // ToDo: refactor!!!!!!
+//        settings.setVatNumber(adaptVatNumber(party));
+//        if (party.getPpapCompatibilityLevel() != null)
+//            settings.setPpapCompatibilityLevel(party.getPpapCompatibilityLevel().intValue());
+//        settings.setCertificates(UblAdapter.adaptCertificates(party.getCertificate()));
 
         // set preferred product categories
         Set<String> preferredProductCategories = party.getPreferredItemClassificationCode().stream()
@@ -61,7 +67,7 @@ public class UblAdapter {
         settings.setRecentlyUsedProductCategories(recentlyUsedProductCategories);
 
         List<String> industrySectors = party.getIndustrySector().stream().map(CodeType::getValue).collect(Collectors.toList());
-        settings.setIndustrySectors(industrySectors);
+        settings.getDetails().setIndustrySectors(industrySectors);
 
         return settings;
     }
@@ -97,6 +103,44 @@ public class UblAdapter {
         ublAddress.setCountry(country);
 
         return ublAddress;
+    }
+
+    public static CompanyDetails adaptCompanyDetails(PartyType party, QualifyingPartyType qualifyingParty) {
+
+        CompanyDetails companyDetails = new CompanyDetails();
+
+        companyDetails.setCompanyLegalName(party.getName());
+        companyDetails.setVatNumber(party.getPartyTaxScheme()
+                .stream()
+                .filter(scheme -> scheme.getTaxScheme().getTaxTypeCode().getValue().equals(VAT_TAX_TYPE_CODE))
+                .map(scheme -> scheme.getTaxScheme().getTaxTypeCode().getValue())
+                .findFirst().orElse(null));
+        companyDetails.setAddress(adaptAddress(party.getPostalAddress()));
+
+        if (qualifyingParty != null) {
+            companyDetails.setVerificationInformation(qualifyingParty.getBusinessIdentityEvidenceID());
+            companyDetails.setBusinessKeywords(qualifyingParty.getBusinessClassificationScheme().getDescription());
+            companyDetails.setYearOfCompanyRegistration(qualifyingParty.getOperatingYearsQuantity().getValue().intValue());
+        }
+
+        return companyDetails;
+    }
+
+    public static CompanyDescription adaptCompanyDescription(PartyType party, QualifyingPartyType qualifyingPartyType) {
+
+        CompanyDescription companyDescription = new CompanyDescription();
+        companyDescription.setWebsite(party.getWebsiteURI());
+        companyDescription.setSocialMediaList(party.getContact().getOtherCommunication()
+                .stream()
+                .map(CommunicationType::getValue)
+                .collect(Collectors.toList()));
+
+        if (qualifyingPartyType != null) {
+            companyDescription.setCompanyStatement(qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().get(0));
+            // ToDo: add events
+        }
+
+        return companyDescription;
     }
 
     public static DeliveryTerms adaptDeliveryTerms(DeliveryTermsType ublDeliveryTerms) {
@@ -201,64 +245,84 @@ public class UblAdapter {
     }
 
     public static PartyType adaptCompanyRegistration(CompanyRegistration registration, PersonType representative) {
+        return changeCompanySettings(registration.getSettings(), representative, null);
+    }
 
-        PartyType newCompany = new PartyType();
+    public static PartyType changeCompanySettings(CompanySettingsV2 settings, PersonType representative, PartyType companyToChange) {
+
+        if (companyToChange == null)
+            companyToChange = new PartyType();
 
         // legal name
-        newCompany.setName(registration.getDetails().getCompanyLegalName());
+        companyToChange.setName(settings.getDetails().getCompanyLegalName());
 
         // VAT number
-        newCompany.getPartyTaxScheme().add(adaptTaxSchema(registration.getDetails().getVatNumber()));
+        companyToChange.getPartyTaxScheme().add(adaptTaxSchema(settings.getDetails().getVatNumber()));
 
         // postal address
-        newCompany.setPostalAddress(adaptAddress(registration.getDetails().getAddress()));
+        companyToChange.setPostalAddress(adaptAddress(settings.getDetails().getAddress()));
 
         // classification code
-        newCompany.setIndustryClassificationCode(adaptCodeType("IndustryClassificationCode", registration.getDetails().getBusinessType()));
+        companyToChange.setIndustryClassificationCode(adaptCodeType("IndustryClassificationCode", settings.getDetails().getBusinessType()));
 
         // website URL
-        newCompany.setWebsiteURI(registration.getDescription().getWebsite());
+        companyToChange.setWebsiteURI(settings.getDescription().getWebsite());
 
         // social media list
         ContactType socialMediaContact = new ContactType();
-        socialMediaContact.setOtherCommunication(adaptSocialMediaList(registration.getDescription().getSocialMediaList()));
-        newCompany.setContact(socialMediaContact);
+        socialMediaContact.setOtherCommunication(adaptSocialMediaList(settings.getDescription().getSocialMediaList()));
+        companyToChange.setContact(socialMediaContact);
 
-        newCompany.getPerson().add(representative);
+        // industry sectors
+        List<CodeType> industrySectors = UblAdapter.adaptIndustrySectors(settings.getDetails().getIndustrySectors());
+        companyToChange.setIndustrySector(industrySectors);
 
-        return newCompany;
+        // check if representative is not already in list
+        if (representative != null) {
+            boolean alreadyInList = companyToChange.getPerson()
+                    .stream()
+                    .anyMatch(personType -> personType.getContact().getElectronicMail().equals(representative.getContact().getElectronicMail()));
+            if (alreadyInList == false)
+                companyToChange.getPerson().add(representative);
+        }
+
+        // PPAP
+        int ppapLevel = settings.getTradeDetails().getPpapCompatibilityLevel() != null ? settings.getTradeDetails().getPpapCompatibilityLevel() : 0;
+        companyToChange.setPpapCompatibilityLevel(BigDecimal.valueOf(ppapLevel));
+
+        return companyToChange;
     }
 
-    public static QualifyingPartyType adaptQualifyingParty(CompanyRegistration registration, PartyType company) {
+    public static QualifyingPartyType adaptQualifyingParty(CompanySettingsV2 settings, PartyType company) {
 
         QualifyingPartyType qualifyingParty = new QualifyingPartyType();
 
         // set verification info
-        qualifyingParty.setBusinessClassificationEvidenceID(registration.getDetails().getVerificationInformation());
+        qualifyingParty.setBusinessClassificationEvidenceID(settings.getDetails().getVerificationInformation());
 
         // business keywords
         ClassificationSchemeType classificationScheme = new ClassificationSchemeType();
-        classificationScheme.setDescription(new ArrayList<>(registration.getDetails().getBusinessKeywords()));
+        classificationScheme.setDescription(new ArrayList<>(settings.getDetails().getBusinessKeywords()));
         qualifyingParty.setBusinessClassificationScheme(classificationScheme);
 
         // year of company registration
         QuantityType years = new QuantityType();
-        years.setValue(new BigDecimal(registration.getDetails().getYearOfCompanyRegistration()));
+        years.setValue(new BigDecimal(settings.getDetails().getYearOfCompanyRegistration()));
         qualifyingParty.setOperatingYearsQuantity(years);
 
         // company events
         List<EventType> events = new ArrayList<>();
-        registration.getDescription().getPastEvents().stream()
+        settings.getDescription().getPastEvents().stream()
                 .map(event -> adaptEvent(event, true))
                 .collect(Collectors.toCollection(() -> events));
-        registration.getDescription().getUpcomingEvents().stream()
+        settings.getDescription().getUpcomingEvents().stream()
                 .map(event -> adaptEvent(event, false))
                 .collect(Collectors.toCollection(() -> events));
         qualifyingParty.setEvent(events);
 
         // company statement
         EconomicOperatorRoleType economicOperatorRole = new EconomicOperatorRoleType();
-        economicOperatorRole.setRoleDescription(Collections.singletonList(registration.getDescription().getCompanyStatement()));
+        economicOperatorRole.setRoleDescription(Collections.singletonList(settings.getDescription().getCompanyStatement()));
         qualifyingParty.setEconomicOperatorRole(economicOperatorRole);
 
         qualifyingParty.setParty(company);
@@ -293,7 +357,7 @@ public class UblAdapter {
     }
 
     public static PartyTaxSchemeType adaptTaxSchema(String vatNumber) {
-        CodeType codeType = adaptCodeType("VAT", vatNumber);
+        CodeType codeType = adaptCodeType(VAT_TAX_TYPE_CODE, vatNumber);
         TaxSchemeType taxScheme = new TaxSchemeType();
         taxScheme.setTaxTypeCode(codeType);
         PartyTaxSchemeType partyTaxSchemeType = new PartyTaxSchemeType();
@@ -316,7 +380,7 @@ public class UblAdapter {
         return codeType;
     }
 
-    public static CertificateType adaptCertificate(MultipartFile certFile, String name, String type) throws IOException {
+    public static CertificateType adaptCertificate(MultipartFile certFile, String name, String type, String description) throws IOException {
 
         CodeType codeType = adaptCodeType(name, null);
 
@@ -330,7 +394,7 @@ public class UblAdapter {
         documentReferenceType.setAttachment(attachmentType);
 
         CertificateType certificateType = new CertificateType();
-//        certificateType.setIssuerParty(issuer);
+        certificateType.setRemarks(description);
         certificateType.setCertificateType(type);
         certificateType.setCertificateTypeCode(codeType);
         certificateType.getDocumentReference().add(documentReferenceType);
@@ -343,7 +407,8 @@ public class UblAdapter {
                 .map(certificateType ->
                         new CompanyCertificate(certificateType.getCertificateTypeCode().getName(),
                                 certificateType.getCertificateType(),
-                                certificateType.getHjid().toString()))
+                                certificateType.getHjid().toString(),
+                                certificateType.getRemarks()))
                 .collect(Collectors.toList());
     }
 

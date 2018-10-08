@@ -15,11 +15,14 @@ public class CompanyRegistration   {
     @ApiModelProperty(value = "Updated access token after registration")
     private String accessToken;
 
-    @ApiModelProperty(value = "General details related to the company")
-    private CompanyDetails details = new CompanyDetails();
+    @ApiModelProperty(value = "Settings of company")
+    private CompanySettingsV2 settings;
 
-    @ApiModelProperty(value = "Descriptive data of the company")
-    private CompanyDescription description = new CompanyDescription();
+//    @ApiModelProperty(value = "General details related to the company")
+//    private CompanyDetails details = new CompanyDetails();
+//
+//    @ApiModelProperty(value = "Descriptive data of the company")
+//    private CompanyDescription description = new CompanyDescription();
 
     public Long getUserID() {
         return userID;
@@ -45,19 +48,27 @@ public class CompanyRegistration   {
         this.accessToken = accessToken;
     }
 
-    public CompanyDetails getDetails() {
-        return details;
+//    public CompanyDetails getDetails() {
+//        return details;
+//    }
+//
+//    public void setDetails(CompanyDetails details) {
+//        this.details = details;
+//    }
+//
+//    public CompanyDescription getDescription() {
+//        return description;
+//    }
+//
+//    public void setDescription(CompanyDescription description) {
+//        this.description = description;
+//    }
+
+    public CompanySettingsV2 getSettings() {
+        return settings;
     }
 
-    public void setDetails(CompanyDetails details) {
-        this.details = details;
-    }
-
-    public CompanyDescription getDescription() {
-        return description;
-    }
-
-    public void setDescription(CompanyDescription description) {
-        this.description = description;
+    public void setSettings(CompanySettingsV2 settings) {
+        this.settings = settings;
     }
 }
