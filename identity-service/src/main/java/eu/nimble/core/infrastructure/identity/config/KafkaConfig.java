@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.config;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -39,9 +40,11 @@ public class KafkaConfig {
     public Map<String, Object> producerConfigs() {
         Map<String, Object> props = new HashMap<>();
         props.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_SSL");
-        props.put("sasl.mechanism", "PLAIN");
-        props.put("sasl.jaas.config", jaasConfig);
+        if (StringUtils.isEmpty(jaasConfig) == false) {
+            props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_SSL");
+            props.put("sasl.mechanism", "PLAIN");
+            props.put("sasl.jaas.config", jaasConfig);
+        }
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
         return props;
@@ -61,9 +64,11 @@ public class KafkaConfig {
     public Map<String, Object> consumerConfigs() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_SSL");
-        props.put("sasl.mechanism", "PLAIN");
-        props.put("sasl.jaas.config", jaasConfig);
+        if (StringUtils.isEmpty(jaasConfig) == false) {
+            props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_SSL");
+            props.put("sasl.mechanism", "PLAIN");
+            props.put("sasl.jaas.config", jaasConfig);
+        }
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, consumerGroupId);

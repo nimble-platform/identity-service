@@ -8,10 +8,12 @@ import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.CertificateRepository;
 import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
+import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.CertificateType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.QualifyingPartyType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
 import io.swagger.annotations.Api;
@@ -49,6 +51,9 @@ public class CompanySettingsController {
     private PartyRepository partyRepository;
 
     @Autowired
+    private QualifyingPartyRepository qualifyingPartyRepository;
+
+    @Autowired
     private CertificateRepository certificateRepository;
 
     @Autowired
@@ -77,10 +82,11 @@ public class CompanySettingsController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
+        Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(party.get()).stream().findFirst();
+
         logger.debug("Returning requested settings for party with Id {}", party.get().getHjid());
 
-
-        CompanySettingsV2 settings = UblAdapter.changeCompanySettings(party.get());
+        CompanySettingsV2 settings = UblAdapter.adaptCompanySettings(party.get(), qualifyingPartyOptional.orElse(null));
         return new ResponseEntity<>(settings, HttpStatus.OK);
     }
 
@@ -103,7 +109,11 @@ public class CompanySettingsController {
         PartyType existingCompany = partyOptional.get();
         logger.debug("Changing settings for party with Id {}", existingCompany.getHjid());
 
-        existingCompany = UblAdapter.changeCompanySettings(newSettings, null, existingCompany);
+        existingCompany = UblAdapter.adaptCompanySettings(newSettings, null, existingCompany);
+
+        Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(existingCompany).stream().findFirst();
+        QualifyingPartyType qualifyingParty = UblAdapter.adaptQualifyingParty(newSettings, existingCompany, qualifyingPartyOptional.orElse(null));
+        qualifyingPartyRepository.save(qualifyingParty);
 
         // set delivery terms
 //        List<DeliveryTermsType> deliveryTerms = newSettings.getDeliveryTerms().stream().map(UblAdapter::adaptDeliveryTerms).collect(Collectors.toList());

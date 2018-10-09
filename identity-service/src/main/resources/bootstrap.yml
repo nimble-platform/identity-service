@@ -119,3 +119,11 @@ spring:
     initialize: false
     username: sa
     password:
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
+    consumer:
+      group-id: "test-identity-service"
+    properties:
+      sasl:
+        jaas:
+          config: ""

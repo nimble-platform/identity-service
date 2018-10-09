@@ -27,7 +27,7 @@ public class CompanyDetails {
     private String businessType = null;
 
     @ApiModelProperty(value = "Keywords explaining business objective")
-    private List<String> businessKeywords;
+    private List<String> businessKeywords = new ArrayList<>();
 
     @ApiModelProperty(value = "Year since company is active")
     private Integer yearOfCompanyRegistration;

@@ -22,36 +22,35 @@ public class UblAdapter {
 
     public static final String VAT_TAX_TYPE_CODE = "VAT";
 
-    public static CompanySettingsV2 changeCompanySettings(PartyType party) {
+    public static CompanySettingsV2 adaptCompanySettings(PartyType party, QualifyingPartyType qualifyingParty) {
         CompanySettingsV2 settings = new CompanySettingsV2();
 
-        CompanyDescription companyDescription = adaptCompanyDescription(party, null);
-        CompanyDetails companyDetails = adaptCompanyDetails(party, null);
+        CompanyDetails companyDetails = adaptCompanyDetails(party, qualifyingParty);
+        CompanyDescription companyDescription = adaptCompanyDescription(party, qualifyingParty);
 
         settings.setCompanyID(party.getID());
-        settings.setDescription(companyDescription);
         settings.setDetails(companyDetails);
+        settings.setDescription(companyDescription);
 
-//        // set payment means
-//        if (party.getPurchaseTerms() != null) {
-//            List<PaymentMeans> paymentMeans = party.getPurchaseTerms().getPaymentMeans().stream()  // ToDo: improve for sales terms
-//                    .map(UblAdapter::adaptPaymentMeans)
-//                    .collect(Collectors.toList());
-//            settings.setPaymentMeans(paymentMeans);
-//
-//
-//        // set delivery terms
-//        if (party.getPurchaseTerms() != null) {
-//            List<DeliveryTerms> deliveryTerms = party.getPurchaseTerms().getDeliveryTerms().stream()  // ToDo: improve for sales terms
-//                    .map(UblAdapter::adaptDeliveryTerms)
-//                    .collect(Collectors.toList());
-//            settings.setDeliveryTerms(deliveryTerms);
-//        }
-//
-////        settings.setVerificationInformation(adaptQualityIndicator(party)); // ToDo: refactor!!!!!!
-//        settings.setVatNumber(adaptVatNumber(party));
-//        if (party.getPpapCompatibilityLevel() != null)
-//            settings.setPpapCompatibilityLevel(party.getPpapCompatibilityLevel().intValue());
+        // set payment means
+        if (party.getPurchaseTerms() != null) {
+            List<PaymentMeans> paymentMeans = party.getPurchaseTerms().getPaymentMeans().stream()
+                    .map(UblAdapter::adaptPaymentMeans)
+                    .collect(Collectors.toList());
+            settings.getTradeDetails().setPaymentMeans(paymentMeans);
+        }
+
+        // set delivery terms
+        if (party.getPurchaseTerms() != null) {
+            List<DeliveryTerms> deliveryTerms = party.getPurchaseTerms().getDeliveryTerms().stream()
+                    .map(UblAdapter::adaptDeliveryTerms)
+                    .collect(Collectors.toList());
+            settings.getTradeDetails().setDeliveryTerms(deliveryTerms);
+        }
+
+        if (party.getPpapCompatibilityLevel() != null)
+            settings.getTradeDetails().setPpapCompatibilityLevel(party.getPpapCompatibilityLevel().intValue());
+
 //        settings.setCertificates(UblAdapter.adaptCertificates(party.getCertificate()));
 
         // set preferred product categories
@@ -112,7 +111,7 @@ public class UblAdapter {
         companyDetails.setCompanyLegalName(party.getName());
         companyDetails.setVatNumber(party.getPartyTaxScheme()
                 .stream()
-                .filter(scheme -> scheme.getTaxScheme().getTaxTypeCode().getValue().equals(VAT_TAX_TYPE_CODE))
+                .filter(scheme -> scheme.getTaxScheme().getTaxTypeCode().getName().equals(VAT_TAX_TYPE_CODE))
                 .map(scheme -> scheme.getTaxScheme().getTaxTypeCode().getValue())
                 .findFirst().orElse(null));
         companyDetails.setAddress(adaptAddress(party.getPostalAddress()));
@@ -137,7 +136,21 @@ public class UblAdapter {
 
         if (qualifyingPartyType != null) {
             companyDescription.setCompanyStatement(qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().get(0));
-            // ToDo: add events
+
+            // adapt events
+            if (qualifyingPartyType.getEvent() != null) {
+                List<CompanyEvent> pastEvents = qualifyingPartyType.getEvent().stream()
+                        .filter(EventType::isCompletionIndicator)
+                        .map(UblAdapter::adaptEvent)
+                        .collect(Collectors.toList());
+                List<CompanyEvent> upcomingEvents = qualifyingPartyType.getEvent().stream()
+                        .filter(e -> e.isCompletionIndicator() == false)
+                        .map(UblAdapter::adaptEvent)
+                        .collect(Collectors.toList());
+                companyDescription.setPastEvents(pastEvents);
+                companyDescription.setUpcomingEvents(upcomingEvents);
+            }
+
         }
 
         return companyDescription;
@@ -245,10 +258,10 @@ public class UblAdapter {
     }
 
     public static PartyType adaptCompanyRegistration(CompanyRegistration registration, PersonType representative) {
-        return changeCompanySettings(registration.getSettings(), representative, null);
+        return adaptCompanySettings(registration.getSettings(), representative, null);
     }
 
-    public static PartyType changeCompanySettings(CompanySettingsV2 settings, PersonType representative, PartyType companyToChange) {
+    public static PartyType adaptCompanySettings(CompanySettingsV2 settings, PersonType representative, PartyType companyToChange) {
 
         if (companyToChange == null)
             companyToChange = new PartyType();
@@ -286,19 +299,41 @@ public class UblAdapter {
                 companyToChange.getPerson().add(representative);
         }
 
-        // PPAP
-        int ppapLevel = settings.getTradeDetails().getPpapCompatibilityLevel() != null ? settings.getTradeDetails().getPpapCompatibilityLevel() : 0;
-        companyToChange.setPpapCompatibilityLevel(BigDecimal.valueOf(ppapLevel));
+        if (settings.getTradeDetails() != null) {
+
+            if (companyToChange.getPurchaseTerms() == null)
+                companyToChange.setPurchaseTerms(new TradingPreferences());
+
+            // delivery terms
+            List<DeliveryTermsType> deliveryTerms = settings.getTradeDetails().getDeliveryTerms().stream()
+                    .map(UblAdapter::adaptDeliveryTerms)
+                    .collect(Collectors.toList());
+            companyToChange.getPurchaseTerms().setDeliveryTerms(deliveryTerms);
+
+            // payment means
+            List<PaymentMeansType> paymentMeans = settings.getTradeDetails().getPaymentMeans().stream()
+                    .map(UblAdapter::adaptPaymentMeans)
+                    .collect(Collectors.toList());
+            companyToChange.getPurchaseTerms().setPaymentMeans(paymentMeans);
+
+            // PPAP
+            int ppapLevel = settings.getTradeDetails().getPpapCompatibilityLevel() != null ? settings.getTradeDetails().getPpapCompatibilityLevel() : 0;
+            companyToChange.setPpapCompatibilityLevel(BigDecimal.valueOf(ppapLevel));
+        }
 
         return companyToChange;
     }
 
     public static QualifyingPartyType adaptQualifyingParty(CompanySettingsV2 settings, PartyType company) {
+        return adaptQualifyingParty(settings, company, null);
+    }
 
-        QualifyingPartyType qualifyingParty = new QualifyingPartyType();
+    public static QualifyingPartyType adaptQualifyingParty(CompanySettingsV2 settings, PartyType company, QualifyingPartyType existingQualifyingParty) {
+
+        QualifyingPartyType qualifyingParty = existingQualifyingParty == null ? new QualifyingPartyType() : existingQualifyingParty;
 
         // set verification info
-        qualifyingParty.setBusinessClassificationEvidenceID(settings.getDetails().getVerificationInformation());
+        qualifyingParty.setBusinessIdentityEvidenceID(settings.getDetails().getVerificationInformation());
 
         // business keywords
         ClassificationSchemeType classificationScheme = new ClassificationSchemeType();
@@ -354,6 +389,19 @@ public class UblAdapter {
         ublEvent.setDescription(event.getDescription());
 
         return ublEvent;
+    }
+
+    public static CompanyEvent adaptEvent(EventType ublEvent) {
+        CompanyEvent companyEvent = new CompanyEvent();
+        companyEvent.setDescription(ublEvent.getDescription());
+        companyEvent.setName(ublEvent.getIdentificationID());
+        if (ublEvent.getOccurenceLocation() != null)
+            companyEvent.setPlace(adaptAddress(ublEvent.getOccurenceLocation().getAddress()));
+        if (ublEvent.getDurationPeriod() != null) {
+            companyEvent.setDateFrom(ublEvent.getDurationPeriod().getStartDateItem());
+            companyEvent.setDateTo(ublEvent.getDurationPeriod().getEndDateItem());
+        }
+        return companyEvent;
     }
 
     public static PartyTaxSchemeType adaptTaxSchema(String vatNumber) {
