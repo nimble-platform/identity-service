@@ -5,12 +5,10 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
+import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.CertificateType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.QualityIndicatorType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -55,6 +53,9 @@ public class PartyController {
 
     @Autowired
     private PersonRepository personRepository;
+
+    @Autowired
+    private QualifyingPartyRepository qualifyingPartyRepository;
 
     @Autowired
     private IdentityUtils identityUtils;
@@ -233,6 +234,34 @@ public class PartyController {
         logger.debug("Returning completeness of party with Id {0}", party.getHjid());
         return new ResponseEntity<>(completenessParty, HttpStatus.OK);
     }
+
+    @SuppressWarnings("ConstantConditions")
+    @ApiOperation(value = "", notes = "Get QualifyingParty for Id.", response = PartyType.class, tags = {})
+    @RequestMapping(value = "/qualifying/{partyId}", method = RequestMethod.GET)
+    ResponseEntity<QualifyingPartyType> getQualifyingParty(
+            @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long partyId,
+            @RequestHeader(value = "Authorization") String bearer) {
+
+        // search relevant parties
+        Optional<PartyType> partyOptional = partyRepository.findByHjid(partyId).stream().findFirst();
+
+        // check if party was found
+        if (partyOptional.isPresent()) {
+            logger.info("Requested party with Id {} not found", partyId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(partyOptional.get()).stream().findFirst();
+
+        if (qualifyingPartyOptional.isPresent()) {
+            logger.info("Requested party with Id {} not found", partyId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        logger.debug("Returning requested QualifyingParty with Id {0}", partyId);
+        return new ResponseEntity<>(qualifyingPartyOptional.get(), HttpStatus.OK);
+    }
+
 
     private static class PartyTuple {
         private String identifier;
