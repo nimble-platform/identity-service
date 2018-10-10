@@ -231,6 +231,46 @@ public class PartyController {
         return new ResponseEntity<>(qualifyingPartyOptional.get(), HttpStatus.OK);
     }
 
+    @ApiOperation(value = "", notes = "Get profile completeness of company.", response = PartyType.class)
+    @RequestMapping(value = "/party/completeness/{partyId}", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<?> getProfileCompleteness(
+            @ApiParam(value = "Id of party to retrieve profile completeness.", required = true) @PathVariable Long partyId
+    ) {
+        // search relevant parties
+        List<PartyType> parties = partyRepository.findByHjid(partyId);
+
+        // check if party was found
+        if (parties.isEmpty()) {
+            logger.info("Requested party with Id {} not found", partyId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        PartyType party = parties.get(0);
+        QualifyingPartyType qualifyingParty = qualifyingPartyRepository.findByParty(party).stream().findFirst().orElse(null);
+
+        CompanySettings companySettings = UblAdapter.adaptCompanySettings(party, qualifyingParty);
+
+        // compute completeness factors
+        Double detailsCompleteness = IdentityUtils.computeDetailsCompleteness(companySettings.getDetails());
+        Double descriptionCompleteness = IdentityUtils.computeDescriptionCompleteness(companySettings.getDescription());
+        Double certificateCompleteness = IdentityUtils.computeCertificateCompleteness(party);
+        Double tradeCompleteness = IdentityUtils.computeTradeCompleteness(companySettings.getTradeDetails());
+        Double overallCompleteness = (detailsCompleteness + descriptionCompleteness + certificateCompleteness + tradeCompleteness) / 4.0;
+
+        List<QualityIndicatorType> qualityIndicators = new ArrayList<>();
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(PROFILE_COMPLETENESS, overallCompleteness));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_GENERAL_DETAILS, detailsCompleteness));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_DESCRIPTION, descriptionCompleteness));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_CERTIFICATE_DETAILS, certificateCompleteness));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_TRADE_DETAILS, overallCompleteness));
+        PartyType completenessParty = new PartyType();
+        completenessParty.setQualityIndicator(qualityIndicators);
+        completenessParty.setID(party.getID());
+
+        logger.debug("Returning completeness of party with Id {0}", party.getHjid());
+        return new ResponseEntity<>(completenessParty, HttpStatus.OK);
+    }
+
 
     private static class PartyTuple {
         private String identifier;
