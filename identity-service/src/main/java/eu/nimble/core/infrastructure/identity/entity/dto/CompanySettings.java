@@ -10,7 +10,7 @@ import java.util.Set;
 /**
  * Created by Johannes Innerbichler on 02.10.18.
  */
-public class CompanySettingsV2 {
+public class CompanySettings {
 
     @ApiModelProperty(value = "Identifier of company")
     private String companyID;
@@ -30,12 +30,12 @@ public class CompanySettingsV2 {
     @ApiModelProperty(value = "List of recently used product categories")
     private Set<String> recentlyUsedProductCategories = new HashSet<>();
 
-    public CompanySettingsV2() {
+    public CompanySettings() {
     }
 
-    public CompanySettingsV2(String companyID, CompanyDetails details, CompanyDescription description, CompanyTradeDetails tradeDetails,
-                             Integer ppapCompatibilityLevel, Set<String> preferredProductCategories,
-                             Set<String> recentlyUsedProductCategories) {
+    public CompanySettings(String companyID, CompanyDetails details, CompanyDescription description, CompanyTradeDetails tradeDetails,
+                           Integer ppapCompatibilityLevel, Set<String> preferredProductCategories,
+                           Set<String> recentlyUsedProductCategories) {
         this.companyID = companyID;
         this.details = details;
         this.description = description;

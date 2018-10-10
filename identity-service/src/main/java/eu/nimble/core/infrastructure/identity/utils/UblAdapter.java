@@ -22,8 +22,8 @@ public class UblAdapter {
 
     public static final String VAT_TAX_TYPE_CODE = "VAT";
 
-    public static CompanySettingsV2 adaptCompanySettings(PartyType party, QualifyingPartyType qualifyingParty) {
-        CompanySettingsV2 settings = new CompanySettingsV2();
+    public static CompanySettings adaptCompanySettings(PartyType party, QualifyingPartyType qualifyingParty) {
+        CompanySettings settings = new CompanySettings();
 
         CompanyDetails companyDetails = adaptCompanyDetails(party, qualifyingParty);
         CompanyDescription companyDescription = adaptCompanyDescription(party, qualifyingParty);
@@ -51,7 +51,7 @@ public class UblAdapter {
         if (party.getPpapCompatibilityLevel() != null)
             settings.getTradeDetails().setPpapCompatibilityLevel(party.getPpapCompatibilityLevel().intValue());
 
-//        settings.setCertificates(UblAdapter.adaptCertificates(party.getCertificate()));
+//        settings.setCertificates(UblAdapter.adaptCertificates(party.getCertificate()));a
 
         // set preferred product categories
         Set<String> preferredProductCategories = party.getPreferredItemClassificationCode().stream()
@@ -119,7 +119,8 @@ public class UblAdapter {
         if (qualifyingParty != null) {
             companyDetails.setVerificationInformation(qualifyingParty.getBusinessIdentityEvidenceID());
             companyDetails.setBusinessKeywords(qualifyingParty.getBusinessClassificationScheme().getDescription());
-            companyDetails.setYearOfCompanyRegistration(qualifyingParty.getOperatingYearsQuantity().getValue().intValue());
+            if( qualifyingParty.getOperatingYearsQuantity() != null && qualifyingParty.getOperatingYearsQuantity().getValue() != null)
+                companyDetails.setYearOfCompanyRegistration(qualifyingParty.getOperatingYearsQuantity().getValue().intValue());
         }
 
         return companyDetails;
@@ -261,7 +262,7 @@ public class UblAdapter {
         return adaptCompanySettings(registration.getSettings(), representative, null);
     }
 
-    public static PartyType adaptCompanySettings(CompanySettingsV2 settings, PersonType representative, PartyType companyToChange) {
+    public static PartyType adaptCompanySettings(CompanySettings settings, PersonType representative, PartyType companyToChange) {
 
         if (companyToChange == null)
             companyToChange = new PartyType();
@@ -270,7 +271,8 @@ public class UblAdapter {
         companyToChange.setName(settings.getDetails().getCompanyLegalName());
 
         // VAT number
-        companyToChange.getPartyTaxScheme().add(adaptTaxSchema(settings.getDetails().getVatNumber()));
+        if( settings.getDetails().getVatNumber() != null)
+            companyToChange.getPartyTaxScheme().add(adaptTaxSchema(settings.getDetails().getVatNumber()));
 
         // postal address
         companyToChange.setPostalAddress(adaptAddress(settings.getDetails().getAddress()));
@@ -324,11 +326,11 @@ public class UblAdapter {
         return companyToChange;
     }
 
-    public static QualifyingPartyType adaptQualifyingParty(CompanySettingsV2 settings, PartyType company) {
+    public static QualifyingPartyType adaptQualifyingParty(CompanySettings settings, PartyType company) {
         return adaptQualifyingParty(settings, company, null);
     }
 
-    public static QualifyingPartyType adaptQualifyingParty(CompanySettingsV2 settings, PartyType company, QualifyingPartyType existingQualifyingParty) {
+    public static QualifyingPartyType adaptQualifyingParty(CompanySettings settings, PartyType company, QualifyingPartyType existingQualifyingParty) {
 
         QualifyingPartyType qualifyingParty = existingQualifyingParty == null ? new QualifyingPartyType() : existingQualifyingParty;
 
@@ -341,9 +343,11 @@ public class UblAdapter {
         qualifyingParty.setBusinessClassificationScheme(classificationScheme);
 
         // year of company registration
-        QuantityType years = new QuantityType();
-        years.setValue(new BigDecimal(settings.getDetails().getYearOfCompanyRegistration()));
-        qualifyingParty.setOperatingYearsQuantity(years);
+        if (settings.getDetails() != null && settings.getDetails().getYearOfCompanyRegistration() != null) {
+            QuantityType years = new QuantityType();
+            years.setValue(new BigDecimal(settings.getDetails().getYearOfCompanyRegistration()));
+            qualifyingParty.setOperatingYearsQuantity(years);
+        }
 
         // company events
         List<EventType> events = new ArrayList<>();
@@ -414,6 +418,10 @@ public class UblAdapter {
     }
 
     public static List<CommunicationType> adaptSocialMediaList(List<String> socialMediaList) {
+
+        if (socialMediaList == null)
+            return Collections.emptyList();
+
         return socialMediaList.stream().map(sm -> {
             CommunicationType communicationType = new CommunicationType();
             communicationType.setValue(sm);

@@ -1,42 +1,38 @@
 package eu.nimble.core.infrastructure.identity.controller.frontend;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import eu.nimble.core.infrastructure.identity.IdentityServiceApplication;
 import eu.nimble.core.infrastructure.identity.IdentityUtilsTestConfiguration;
-import eu.nimble.core.infrastructure.identity.config.KafkaConfig;
 import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
+import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.junit.Before;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.QualityIndicatorType;
 import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import static org.junit.Assert.*;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-import org.springframework.kafka.listener.KafkaMessageListenerContainer;
-import org.springframework.kafka.listener.MessageListener;
-import org.springframework.kafka.listener.config.ContainerProperties;
 import org.springframework.kafka.test.rule.KafkaEmbedded;
-import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
-import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
 
+import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -64,6 +60,9 @@ public class CompanySettingsControllerTests {
 
     @Autowired
     private PartyRepository partyRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @ClassRule
     public static KafkaEmbedded embeddedKafka = new KafkaEmbedded(1, true, "topic");
@@ -101,7 +100,7 @@ public class CompanySettingsControllerTests {
         companyTradeDetails.getPaymentMeans().add(new PaymentMeans("instruction note"));
         companyTradeDetails.getDeliveryTerms().add(new DeliveryTerms("special terms", new Address(), 5));
 
-        CompanySettingsV2 companySettings = new CompanySettingsV2();
+        CompanySettings companySettings = new CompanySettings();
         companySettings.setDetails(companyDetails);
         companySettings.setDescription(companyDescription);
         companySettings.setTradeDetails(companyTradeDetails);
@@ -272,6 +271,80 @@ public class CompanySettingsControllerTests {
                 .accept(MediaType.APPLICATION_JSON))
                 // THEN: 4xx error should occur
                 .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @SuppressWarnings("ConstantConditions")
+    public void testProfileCompleteness() throws Exception {
+
+        // GIVEN: existing company on platform
+        PartyType company = identityUtils.getCompanyOfUser(null).get();
+        partyRepository.save(company);
+
+        CompanySettings companySettings = new CompanySettings();
+
+        Gson gson = new Gson();
+        this.mockMvc.perform(put("/company-settings/" + company.getID())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
+                .content(gson.toJson(companySettings)))
+                .andExpect(status().isAccepted())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+
+        String responseAsString = this.mockMvc.perform(get("/company-settings/" + company.getID() + "/completeness"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        PartyType responseParty = objectMapper.readValue(responseAsString, PartyType.class);
+
+        // check quality indicator which should all be zero
+        QualityIndicatorType profileCompleteness = UblUtils.extractQualityIndicator(responseParty, PROFILE_COMPLETENESS).orElse(null);
+        QualityIndicatorType descriptionCompleteness = UblUtils.extractQualityIndicator(responseParty, COMPLETENESS_OF_COMPANY_DESCRIPTION).orElse(null);
+        QualityIndicatorType detailCompleteness = UblUtils.extractQualityIndicator(responseParty, COMPLETENESS_OF_COMPANY_GENERAL_DETAILS).orElse(null);
+        QualityIndicatorType certificationCompleteness = UblUtils.extractQualityIndicator(responseParty, COMPLETENESS_OF_COMPANY_CERTIFICATE_DETAILS).orElse(null);
+        QualityIndicatorType tradeCompleteness = UblUtils.extractQualityIndicator(responseParty, COMPLETENESS_OF_COMPANY_TRADE_DETAILS).orElse(null);
+
+        assertFalse(profileCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertFalse(descriptionCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertFalse(detailCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertFalse(certificationCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertFalse(tradeCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+
+        // WHEN: updating company settings
+        CompanyDetails companyDetails = new CompanyDetails();
+        companyDetails.setCompanyLegalName("company name");
+        companySettings.setDetails(companyDetails);
+        CompanyDescription companyDescription = new CompanyDescription();
+        companyDescription.setCompanyStatement("company statement");
+        companySettings.setDescription(companyDescription);
+        CompanyTradeDetails companyTradeDetails = new CompanyTradeDetails();
+        companyTradeDetails.setPpapCompatibilityLevel(5);
+        companySettings.setTradeDetails(companyTradeDetails);
+
+        this.mockMvc.perform(put("/company-settings/" + company.getID())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
+                .content(gson.toJson(companySettings)))
+                .andExpect(status().isAccepted())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+        responseAsString = this.mockMvc.perform(get("/company-settings/" + company.getID() + "/completeness"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        responseParty = objectMapper.readValue(responseAsString, PartyType.class);
+
+        // THEN: completeness indicators should be updated
+        profileCompleteness = UblUtils.extractQualityIndicator(responseParty, PROFILE_COMPLETENESS).orElse(null);
+        descriptionCompleteness = UblUtils.extractQualityIndicator(responseParty, COMPLETENESS_OF_COMPANY_DESCRIPTION).orElse(null);
+        detailCompleteness = UblUtils.extractQualityIndicator(responseParty, COMPLETENESS_OF_COMPANY_GENERAL_DETAILS).orElse(null);
+        certificationCompleteness = UblUtils.extractQualityIndicator(responseParty, COMPLETENESS_OF_COMPANY_CERTIFICATE_DETAILS).orElse(null);
+        tradeCompleteness = UblUtils.extractQualityIndicator(responseParty, COMPLETENESS_OF_COMPANY_TRADE_DETAILS).orElse(null);
+
+        assertTrue(profileCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertTrue(descriptionCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertTrue(detailCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertFalse(certificationCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertTrue(tradeCompleteness.getQuantity().getValue().doubleValue() > 0.0);
     }
 
     public NegotiationSettings initNegotiationSettings() throws Exception {

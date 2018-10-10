@@ -3,6 +3,7 @@ package eu.nimble.core.infrastructure.identity.controller.ubl;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
@@ -190,7 +191,7 @@ public class PartyController {
 
     @ApiOperation(value = "", notes = "Get all party ids and name. Returns id-name tuples.", response = PartyTuple.class, responseContainer = "Set")
     @RequestMapping(value = "/party/all", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<Set<PartyTuple> > getAllPartyIds(
+    ResponseEntity<Set<PartyTuple>> getAllPartyIds(
             @ApiParam(value = "Excluded ids") @RequestParam(value = "exclude", required = false) List<String> exclude) {
 
         Set<PartyTuple> partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
@@ -201,38 +202,6 @@ public class PartyController {
             partyIds = partyIds.stream().filter(p -> !exclude.contains(p.getIdentifier())).collect(Collectors.toSet());
 
         return ResponseEntity.ok(partyIds);
-    }
-
-    @ApiOperation(value = "", notes = "Get profile completeness of company.", response = PartyType.class)
-    @RequestMapping(value = "/party/completeness/{partyId}", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<?> getProfileCompleteness(
-            @ApiParam(value = "Id of party to retrieve profile completeness.", required = true) @PathVariable Long partyId
-    ) {
-        // search relevant parties
-        List<PartyType> parties = partyRepository.findByHjid(partyId);
-
-        // check if party was found
-        if (parties.isEmpty()) {
-            logger.info("Requested party with Id {} not found", partyId);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-
-        PartyType party = parties.get(0);
-
-        // ToDo: compute completeness
-
-        List<QualityIndicatorType> qualityIndicators = new ArrayList<>();
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator(PROFILE_COMPLETENESS, 0.4));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_GENERAL_DETAILS, 0.1));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_DESCRIPTION, 0.5));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_CERTIFICATE_DETAILS, 0.66));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_TRADE_DETAILS, 0.6));
-        PartyType completenessParty = new PartyType();
-        completenessParty.setQualityIndicator(qualityIndicators);
-        completenessParty.setID(party.getID());
-
-        logger.debug("Returning completeness of party with Id {0}", party.getHjid());
-        return new ResponseEntity<>(completenessParty, HttpStatus.OK);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -282,7 +251,7 @@ public class PartyController {
     }
 
     public static PartyType removeBinaries(PartyType partyType) {
-        for(CertificateType cert : partyType.getCertificate()) {
+        for (CertificateType cert : partyType.getCertificate()) {
             cert.setDocumentReference(null);
         }
         return partyType;

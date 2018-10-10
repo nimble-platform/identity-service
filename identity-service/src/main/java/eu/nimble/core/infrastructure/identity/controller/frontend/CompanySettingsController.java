@@ -3,7 +3,7 @@ package eu.nimble.core.infrastructure.identity.controller.frontend;
 import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
-import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettingsV2;
+import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.CertificateRepository;
 import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
@@ -14,6 +14,7 @@ import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.CertificateType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.QualifyingPartyType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.QualityIndicatorType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
 import io.swagger.annotations.Api;
@@ -32,9 +33,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
+import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.COMPLETENESS_OF_COMPANY_TRADE_DETAILS;
 
 /**
  * Created by Johannes Innerbichler on 04/07/17.
@@ -68,9 +73,9 @@ public class CompanySettingsController {
     @Autowired
     private KafkaSender kafkaSender;
 
-    @ApiOperation(value = "Retrieve company settings", response = CompanySettingsV2.class)
+    @ApiOperation(value = "Retrieve company settings", response = CompanySettings.class)
     @RequestMapping(value = "/{companyID}", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<CompanySettingsV2> getSettings(
+    ResponseEntity<CompanySettings> getSettings(
             @ApiParam(value = "Id of company to retrieve settings from.", required = true) @PathVariable Long companyID) {
 
         // search relevant parties
@@ -86,16 +91,16 @@ public class CompanySettingsController {
 
         logger.debug("Returning requested settings for party with Id {}", party.get().getHjid());
 
-        CompanySettingsV2 settings = UblAdapter.adaptCompanySettings(party.get(), qualifyingPartyOptional.orElse(null));
+        CompanySettings settings = UblAdapter.adaptCompanySettings(party.get(), qualifyingPartyOptional.orElse(null));
         return new ResponseEntity<>(settings, HttpStatus.OK);
     }
 
     @ApiOperation(value = "Change company settings")
     @RequestMapping(value = "/{companyID}", consumes = {"application/json"}, method = RequestMethod.PUT)
-    ResponseEntity<CompanySettingsV2> setSettings(
+    ResponseEntity<CompanySettings> setSettings(
             @RequestHeader(value = "Authorization") String bearer,
             @ApiParam(value = "Id of company to change settings from.", required = true) @PathVariable Long companyID,
-            @ApiParam(value = "Settings to update.", required = true) @RequestBody CompanySettingsV2 newSettings) {
+            @ApiParam(value = "Settings to update.", required = true) @RequestBody CompanySettings newSettings) {
 
         // search relevant parties
         Optional<PartyType> partyOptional = partyRepository.findByHjid(companyID).stream().findFirst();
@@ -114,16 +119,6 @@ public class CompanySettingsController {
         Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(existingCompany).stream().findFirst();
         QualifyingPartyType qualifyingParty = UblAdapter.adaptQualifyingParty(newSettings, existingCompany, qualifyingPartyOptional.orElse(null));
         qualifyingPartyRepository.save(qualifyingParty);
-
-        // set delivery terms
-//        List<DeliveryTermsType> deliveryTerms = newSettings.getDeliveryTerms().stream().map(UblAdapter::adaptDeliveryTerms).collect(Collectors.toList());
-//        if (party.getPurchaseTerms() == null)
-//            party.setPurchaseTerms(new TradingPreferences());
-//        party.getPurchaseTerms().setDeliveryTerms(deliveryTerms);   // ToDo: improve for sales terms
-//
-//        // set payment means
-//        List<PaymentMeansType> paymentMeans = newSettings.getPaymentMeans().stream().map(UblAdapter::adaptPaymentMeans).collect(Collectors.toList());
-//        party.getPurchaseTerms().setPaymentMeans(paymentMeans);   // ToDo: improve for sales terms
 
         // set preferred product categories
         List<CodeType> preferredProductCategories = UblAdapter.adaptProductCategories(newSettings.getPreferredProductCategories());
@@ -259,6 +254,46 @@ public class CompanySettingsController {
             negotiationSettings = negotiationSettingsRepository.save(negotiationSettings);
         }
         return negotiationSettings;
+    }
+
+    @ApiOperation(value = "", notes = "Get profile completeness of company.", response = PartyType.class)
+    @RequestMapping(value = "/{partyId}/completeness", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<?> getProfileCompleteness(
+            @ApiParam(value = "Id of party to retrieve profile completeness.", required = true) @PathVariable Long partyId
+    ) {
+        // search relevant parties
+        List<PartyType> parties = partyRepository.findByHjid(partyId);
+
+        // check if party was found
+        if (parties.isEmpty()) {
+            logger.info("Requested party with Id {} not found", partyId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        PartyType party = parties.get(0);
+        QualifyingPartyType qualifyingParty = qualifyingPartyRepository.findByParty(party).stream().findFirst().orElse(null);
+
+        CompanySettings companySettings = UblAdapter.adaptCompanySettings(party, qualifyingParty);
+
+        // compute completeness factors
+        Double detailsCompleteness = IdentityUtils.computeDetailsCompleteness(companySettings.getDetails());
+        Double descriptionCompleteness = IdentityUtils.computeDescriptionCompleteness(companySettings.getDescription());
+        Double certificateCompleteness = IdentityUtils.computeCertificateCompleteness(party);
+        Double tradeCompleteness = IdentityUtils.computeTradeCompleteness(companySettings.getTradeDetails());
+        Double overallCompleteness = (detailsCompleteness + descriptionCompleteness + certificateCompleteness + tradeCompleteness) / 4.0;
+
+        List<QualityIndicatorType> qualityIndicators = new ArrayList<>();
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(PROFILE_COMPLETENESS, overallCompleteness));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_GENERAL_DETAILS, detailsCompleteness));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_DESCRIPTION, descriptionCompleteness));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_CERTIFICATE_DETAILS, certificateCompleteness));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_TRADE_DETAILS, overallCompleteness));
+        PartyType completenessParty = new PartyType();
+        completenessParty.setQualityIndicator(qualityIndicators);
+        completenessParty.setID(party.getID());
+
+        logger.debug("Returning completeness of party with Id {0}", party.getHjid());
+        return new ResponseEntity<>(completenessParty, HttpStatus.OK);
     }
 
     @ResponseStatus(code = HttpStatus.NOT_FOUND, reason = "company not found")

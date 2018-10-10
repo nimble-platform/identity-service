@@ -16,7 +16,7 @@ public class CompanyRegistration   {
     private String accessToken;
 
     @ApiModelProperty(value = "Settings of company")
-    private CompanySettingsV2 settings;
+    private CompanySettings settings;
 
 //    @ApiModelProperty(value = "General details related to the company")
 //    private CompanyDetails details = new CompanyDetails();
@@ -64,11 +64,11 @@ public class CompanyRegistration   {
 //        this.description = description;
 //    }
 
-    public CompanySettingsV2 getSettings() {
+    public CompanySettings getSettings() {
         return settings;
     }
 
-    public void setSettings(CompanySettingsV2 settings) {
+    public void setSettings(CompanySettings settings) {
         this.settings = settings;
     }
 }
