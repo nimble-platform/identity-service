@@ -2,7 +2,7 @@ server:
   port: ${PORT:9096}
 spring:
   application:
-    name: identity-service
+    name: identity-service${APPLICATION_NAME_SUFFIX:}
   cloud:
     config:
       enabled: ${CONFIG_SERVER_ENABLED:true}
@@ -14,7 +14,7 @@ spring:
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         temp:
@@ -25,8 +25,8 @@ spring:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:identityDB}
     username: ${POSTGRES_USER:root}
     password: ${POSTGRES_PASSWORD:changeme}
-    maxActive: 5
-    maxIdle: 5
+    maxActive: 3
+    maxIdle: 3
   mail:
     debug: false  # disable printing email to log output
     host: ${SMTP_HOST:localhost}
@@ -38,6 +38,14 @@ spring:
     properties.mail.smtp.starttls.enable: true
   jackson:
     default-property-inclusion: NON_NULL
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    consumer:
+      group-id: identity-service:${KAFKA_CONSUMER_GROUP_ID_SUFFIX:}
+    properties:
+      sasl:
+        jaas:
+          config: ${KAFKA_JAAS_CONFIG}
 
 logstash:
   uri: ${LOGSTASH_URI:localhost:5000}
@@ -63,6 +71,9 @@ nimble:
       accessTokenUri: ${OAUTH_CLIENT_ACCESSTOKEN_URI}
   frontend:
     url: ${FRONTEND_URL:http://localhost:9092}
+  kafka:
+    topics:
+      companyUpdates: ${KAFKA_TOPIC_COMPANY_UPDATES:company-updates}
 
 ---
 
@@ -71,7 +82,7 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
   h2:
     console:
       enabled: true
@@ -79,9 +90,7 @@ spring:
   datasource:
     name: identitydb
     driverClassName: org.h2.Driver
-#    url: jdbc:h2:mem:test;DB_CLOSE_DELAY=-1
     url: jdbc:h2:file:~/identitydb;
-    initialize: true
     username: sa
     password: sa
   mail:
@@ -110,3 +119,11 @@ spring:
     initialize: false
     username: sa
     password:
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
+    consumer:
+      group-id: "test-identity-service"
+    properties:
+      sasl:
+        jaas:
+          config: ""

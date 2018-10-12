@@ -1,17 +1,19 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
 public class CompanyCertificate {
-    private String name;
-    private String type;
     private String id;
+    private String name;
+    private String description;
+    private String type;
 
     public CompanyCertificate() {
     }
 
-    public CompanyCertificate(String name, String type, String id) {
+    public CompanyCertificate(String name, String type, String id, String description) {
         this.name = name;
         this.type = type;
         this.id = id;
+        this.description = description;
     }
 
     public String getName() {
@@ -36,5 +38,13 @@ public class CompanyCertificate {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

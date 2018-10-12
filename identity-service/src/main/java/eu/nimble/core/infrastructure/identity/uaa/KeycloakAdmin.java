@@ -1,7 +1,7 @@
 package eu.nimble.core.infrastructure.identity.uaa;
 
 import com.google.common.collect.Sets;
-import eu.nimble.core.infrastructure.identity.controller.frontend.UserIdentityController;
+import eu.nimble.core.infrastructure.identity.controller.frontend.IdentityController;
 import org.apache.commons.lang.WordUtils;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.keycloak.OAuth2Constants;
@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 @Service
 public class KeycloakAdmin {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserIdentityController.class);
+    private static final Logger logger = LoggerFactory.getLogger(KeycloakAdmin.class);
 
     public static final String NIMBLE_USER_ROLE = "nimble_user";
     public static final String INITIAL_REPRESENTATIVE_ROLE = "initial_representative";

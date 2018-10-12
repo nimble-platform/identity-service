@@ -1,13 +1,21 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
+import io.swagger.annotations.ApiModelProperty;
+
 /**
  * Created by Johannes Innerbichler on 04/07/17.
  */
 public class Address {
+
+    @ApiModelProperty(value = "Name of the street")
     private String streetName;
+    @ApiModelProperty(value = "Number of the building")
     private String buildingNumber;
+    @ApiModelProperty(value = "Name of the city")
     private String cityName;
+    @ApiModelProperty(value = "Postal code of the city")
     private String postalCode;
+    @ApiModelProperty(value = "Name of the country")
     private String country;
 
     public Address() {

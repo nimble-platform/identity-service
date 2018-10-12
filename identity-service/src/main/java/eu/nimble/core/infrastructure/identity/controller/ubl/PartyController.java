@@ -5,9 +5,11 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
+import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.QualifyingPartyType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -35,8 +37,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static eu.nimble.core.infrastructure.identity.controller.IdentityUtils.removeBinaries;
-
 /**
  * Created by Johannes Innerbichler on 26/04/17.
  * Controller for retrieving party data.
@@ -52,6 +52,9 @@ public class PartyController {
 
     @Autowired
     private PersonRepository personRepository;
+
+    @Autowired
+    private QualifyingPartyRepository qualifyingPartyRepository;
 
     @Autowired
     private IdentityUtils identityUtils;
@@ -78,14 +81,14 @@ public class PartyController {
         if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             party.setPerson(new ArrayList<>());
 
-        removeBinaries(party);
+        IdentityUtils.removeBinaries(party);
 
         logger.debug("Returning requested party with Id {0}", party.getHjid());
         return new ResponseEntity<>(party, HttpStatus.OK);
     }
 
     @SuppressWarnings("PointlessBooleanExpression")
-    @ApiOperation(value = "", notes = "Get multiple parties for Ids.", response = Iterable.class)
+    @ApiOperation(value = "getParties", notes = "Get multiple parties for Ids.", response = Iterable.class)
     @RequestMapping(value = "/parties/{partyIds}", method = RequestMethod.GET)
     ResponseEntity<?> getParty(
             @ApiParam(value = "Ids of parties to retrieve.", required = true) @PathVariable List<Long> partyIds) {
@@ -186,7 +189,7 @@ public class PartyController {
 
     @ApiOperation(value = "", notes = "Get all party ids and name. Returns id-name tuples.", response = PartyTuple.class, responseContainer = "Set")
     @RequestMapping(value = "/party/all", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<Set<PartyTuple> > getAllPartyIds(
+    ResponseEntity<Set<PartyTuple>> getAllPartyIds(
             @ApiParam(value = "Excluded ids") @RequestParam(value = "exclude", required = false) List<String> exclude) {
 
         Set<PartyTuple> partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
@@ -197,6 +200,33 @@ public class PartyController {
             partyIds = partyIds.stream().filter(p -> !exclude.contains(p.getIdentifier())).collect(Collectors.toSet());
 
         return ResponseEntity.ok(partyIds);
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @ApiOperation(value = "", notes = "Get QualifyingParty for Id.", response = PartyType.class, tags = {})
+    @RequestMapping(value = "/qualifying/{partyId}", method = RequestMethod.GET)
+    ResponseEntity<QualifyingPartyType> getQualifyingParty(
+            @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long partyId,
+            @RequestHeader(value = "Authorization") String bearer) {
+
+        // search relevant parties
+        Optional<PartyType> partyOptional = partyRepository.findByHjid(partyId).stream().findFirst();
+
+        // check if party was found
+        if (partyOptional.isPresent()) {
+            logger.info("Requested party with Id {} not found", partyId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(partyOptional.get()).stream().findFirst();
+
+        if (qualifyingPartyOptional.isPresent()) {
+            logger.info("Requested party with Id {} not found", partyId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        logger.debug("Returning requested QualifyingParty with Id {0}", partyId);
+        return new ResponseEntity<>(qualifyingPartyOptional.get(), HttpStatus.OK);
     }
 
     private static class PartyTuple {

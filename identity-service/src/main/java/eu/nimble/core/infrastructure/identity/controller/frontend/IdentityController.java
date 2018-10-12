@@ -10,6 +10,7 @@ import eu.nimble.core.infrastructure.identity.entity.dto.CompanyRegistration;
 import eu.nimble.core.infrastructure.identity.entity.dto.Credentials;
 import eu.nimble.core.infrastructure.identity.entity.dto.FrontEndUser;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
+import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
@@ -41,17 +42,21 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
-public class UserIdentityController {
+@SuppressWarnings("SpringJavaAutowiredFieldsWarningInspection")
+public class IdentityController {
 
     private static final String REFRESH_TOKEN_SESSION_KEY = "refresh_token";
 
-    private static final Logger logger = LoggerFactory.getLogger(UserIdentityController.class);
+    private static final Logger logger = LoggerFactory.getLogger(IdentityController.class);
 
     @Autowired
     private PersonRepository personRepository;
 
     @Autowired
     private PartyRepository partyRepository;
+
+    @Autowired
+    private QualifyingPartyRepository qualifyingPartyRepository;
 
     @Autowired
     private DeliveryTermsRepository deliveryTermsRepository;
@@ -79,6 +84,9 @@ public class UserIdentityController {
 
     @Autowired
     private IdentityUtils identityUtils;
+
+    @Autowired
+    private KafkaSender kafkaSender;
 
     @ApiOperation(value = "Register a new user to the nimble.", response = FrontEndUser.class, tags = {})
     @ApiResponses(value = {
@@ -170,27 +178,27 @@ public class UserIdentityController {
             @ApiResponse(code = 405, message = "Company not registered", response = CompanyRegistration.class)})
     @RequestMapping(value = "/register/company", produces = {"application/json"}, consumes = {"application/json"}, method = RequestMethod.POST)
     ResponseEntity<?> registerCompany(
-            @ApiParam(value = "Company object that needs to be registered to Nimble.", required = true) @RequestBody CompanyRegistration company,
+            @ApiParam(value = "Company object that is registered on NIMBLE.", required = true) @RequestBody CompanyRegistration companyRegistration,
             @RequestHeader(value = "Authorization") String bearer,
             HttpServletResponse response, HttpServletRequest request) {
 
-        Address companyAddress = company.getAddress();
-        if (companyAddress == null || company.getName() == null)
+        Address companyAddress = companyRegistration.getSettings().getDetails().getAddress();
+        if (companyAddress == null || companyRegistration.getSettings().getDetails().getCompanyLegalName() == null)
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
-        Optional<PersonType> userPartyOpt = personRepository.findByHjid(company.getUserID()).stream().findFirst();
+        Optional<PersonType> userPartyOpt = personRepository.findByHjid(companyRegistration.getUserID()).stream().findFirst();
 
         // check if user exists
         if (userPartyOpt.isPresent() == false) {
-            logger.info("Cannot find user with id {}", company.getUserID());
+            logger.info("Cannot find user with id {}", companyRegistration.getUserID());
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
         PersonType userParty = userPartyOpt.get();
 
         // create company
-        PartyType companyParty = UblAdapter.adaptCompanyRegistration(company, userParty);
-        partyRepository.save(companyParty);
+        PartyType newCompany = UblAdapter.adaptCompanyRegistration(companyRegistration, userParty);
+        partyRepository.save(newCompany);
 
         // create delivery terms
         DeliveryTermsType blankDeliveryTerms = new DeliveryTermsType();
@@ -208,17 +216,21 @@ public class UserIdentityController {
         TradingPreferences purchaseTerms = new TradingPreferences();
         purchaseTerms.setDeliveryTerms(Collections.singletonList(blankDeliveryTerms));   // ToDo: improve for sales terms
         purchaseTerms.setPaymentMeans(Collections.singletonList(paymentMeans));   // ToDo: improve for sales terms
-        companyParty.setPurchaseTerms(purchaseTerms);
+        newCompany.setPurchaseTerms(purchaseTerms);
 
         // update id of company
-        companyParty.setID(UblUtils.identifierType(companyParty.getHjid()));
-        partyRepository.save(companyParty);
+        newCompany.setID(UblUtils.identifierType(newCompany.getHjid()));
+        partyRepository.save(newCompany);
 
-        // add id to original object
-        company.setCompanyID(Long.parseLong(companyParty.getID()));
-        company.setUserID(Long.parseLong(userParty.getID()));
+        // create qualifying party
+        QualifyingPartyType qualifyingParty = UblAdapter.adaptQualifyingParty(companyRegistration.getSettings(), newCompany);
+        qualifyingPartyRepository.save(qualifyingParty);
 
-        logger.info("Registered company with id {} for user with id {}", company.getCompanyID(), company.getUserID());
+        // add id to response object
+        companyRegistration.setCompanyID(Long.parseLong(newCompany.getID()));
+        companyRegistration.setUserID(Long.parseLong(userParty.getID()));
+
+        logger.info("Registered company with id {} for user with id {}", companyRegistration.getCompanyID(), companyRegistration.getUserID());
 
         // adapt role of user and refresh access token
         try {
@@ -231,12 +243,16 @@ public class UserIdentityController {
 
         // inform platform managers
         try {
-            informPlatformManager(userParty, companyParty);
+            informPlatformManager(userParty, newCompany);
         } catch (Exception ex) {
             logger.error("Could not notify platform managers", ex);
         }
 
-        return new ResponseEntity<>(company, HttpStatus.OK);
+
+        // broadcast changes
+        kafkaSender.broadcastCompanyUpdate(newCompany.getID(), bearer);
+
+        return new ResponseEntity<>(companyRegistration, HttpStatus.OK);
     }
 
     @ApiOperation(value = "", notes = "Login controller with credentials.", response = CompanyRegistrationResponse.class, tags = {})

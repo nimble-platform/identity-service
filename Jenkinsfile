@@ -3,7 +3,6 @@
 node('nimble-jenkins-slave') {
 
     stage('Clone and Update') {
-        // slackSend 'Started build no. ${env.BUILD_ID} of ${env.JOB_NAME}'
         git(url: 'https://github.com/nimble-platform/identity-service.git', branch: env.BRANCH_NAME)
         sh 'git submodule init'
         sh 'git submodule update'
@@ -28,6 +27,19 @@ node('nimble-jenkins-slave') {
 
         stage('Deploy') {
             sh 'ssh staging "cd /srv/nimble-staging/ && ./run-staging.sh restart-single identity-service"'
+        }
+    } else if (env.BRANCH_NAME == 'staging-v2') {
+
+        stage('Build Docker') {
+            sh 'mvn -f identity-service/pom.xml docker:build -DdockerImageTag=staging-v2'
+        }
+
+        stage('Push Docker') {
+            sh 'docker push nimbleplatform/identity-service:staging-v2'
+        }
+
+        stage('Deploy') {
+            sh 'ssh staging "cd /srv/nimble-staging/ && ./run-staging.sh restart-single identity-service-v2"'
         }
     } else {
         stage('Build Docker') {

@@ -1,6 +1,7 @@
 package eu.nimble.core.infrastructure.identity.controller;
 
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
+import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -38,13 +39,16 @@ public class AdminController {
     @Autowired
     private PartyRepository partyRepository;
 
+    @Autowired
+    private KeycloakAdmin keycloakAdmin;
+
     @ApiOperation(value = "Retrieve unverified companies", response = Page.class)
     @RequestMapping(value = "/unverified_companies", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<Page<PartyType>> getUnverifiedCompanies(@RequestParam(value = "page", required = false, defaultValue = "0") int page,
                                                            @RequestParam(value = "size", required = false, defaultValue = DEFAULT_PAGE_SIZE) int size) {
         logger.info("Fetching unverified companies");
 
-        // ToDo: verify proper access policy
+        // ToDo: verify proper access policy (e.g. admin role)
 
         Specification<PartyType> verifiedCompanySpecification = new Specification<PartyType>() {
             @Override
