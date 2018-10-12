@@ -119,7 +119,7 @@ public class UblAdapter {
         if (qualifyingParty != null) {
             companyDetails.setVerificationInformation(qualifyingParty.getBusinessIdentityEvidenceID());
             companyDetails.setBusinessKeywords(qualifyingParty.getBusinessClassificationScheme().getDescription());
-            if( qualifyingParty.getOperatingYearsQuantity() != null && qualifyingParty.getOperatingYearsQuantity().getValue() != null)
+            if (qualifyingParty.getOperatingYearsQuantity() != null && qualifyingParty.getOperatingYearsQuantity().getValue() != null)
                 companyDetails.setYearOfCompanyRegistration(qualifyingParty.getOperatingYearsQuantity().getValue().intValue());
         }
 
@@ -271,7 +271,7 @@ public class UblAdapter {
         companyToChange.setName(settings.getDetails().getCompanyLegalName());
 
         // VAT number
-        if( settings.getDetails().getVatNumber() != null)
+        if (settings.getDetails().getVatNumber() != null)
             companyToChange.getPartyTaxScheme().add(adaptTaxSchema(settings.getDetails().getVatNumber()));
 
         // postal address
@@ -281,12 +281,14 @@ public class UblAdapter {
         companyToChange.setIndustryClassificationCode(adaptCodeType("IndustryClassificationCode", settings.getDetails().getBusinessType()));
 
         // website URL
-        companyToChange.setWebsiteURI(settings.getDescription().getWebsite());
+        if (settings.getDescription() != null) {
+            companyToChange.setWebsiteURI(settings.getDescription().getWebsite());
 
-        // social media list
-        ContactType socialMediaContact = new ContactType();
-        socialMediaContact.setOtherCommunication(adaptSocialMediaList(settings.getDescription().getSocialMediaList()));
-        companyToChange.setContact(socialMediaContact);
+            // social media list
+            ContactType socialMediaContact = new ContactType();
+            socialMediaContact.setOtherCommunication(adaptSocialMediaList(settings.getDescription().getSocialMediaList()));
+            companyToChange.setContact(socialMediaContact);
+        }
 
         // industry sectors
         List<CodeType> industrySectors = UblAdapter.adaptIndustrySectors(settings.getDetails().getIndustrySectors());
@@ -350,19 +352,21 @@ public class UblAdapter {
         }
 
         // company events
-        List<EventType> events = new ArrayList<>();
-        settings.getDescription().getPastEvents().stream()
-                .map(event -> adaptEvent(event, true))
-                .collect(Collectors.toCollection(() -> events));
-        settings.getDescription().getUpcomingEvents().stream()
-                .map(event -> adaptEvent(event, false))
-                .collect(Collectors.toCollection(() -> events));
-        qualifyingParty.setEvent(events);
+        if (settings.getDescription() != null) {
+            List<EventType> events = new ArrayList<>();
+            settings.getDescription().getPastEvents().stream()
+                    .map(event -> adaptEvent(event, true))
+                    .collect(Collectors.toCollection(() -> events));
+            settings.getDescription().getUpcomingEvents().stream()
+                    .map(event -> adaptEvent(event, false))
+                    .collect(Collectors.toCollection(() -> events));
+            qualifyingParty.setEvent(events);
 
-        // company statement
-        EconomicOperatorRoleType economicOperatorRole = new EconomicOperatorRoleType();
-        economicOperatorRole.setRoleDescription(Collections.singletonList(settings.getDescription().getCompanyStatement()));
-        qualifyingParty.setEconomicOperatorRole(economicOperatorRole);
+            // company statement
+            EconomicOperatorRoleType economicOperatorRole = new EconomicOperatorRoleType();
+            economicOperatorRole.setRoleDescription(Collections.singletonList(settings.getDescription().getCompanyStatement()));
+            qualifyingParty.setEconomicOperatorRole(economicOperatorRole);
+        }
 
         qualifyingParty.setParty(company);
 
