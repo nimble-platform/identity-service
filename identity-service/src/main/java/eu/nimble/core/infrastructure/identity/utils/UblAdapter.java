@@ -137,7 +137,7 @@ public class UblAdapter {
                     .collect(Collectors.toList()));
         }
 
-        if (qualifyingPartyType != null) {
+        if (qualifyingPartyType != null && qualifyingPartyType.getEconomicOperatorRole() != null && qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().isEmpty() == false) {
             companyDescription.setCompanyStatement(qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().get(0));
 
             // adapt events
