@@ -130,10 +130,12 @@ public class UblAdapter {
 
         CompanyDescription companyDescription = new CompanyDescription();
         companyDescription.setWebsite(party.getWebsiteURI());
-        companyDescription.setSocialMediaList(party.getContact().getOtherCommunication()
-                .stream()
-                .map(CommunicationType::getValue)
-                .collect(Collectors.toList()));
+        if (companyDescription.getSocialMediaList() != null && party.getContact() != null) {
+            companyDescription.setSocialMediaList(party.getContact().getOtherCommunication()
+                    .stream()
+                    .map(CommunicationType::getValue)
+                    .collect(Collectors.toList()));
+        }
 
         if (qualifyingPartyType != null) {
             companyDescription.setCompanyStatement(qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().get(0));
