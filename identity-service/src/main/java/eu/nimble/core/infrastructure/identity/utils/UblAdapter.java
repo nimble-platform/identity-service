@@ -130,7 +130,7 @@ public class UblAdapter {
 
         CompanyDescription companyDescription = new CompanyDescription();
         companyDescription.setWebsite(party.getWebsiteURI());
-        if (companyDescription.getSocialMediaList() != null && party.getContact() != null) {
+        if (party.getContact() != null && party.getContact().getOtherCommunication() != null) {
             companyDescription.setSocialMediaList(party.getContact().getOtherCommunication()
                     .stream()
                     .map(CommunicationType::getValue)

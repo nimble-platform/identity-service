@@ -19,7 +19,7 @@ public class CompanyDescription {
     private String website = null;
 
     @ApiModelProperty(value = "List of social media references (e.g. Facebook)")
-    private List<String> socialMediaList = null;
+    private List<String> socialMediaList = new ArrayList<>();
 
     @ApiModelProperty(value = "List of past events")
     private List<CompanyEvent> pastEvents = new ArrayList<>();
