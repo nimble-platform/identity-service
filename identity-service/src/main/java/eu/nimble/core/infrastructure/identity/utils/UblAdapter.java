@@ -51,7 +51,8 @@ public class UblAdapter {
         if (party.getPpapCompatibilityLevel() != null)
             settings.getTradeDetails().setPpapCompatibilityLevel(party.getPpapCompatibilityLevel().intValue());
 
-//        settings.setCertificates(UblAdapter.adaptCertificates(party.getCertificate()));a
+        // set certificates
+        settings.setCertificates(UblAdapter.adaptCertificates(party.getCertificate()));
 
         // set preferred product categories
         Set<String> preferredProductCategories = party.getPreferredItemClassificationCode().stream()

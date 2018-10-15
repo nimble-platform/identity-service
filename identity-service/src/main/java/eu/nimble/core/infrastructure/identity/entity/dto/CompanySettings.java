@@ -24,6 +24,9 @@ public class CompanySettings {
     @ApiModelProperty(value = "Trade details of the company")
     private CompanyTradeDetails tradeDetails = new CompanyTradeDetails();
 
+    @ApiModelProperty(value = "Certificates of company")
+    private List<CompanyCertificate> certificates = new ArrayList<>();
+
     @ApiModelProperty(value = "List of preferred product categories")
     private Set<String> preferredProductCategories = new HashSet<>();
 
@@ -34,12 +37,13 @@ public class CompanySettings {
     }
 
     public CompanySettings(String companyID, CompanyDetails details, CompanyDescription description, CompanyTradeDetails tradeDetails,
-                           Integer ppapCompatibilityLevel, Set<String> preferredProductCategories,
+                           List<CompanyCertificate> certificates, Set<String> preferredProductCategories,
                            Set<String> recentlyUsedProductCategories) {
         this.companyID = companyID;
         this.details = details;
         this.description = description;
         this.tradeDetails = tradeDetails;
+        this.certificates = certificates;
         this.preferredProductCategories = preferredProductCategories;
         this.recentlyUsedProductCategories = recentlyUsedProductCategories;
     }
@@ -70,6 +74,14 @@ public class CompanySettings {
 
     public CompanyTradeDetails getTradeDetails() {
         return tradeDetails;
+    }
+
+    public List<CompanyCertificate> getCertificates() {
+        return certificates;
+    }
+
+    public void setCertificates(List<CompanyCertificate> certificates) {
+        this.certificates = certificates;
     }
 
     public void setTradeDetails(CompanyTradeDetails tradeDetails) {

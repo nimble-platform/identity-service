@@ -145,6 +145,8 @@ public class CompanySettingsControllerTests {
                 .andExpect(jsonPath("$.description.socialMediaList[1]", is("social media 2")))
                 .andExpect(jsonPath("$.description.pastEvents.length()", is(1)))
                 .andExpect(jsonPath("$.description.upcomingEvents.length()", is(1)))
+                // check certificates
+                .andExpect(jsonPath("$.certificates.length()", is(0))) // no certs added
                 // check trade details
                 .andExpect(jsonPath("$.tradeDetails.ppapCompatibilityLevel", is(5)))
                 .andExpect(jsonPath("$.tradeDetails.paymentMeans.length()", is(1)))
