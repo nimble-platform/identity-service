@@ -116,6 +116,8 @@ public class UblAdapter {
                 .map(scheme -> scheme.getTaxScheme().getTaxTypeCode().getValue())
                 .findFirst().orElse(null));
         companyDetails.setAddress(adaptAddress(party.getPostalAddress()));
+        if (party.getIndustryClassificationCode() != null)
+            companyDetails.setBusinessType(party.getIndustryClassificationCode().getValue());
 
         if (qualifyingParty != null) {
             companyDetails.setVerificationInformation(qualifyingParty.getBusinessIdentityEvidenceID());

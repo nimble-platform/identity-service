@@ -131,6 +131,7 @@ public class CompanySettingsControllerTests {
                 .andExpect(jsonPath("$.details.address.postalCode", is("postal code")))
                 .andExpect(jsonPath("$.details.address.country", is("country")))
                 .andExpect(jsonPath("$.details.businessKeywords.length()", is(2)))
+                .andExpect(jsonPath("$.details.businessType", is("business type")))
                 .andExpect(jsonPath("$.details.businessKeywords[0]", is("k1")))
                 .andExpect(jsonPath("$.details.businessKeywords[1]", is("k2")))
                 .andExpect(jsonPath("$.details.yearOfCompanyRegistration", is(2001)))
