@@ -1,5 +1,7 @@
 package eu.nimble.core.infrastructure.identity.controller.ubl;
 
+import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.Api;
@@ -12,9 +14,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -29,6 +33,9 @@ public class PersonController {
 
     @Autowired
     private PersonRepository personRepository;
+
+    @Autowired
+    private IdentityUtils identityUtils;
 
     @ApiOperation(value = "", notes = "Get Person for Id.", response = PersonType.class, tags = {})
     @RequestMapping(value = "/person/{personId}", produces = {"application/json"}, method = RequestMethod.GET)
@@ -48,5 +55,12 @@ public class PersonController {
 
         logger.debug("Returning requested person with Id {}", person.getHjid());
         return new ResponseEntity<>(person, HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "", notes = "Get Person for Id.", response = PersonType.class)
+    @RequestMapping(value = "/person/", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<PersonType> getPerson(@RequestHeader(value = "Authorization") String bearer) throws IOException {
+        UaaUser user = identityUtils.getUserfromBearer(bearer);
+        return new ResponseEntity<>(user.getUBLPerson(), HttpStatus.OK);
     }
 }
