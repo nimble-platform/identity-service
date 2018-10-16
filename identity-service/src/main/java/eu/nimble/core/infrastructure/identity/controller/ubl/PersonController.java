@@ -57,7 +57,7 @@ public class PersonController {
         return new ResponseEntity<>(person, HttpStatus.OK);
     }
 
-    @ApiOperation(value = "", notes = "Get Person for Id.", response = PersonType.class)
+    @ApiOperation(value = "", notes = "Resolve Person for access token.", response = PersonType.class)
     @RequestMapping(value = "/person/", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<PersonType> getPerson(@RequestHeader(value = "Authorization") String bearer) throws IOException {
         UaaUser user = identityUtils.getUserfromBearer(bearer);
