@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 public class UblAdapter {
 
     public static final String VAT_TAX_TYPE_CODE = "VAT";
+    public static final String DOCUMENT_TYPE_COMPANY_PHOTO = "CompanyPhoto";
+    public static final String DOCUMENT_TYPE_COMPANY_LOGO = "CompanyLogo";
 
     public static CompanySettings adaptCompanySettings(PartyType party, QualifyingPartyType qualifyingParty) {
         CompanySettings settings = new CompanySettings();
@@ -138,6 +140,23 @@ public class UblAdapter {
                     .stream()
                     .map(CommunicationType::getValue)
                     .collect(Collectors.toList()));
+        }
+
+        // photos
+        if( party.getDocumentReference() != null) {
+            List<String> companyPhotoIds = party.getDocumentReference().stream()
+                    .filter(dr -> DOCUMENT_TYPE_COMPANY_PHOTO.equals(dr.getDocumentType()))
+                    .map(dr -> dr.getHjid().toString())
+                    .collect(Collectors.toList());
+            companyDescription.setCompanyPhotoList(companyPhotoIds);
+
+            // company logo
+            String logoImageId = party.getDocumentReference().stream()
+                    .filter(dr -> DOCUMENT_TYPE_COMPANY_LOGO.equals(dr.getDocumentType()))
+                    .map(dr -> dr.getHjid().toString())
+                    .findFirst()
+                    .orElse(null);
+            companyDescription.setLogoImageId(logoImageId);
         }
 
         if (qualifyingPartyType != null) {
@@ -466,6 +485,26 @@ public class UblAdapter {
         certificateType.getDocumentReference().add(documentReferenceType);
 
         return certificateType;
+    }
+
+    public static DocumentReferenceType adaptCompanyPhoto(MultipartFile photoFile) throws IOException {
+        return adaptCompanyPhoto(photoFile, false);
+    }
+
+    public static DocumentReferenceType adaptCompanyPhoto(MultipartFile photoFile, Boolean isLogo) throws IOException {
+
+        BinaryObjectType photoBinary = new BinaryObjectType();
+        photoBinary.setValue(photoFile.getBytes());
+        photoBinary.setMimeCode(photoFile.getContentType());
+
+        AttachmentType attachment = new AttachmentType();
+        attachment.setEmbeddedDocumentBinaryObject(photoBinary);
+
+        DocumentReferenceType document = new DocumentReferenceType();
+        String documentType = isLogo ? DOCUMENT_TYPE_COMPANY_LOGO : DOCUMENT_TYPE_COMPANY_PHOTO;
+        document.setDocumentType(documentType);
+        document.setAttachment(attachment);
+        return document;
     }
 
     public static List<CompanyCertificate> adaptCertificates(List<CertificateType> certificateTypes) {

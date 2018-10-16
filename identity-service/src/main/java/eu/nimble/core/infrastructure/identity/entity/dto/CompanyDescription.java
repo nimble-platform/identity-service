@@ -18,6 +18,13 @@ public class CompanyDescription {
     @ApiModelProperty(value = "Main website of the company")
     private String website = null;
 
+    @ApiModelProperty(value = "Identifiers of company photos")
+    private List<String> companyPhotoList = new ArrayList<>();
+
+
+    @ApiModelProperty(value = "Identifiers of company logo image")
+    private String logoImageId = null;
+
     @ApiModelProperty(value = "List of social media references (e.g. Facebook)")
     private List<String> socialMediaList = new ArrayList<>();
 
@@ -41,6 +48,22 @@ public class CompanyDescription {
 
     public void setWebsite(String website) {
         this.website = website;
+    }
+
+    public List<String> getCompanyPhotoList() {
+        return companyPhotoList;
+    }
+
+    public void setCompanyPhotoList(List<String> companyPhotoList) {
+        this.companyPhotoList = companyPhotoList;
+    }
+
+    public String getLogoImageId() {
+        return logoImageId;
+    }
+
+    public void setLogoImageId(String logoImageId) {
+        this.logoImageId = logoImageId;
     }
 
     public List<String> getSocialMediaList() {

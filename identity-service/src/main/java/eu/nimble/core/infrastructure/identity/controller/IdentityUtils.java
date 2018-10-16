@@ -47,6 +47,8 @@ public class IdentityUtils {
     }
 
     public Optional<PartyType> getCompanyOfUser(UaaUser uaaUser) {
+        if( uaaUser == null)
+            return Optional.empty();
         return partyRepository.findByPerson(uaaUser.getUBLPerson()).stream().findFirst();
     }
 
