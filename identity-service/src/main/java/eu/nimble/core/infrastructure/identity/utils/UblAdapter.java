@@ -164,13 +164,16 @@ public class UblAdapter {
                 companyDescription.setCompanyStatement(qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().get(0));
 
             // adapt events
+            Date today = new Date();
             if (qualifyingPartyType.getEvent() != null) {
                 List<CompanyEvent> pastEvents = qualifyingPartyType.getEvent().stream()
-                        .filter(EventType::isCompletionIndicator)
+                        .filter(event -> event.getDurationPeriod() != null && event.getDurationPeriod().getEndDateItem() != null)
+                        .filter(event -> event.getDurationPeriod().getEndDateItem().before(today))
                         .map(UblAdapter::adaptEvent)
                         .collect(Collectors.toList());
                 List<CompanyEvent> upcomingEvents = qualifyingPartyType.getEvent().stream()
-                        .filter(e -> e.isCompletionIndicator() == false)
+                        .filter(event -> event.getDurationPeriod() != null && event.getDurationPeriod().getEndDateItem() != null)
+                        .filter(event -> event.getDurationPeriod().getEndDateItem().after(today))
                         .map(UblAdapter::adaptEvent)
                         .collect(Collectors.toList());
                 companyDescription.setPastEvents(pastEvents);
@@ -380,10 +383,10 @@ public class UblAdapter {
         if (settings.getDescription() != null) {
             List<EventType> events = new ArrayList<>();
             settings.getDescription().getPastEvents().stream()
-                    .map(event -> adaptEvent(event, true))
+                    .map(UblAdapter::adaptEvent)
                     .collect(Collectors.toCollection(() -> events));
             settings.getDescription().getUpcomingEvents().stream()
-                    .map(event -> adaptEvent(event, false))
+                    .map(UblAdapter::adaptEvent)
                     .collect(Collectors.toCollection(() -> events));
             qualifyingParty.setEvent(events);
 
@@ -398,14 +401,15 @@ public class UblAdapter {
         return qualifyingParty;
     }
 
-    public static EventType adaptEvent(CompanyEvent event, Boolean completionIndicator) {
+    public static EventType adaptEvent(CompanyEvent event) {
         EventType ublEvent = new EventType();
 
         // identifier
         ublEvent.setIdentificationID(event.getName());
 
-        // completion indicator
-        ublEvent.setCompletionIndicator(completionIndicator);
+//        // completion indicator
+//        Boolean completionIndicator = new Date().after(event.getDateTo());
+//        ublEvent.setCompletionIndicator(completionIndicator);
 
         // address
         LocationType location = new LocationType();
@@ -487,10 +491,6 @@ public class UblAdapter {
         return certificateType;
     }
 
-    public static DocumentReferenceType adaptCompanyPhoto(MultipartFile photoFile) throws IOException {
-        return adaptCompanyPhoto(photoFile, false);
-    }
-
     public static DocumentReferenceType adaptCompanyPhoto(MultipartFile photoFile, Boolean isLogo) throws IOException {
 
         BinaryObjectType photoBinary = new BinaryObjectType();
@@ -524,21 +524,6 @@ public class UblAdapter {
         qualityIndicator.setQuantity(quantity);
         qualityIndicator.setQualityParameter(parameterName.name());
         return qualityIndicator;
-    }
-
-    public static String adaptVatNumber(PartyType partyType) {
-
-        if (partyType == null)
-            return null;
-
-        String vatNumber = null;
-        Optional<PartyTaxSchemeType> partyTaxSchemeOpt = partyType.getPartyTaxScheme().stream().findFirst();
-        if (partyTaxSchemeOpt.isPresent()) {
-            PartyTaxSchemeType partyTaxScheme = partyTaxSchemeOpt.get();
-            if (partyTaxScheme.getTaxScheme() != null && partyTaxScheme.getTaxScheme().getTaxTypeCode() != null)
-                vatNumber = partyTaxScheme.getTaxScheme().getTaxTypeCode().getValue();
-        }
-        return vatNumber;
     }
 
     public static List<CodeType> adaptProductCategories(Set<String> categoryCodes) {

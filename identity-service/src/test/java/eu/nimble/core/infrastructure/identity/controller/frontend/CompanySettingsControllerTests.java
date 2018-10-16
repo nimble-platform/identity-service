@@ -29,8 +29,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 
 import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
 import static org.hamcrest.Matchers.hasItem;
@@ -90,10 +92,6 @@ public class CompanySettingsControllerTests {
         companyDescription.setCompanyStatement("company statement");
         companyDescription.setWebsite("website");
         companyDescription.setSocialMediaList(Arrays.asList("social media 1", "social media 2"));
-        Address pastEventAddress = new Address("event street name", "event building number", "event city name", "event postal code", "event country");
-        companyDescription.setPastEvents(Collections.singletonList(new CompanyEvent("event name", pastEventAddress, null, null, "event desc")));
-        Address upcomingEventAddress = new Address("event street name", "event building number", "event city name", "event postal code", "event country");
-        companyDescription.setUpcomingEvents(Collections.singletonList(new CompanyEvent("event name", upcomingEventAddress, null, null, "event desc")));
 
         CompanyTradeDetails companyTradeDetails = new CompanyTradeDetails();
         companyTradeDetails.setPpapCompatibilityLevel(5);
@@ -144,8 +142,6 @@ public class CompanySettingsControllerTests {
                 .andExpect(jsonPath("$.description.socialMediaList.length()", is(2)))
                 .andExpect(jsonPath("$.description.socialMediaList[0]", is("social media 1")))
                 .andExpect(jsonPath("$.description.socialMediaList[1]", is("social media 2")))
-                .andExpect(jsonPath("$.description.pastEvents.length()", is(1)))
-                .andExpect(jsonPath("$.description.upcomingEvents.length()", is(1)))
                 // check certificates
                 .andExpect(jsonPath("$.certificates.length()", is(0))) // no certs added
                 // check trade details

@@ -190,7 +190,6 @@ public class CompanySettingsController {
         UaaUser user = identityUtils.getUserfromBearer(bearer);
         PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(CompanyNotFoundException::new);
 
-
         // remove from list in party
         if (company.getDocumentReference().stream().anyMatch(dr -> imageId.equals(dr.getHjid())) == false)
             throw new DocumentNotFoundException("No associated document found.");
