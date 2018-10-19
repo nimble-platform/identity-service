@@ -26,6 +26,8 @@ spring:
     password: ${POSTGRES_PASSWORD:changeme}
     maxActive: 3
     maxIdle: 3
+    tomcat:
+      default-auto-commit: false
   mail:
     debug: false  # disable printing email to log output
     host: ${SMTP_HOST:localhost}

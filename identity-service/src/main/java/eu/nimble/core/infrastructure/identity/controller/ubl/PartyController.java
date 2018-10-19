@@ -253,6 +253,12 @@ public class PartyController {
         for (CertificateType cert : partyType.getCertificate()) {
             cert.setDocumentReference(null);
         }
+        if (partyType.getDocumentReference() != null) {
+            for (DocumentReferenceType documentReference : partyType.getDocumentReference()) {
+                if (documentReference.getAttachment() != null)
+                    documentReference.getAttachment().setEmbeddedDocumentBinaryObject(null);
+            }
+        }
         return partyType;
     }
 }
