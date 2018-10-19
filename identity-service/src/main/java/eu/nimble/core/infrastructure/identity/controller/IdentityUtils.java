@@ -91,8 +91,7 @@ public class IdentityUtils {
         completenessWeights.add(StringUtils.isNotEmpty(companyDescription.getCompanyStatement()) ? 1.0 : 0.0);
         completenessWeights.add(StringUtils.isNotEmpty(companyDescription.getWebsite()) ? 1.0 : 0.0);
         completenessWeights.add(companyDescription.getSocialMediaList() != null && companyDescription.getSocialMediaList().size() > 0 ? 1.0 : 0.0);
-        completenessWeights.add(companyDescription.getPastEvents() != null && companyDescription.getPastEvents().size() > 0 ? 1.0 : 0.0);
-        completenessWeights.add(companyDescription.getUpcomingEvents() != null && companyDescription.getUpcomingEvents().size() > 0 ? 1.0 : 0.0);
+        completenessWeights.add(companyDescription.getEvents() != null && companyDescription.getEvents().size() > 0 ? 1.0 : 0.0);
         return completenessWeights.stream().mapToDouble(d->d).average().orElse(0.0);
     }
 

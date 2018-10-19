@@ -21,18 +21,14 @@ public class CompanyDescription {
     @ApiModelProperty(value = "Identifiers of company photos")
     private List<String> companyPhotoList = new ArrayList<>();
 
-
     @ApiModelProperty(value = "Identifiers of company logo image")
     private String logoImageId = null;
 
     @ApiModelProperty(value = "List of social media references (e.g. Facebook)")
     private List<String> socialMediaList = new ArrayList<>();
 
-    @ApiModelProperty(value = "List of past events")
-    private List<CompanyEvent> pastEvents = new ArrayList<>();
-
-    @ApiModelProperty(value = "List of upcoming events")
-    private List<CompanyEvent> upcomingEvents = new ArrayList<>();
+    @ApiModelProperty(value = "List of company related events")
+    private List<CompanyEvent> events = new ArrayList<>();
 
     public String getCompanyStatement() {
         return companyStatement;
@@ -74,19 +70,11 @@ public class CompanyDescription {
         this.socialMediaList = socialMediaList;
     }
 
-    public List<CompanyEvent> getPastEvents() {
-        return pastEvents;
+    public List<CompanyEvent> getEvents() {
+        return events;
     }
 
-    public void setPastEvents(List<CompanyEvent> pastEvents) {
-        this.pastEvents = pastEvents;
-    }
-
-    public List<CompanyEvent> getUpcomingEvents() {
-        return upcomingEvents;
-    }
-
-    public void setUpcomingEvents(List<CompanyEvent> upcomingEvents) {
-        this.upcomingEvents = upcomingEvents;
+    public void setEvents(List<CompanyEvent> events) {
+        this.events = events;
     }
 }

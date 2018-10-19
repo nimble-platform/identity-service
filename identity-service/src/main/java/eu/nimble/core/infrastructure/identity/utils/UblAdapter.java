@@ -164,20 +164,11 @@ public class UblAdapter {
                 companyDescription.setCompanyStatement(qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().get(0));
 
             // adapt events
-            Date today = new Date();
             if (qualifyingPartyType.getEvent() != null) {
-                List<CompanyEvent> pastEvents = qualifyingPartyType.getEvent().stream()
-                        .filter(event -> event.getDurationPeriod() != null && event.getDurationPeriod().getEndDateItem() != null)
-                        .filter(event -> event.getDurationPeriod().getEndDateItem().before(today))
+                List<CompanyEvent> events = qualifyingPartyType.getEvent().stream()
                         .map(UblAdapter::adaptEvent)
                         .collect(Collectors.toList());
-                List<CompanyEvent> upcomingEvents = qualifyingPartyType.getEvent().stream()
-                        .filter(event -> event.getDurationPeriod() != null && event.getDurationPeriod().getEndDateItem() != null)
-                        .filter(event -> event.getDurationPeriod().getEndDateItem().after(today))
-                        .map(UblAdapter::adaptEvent)
-                        .collect(Collectors.toList());
-                companyDescription.setPastEvents(pastEvents);
-                companyDescription.setUpcomingEvents(upcomingEvents);
+                companyDescription.setEvents(events);
             }
 
         }
@@ -382,10 +373,7 @@ public class UblAdapter {
         // company events
         if (settings.getDescription() != null) {
             List<EventType> events = new ArrayList<>();
-            settings.getDescription().getPastEvents().stream()
-                    .map(UblAdapter::adaptEvent)
-                    .collect(Collectors.toCollection(() -> events));
-            settings.getDescription().getUpcomingEvents().stream()
+            settings.getDescription().getEvents().stream()
                     .map(UblAdapter::adaptEvent)
                     .collect(Collectors.toCollection(() -> events));
             qualifyingParty.setEvent(events);
