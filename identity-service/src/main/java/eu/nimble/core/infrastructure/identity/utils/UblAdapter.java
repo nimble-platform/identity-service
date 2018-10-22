@@ -68,6 +68,7 @@ public class UblAdapter {
                 .collect(Collectors.toSet());
         settings.setRecentlyUsedProductCategories(recentlyUsedProductCategories);
 
+        // set industry sectors
         List<String> industrySectors = party.getIndustrySector().stream().map(CodeType::getValue).collect(Collectors.toList());
         settings.getDetails().setIndustrySectors(industrySectors);
 

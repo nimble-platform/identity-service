@@ -26,13 +26,17 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static eu.nimble.core.infrastructure.identity.utils.UblAdapter.DOCUMENT_TYPE_COMPANY_LOGO;
+import static eu.nimble.core.infrastructure.identity.utils.UblAdapter.DOCUMENT_TYPE_COMPANY_PHOTO;
 import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
 import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.COMPLETENESS_OF_COMPANY_TRADE_DETAILS;
+import static org.codehaus.groovy.runtime.DefaultGroovyMethods.collect;
 
 /**
  * Created by Johannes Innerbichler on 04/07/17.
@@ -75,19 +79,30 @@ public class CompanySettingsController {
             @ApiParam(value = "Id of company to retrieve settings from.", required = true) @PathVariable Long companyID) {
 
         // search relevant parties
-        Optional<PartyType> party = partyRepository.findByHjid(companyID).stream().findFirst();
+        Optional<PartyType> partyOptional = partyRepository.findByHjid(companyID).stream().findFirst();
 
         // check if party was found
-        if (party.isPresent() == false) {
+        if (partyOptional.isPresent() == false) {
             logger.info("Requested party with Id {} not found", companyID);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
+        PartyType party = partyOptional.get();
 
-        Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(party.get()).stream().findFirst();
+        Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(partyOptional.get()).stream().findFirst();
 
-        logger.debug("Returning requested settings for party with Id {}", party.get().getHjid());
+        logger.debug("Returning requested settings for party with Id {}", party.getHjid());
 
-        CompanySettings settings = UblAdapter.adaptCompanySettings(party.get(), qualifyingPartyOptional.orElse(null));
+        // fetch only identifiers of images in order to avoid fetch of entire binary files.
+        List<DocumentReferenceType> logos = partyRepository.findDocumentIds(party.getHjid(), DOCUMENT_TYPE_COMPANY_LOGO).stream()
+                .map(id -> shallowDocumentReference(id, DOCUMENT_TYPE_COMPANY_LOGO))
+                .collect(Collectors.toList());
+        List<DocumentReferenceType> images = partyRepository.findDocumentIds(party.getHjid(), DOCUMENT_TYPE_COMPANY_PHOTO).stream()
+                .map(id -> shallowDocumentReference(id, DOCUMENT_TYPE_COMPANY_PHOTO))
+                .collect(Collectors.toList());
+        images.addAll(logos);
+        party.setDocumentReference(images);
+
+        CompanySettings settings = UblAdapter.adaptCompanySettings(party, qualifyingPartyOptional.orElse(null));
         return new ResponseEntity<>(settings, HttpStatus.OK);
     }
 
@@ -380,5 +395,13 @@ public class CompanySettingsController {
         public DocumentNotFoundException(String message) {
             super(message);
         }
+    }
+
+    private static DocumentReferenceType shallowDocumentReference(BigInteger identifier, String documentType) {
+        DocumentReferenceType documentReference = new DocumentReferenceType();
+        documentReference.setID(identifier.toString());
+        documentReference.setHjid(identifier.longValue());
+        documentReference.setDocumentType(documentType);
+        return documentReference;
     }
 }
