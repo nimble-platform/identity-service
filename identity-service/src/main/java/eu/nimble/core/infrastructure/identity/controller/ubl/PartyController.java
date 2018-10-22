@@ -85,7 +85,7 @@ public class PartyController {
 
         removeBinaries(party);
 
-        logger.debug("Returning requested party with Id {0}", party.getHjid());
+        logger.debug("Returning requested party with Id {}", party.getHjid());
         return new ResponseEntity<>(party, HttpStatus.OK);
     }
 
@@ -95,7 +95,7 @@ public class PartyController {
     ResponseEntity<?> getParty(
             @ApiParam(value = "Ids of parties to retrieve.", required = true) @PathVariable List<Long> partyIds) {
 
-        logger.debug("Requesting parties with Ids {0}", partyIds);
+        logger.debug("Requesting parties with Ids {}", partyIds);
 
         // search relevant parties
         List<PartyType> parties = new ArrayList<>();
@@ -116,7 +116,7 @@ public class PartyController {
         // remove binaries for response
         parties.forEach(PartyController::removeBinaries);
 
-        logger.debug("Returning requested parties with Ids {0}", partyIds);
+        logger.debug("Returning requested parties with Ids {}", partyIds);
         return new ResponseEntity<>(parties, HttpStatus.OK);
     }
 
@@ -227,7 +227,7 @@ public class PartyController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
-        logger.debug("Returning requested QualifyingParty with Id {0}", partyId);
+        logger.debug("Returning requested QualifyingParty with Id {}", partyId);
         return new ResponseEntity<>(qualifyingPartyOptional.get(), HttpStatus.OK);
     }
 
