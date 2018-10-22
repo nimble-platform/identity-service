@@ -231,8 +231,6 @@ public class IdentityController {
         companyRegistration.setCompanyID(Long.parseLong(newCompany.getID()));
         companyRegistration.setUserID(Long.parseLong(userParty.getID()));
 
-        logger.info("Registered company with id {} for user with id {}", companyRegistration.getCompanyID(), companyRegistration.getUserID());
-
         // adapt role of user and refresh access token
         try {
             String keyCloakId = getKeycloakUserId(userParty);
@@ -256,6 +254,8 @@ public class IdentityController {
 
         // broadcast changes
         kafkaSender.broadcastCompanyUpdate(newCompany.getID(), bearer);
+
+        logger.info("Registered company with id {} for user with id {}", companyRegistration.getCompanyID(), companyRegistration.getUserID());
 
         return new ResponseEntity<>(companyRegistration, HttpStatus.OK);
     }
