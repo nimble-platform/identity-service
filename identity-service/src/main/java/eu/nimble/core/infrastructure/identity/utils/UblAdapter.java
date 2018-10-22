@@ -170,7 +170,6 @@ public class UblAdapter {
                         .collect(Collectors.toList());
                 companyDescription.setEvents(events);
             }
-
         }
 
         return companyDescription;
