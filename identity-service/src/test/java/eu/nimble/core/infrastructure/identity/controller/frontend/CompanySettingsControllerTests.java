@@ -2,6 +2,7 @@ package eu.nimble.core.infrastructure.identity.controller.frontend;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import eu.nimble.core.infrastructure.identity.IdentityServiceApplication;
 import eu.nimble.core.infrastructure.identity.IdentityUtilsTestConfiguration;
 import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
@@ -29,8 +30,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 
 import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
 import static org.hamcrest.Matchers.hasItem;
@@ -51,6 +55,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @FixMethodOrder
 @Import(IdentityUtilsTestConfiguration.class)
 public class CompanySettingsControllerTests {
+
+    private static final String DATE_FORMAT = "yyyy-MM-dd";
 
     @Autowired
     private MockMvc mockMvc;
@@ -90,10 +96,10 @@ public class CompanySettingsControllerTests {
         companyDescription.setCompanyStatement("company statement");
         companyDescription.setWebsite("website");
         companyDescription.setSocialMediaList(Arrays.asList("social media 1", "social media 2"));
-        Address pastEventAddress = new Address("event street name", "event building number", "event city name", "event postal code", "event country");
-        companyDescription.setPastEvents(Collections.singletonList(new CompanyEvent("event name", pastEventAddress, null, null, "event desc")));
-        Address upcomingEventAddress = new Address("event street name", "event building number", "event city name", "event postal code", "event country");
-        companyDescription.setUpcomingEvents(Collections.singletonList(new CompanyEvent("event name", upcomingEventAddress, null, null, "event desc")));
+        Address eventAddress = new Address("event street", "event building", "event city", "event postal", "event country");
+        Date eventDate = new Date();
+        companyDescription.getEvents().add(new CompanyEvent("event name", eventAddress, eventDate, eventDate, "event description"));
+        companyDescription.setExternalResources(Arrays.asList("URL 1", "URL 2"));
 
         CompanyTradeDetails companyTradeDetails = new CompanyTradeDetails();
         companyTradeDetails.setPpapCompatibilityLevel(5);
@@ -109,7 +115,7 @@ public class CompanySettingsControllerTests {
         companySettings.getRecentlyUsedProductCategories().add("category 3");
         companySettings.getRecentlyUsedProductCategories().add("category 4");
 
-        Gson gson = new Gson();
+        Gson gson = new GsonBuilder().setDateFormat(DATE_FORMAT).create();
         this.mockMvc.perform(put("/company-settings/" + company.getID())
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
@@ -117,6 +123,7 @@ public class CompanySettingsControllerTests {
                 .andExpect(status().isAccepted());
 
         // THEN: getting settings should be updated
+        SimpleDateFormat format = new SimpleDateFormat(DATE_FORMAT);
         this.mockMvc.perform(get("/company-settings/" + company.getID()))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -131,6 +138,7 @@ public class CompanySettingsControllerTests {
                 .andExpect(jsonPath("$.details.address.postalCode", is("postal code")))
                 .andExpect(jsonPath("$.details.address.country", is("country")))
                 .andExpect(jsonPath("$.details.businessKeywords.length()", is(2)))
+                .andExpect(jsonPath("$.details.businessType", is("business type")))
                 .andExpect(jsonPath("$.details.businessKeywords[0]", is("k1")))
                 .andExpect(jsonPath("$.details.businessKeywords[1]", is("k2")))
                 .andExpect(jsonPath("$.details.yearOfCompanyRegistration", is(2001)))
@@ -143,8 +151,13 @@ public class CompanySettingsControllerTests {
                 .andExpect(jsonPath("$.description.socialMediaList.length()", is(2)))
                 .andExpect(jsonPath("$.description.socialMediaList[0]", is("social media 1")))
                 .andExpect(jsonPath("$.description.socialMediaList[1]", is("social media 2")))
-                .andExpect(jsonPath("$.description.pastEvents.length()", is(1)))
-                .andExpect(jsonPath("$.description.upcomingEvents.length()", is(1)))
+                .andExpect(jsonPath("$.description.events.length()", is(1)))
+                .andExpect(jsonPath("$.description.events[0].dateTo", is(format.format(eventDate))))
+                .andExpect(jsonPath("$.description.externalResources.length()", is(2)))
+                .andExpect(jsonPath("$.description.externalResources[0]", is("URL 1")))
+                .andExpect(jsonPath("$.description.externalResources[1]", is("URL 2")))
+                // check certificates
+                .andExpect(jsonPath("$.certificates.length()", is(0))) // no certs added
                 // check trade details
                 .andExpect(jsonPath("$.tradeDetails.ppapCompatibilityLevel", is(5)))
                 .andExpect(jsonPath("$.tradeDetails.paymentMeans.length()", is(1)))

@@ -20,11 +20,11 @@ public class CompanyEvent {
     private Address place = null;
 
     @ApiModelProperty(value = "Start date of event")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private Date dateFrom = null;
 
     @ApiModelProperty(value = "End date of event")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private Date dateTo = null;
 
     @ApiModelProperty(value = "Description of event")

@@ -18,14 +18,19 @@ public class CompanyDescription {
     @ApiModelProperty(value = "Main website of the company")
     private String website = null;
 
+    @ApiModelProperty(value = "Identifiers of company photos")
+    private List<String> companyPhotoList = new ArrayList<>();
+
+    @ApiModelProperty(value = "Identifiers of company logo image")
+    private String logoImageId = null;
+
     @ApiModelProperty(value = "List of social media references (e.g. Facebook)")
-    private List<String> socialMediaList = null;
+    private List<String> socialMediaList = new ArrayList<>();
 
-    @ApiModelProperty(value = "List of past events")
-    private List<CompanyEvent> pastEvents = new ArrayList<>();
+    @ApiModelProperty(value = "List of company related events")
+    private List<CompanyEvent> events = new ArrayList<>();
 
-    @ApiModelProperty(value = "List of upcoming events")
-    private List<CompanyEvent> upcomingEvents = new ArrayList<>();
+    private List<String> externalResources = new ArrayList<>();
 
     public String getCompanyStatement() {
         return companyStatement;
@@ -43,6 +48,22 @@ public class CompanyDescription {
         this.website = website;
     }
 
+    public List<String> getCompanyPhotoList() {
+        return companyPhotoList;
+    }
+
+    public void setCompanyPhotoList(List<String> companyPhotoList) {
+        this.companyPhotoList = companyPhotoList;
+    }
+
+    public String getLogoImageId() {
+        return logoImageId;
+    }
+
+    public void setLogoImageId(String logoImageId) {
+        this.logoImageId = logoImageId;
+    }
+
     public List<String> getSocialMediaList() {
         return socialMediaList;
     }
@@ -51,19 +72,19 @@ public class CompanyDescription {
         this.socialMediaList = socialMediaList;
     }
 
-    public List<CompanyEvent> getPastEvents() {
-        return pastEvents;
+    public List<CompanyEvent> getEvents() {
+        return events;
     }
 
-    public void setPastEvents(List<CompanyEvent> pastEvents) {
-        this.pastEvents = pastEvents;
+    public void setEvents(List<CompanyEvent> events) {
+        this.events = events;
     }
 
-    public List<CompanyEvent> getUpcomingEvents() {
-        return upcomingEvents;
+    public List<String> getExternalResources() {
+        return externalResources;
     }
 
-    public void setUpcomingEvents(List<CompanyEvent> upcomingEvents) {
-        this.upcomingEvents = upcomingEvents;
+    public void setExternalResources(List<String> externalResources) {
+        this.externalResources = externalResources;
     }
 }

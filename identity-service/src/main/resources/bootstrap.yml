@@ -14,12 +14,11 @@ spring:
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     properties:
       hibernate:
         temp:
           use_jdbc_metadata_defaults: false
-    generate-ddl: true
   datasource:
     driverClassName: org.postgresql.Driver
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:identityDB}
@@ -27,6 +26,8 @@ spring:
     password: ${POSTGRES_PASSWORD:changeme}
     maxActive: 3
     maxIdle: 3
+    tomcat:
+      default-auto-commit: false
   mail:
     debug: false  # disable printing email to log output
     host: ${SMTP_HOST:localhost}
@@ -46,6 +47,10 @@ spring:
       sasl:
         jaas:
           config: ${KAFKA_JAAS_CONFIG}
+  http:
+    multipart:
+      max-file-size: 10Mb
+      max-request-size: 10Mb
 
 logstash:
   uri: ${LOGSTASH_URI:localhost:5000}
@@ -82,7 +87,11 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
+    properties:
+      hibernate:
+        temp:
+          use_jdbc_metadata_defaults: true
   h2:
     console:
       enabled: true
@@ -90,9 +99,10 @@ spring:
   datasource:
     name: identitydb
     driverClassName: org.h2.Driver
-    url: jdbc:h2:file:~/identitydb;
+    url: jdbc:h2:file:~/identitydb_h2;
+    initialize: false
     username: sa
-    password: sa
+    password:
   mail:
     debug: true  # prints email to log output
     host: localhost # in-v3.mailjet.com
@@ -116,7 +126,7 @@ spring:
     name: channeldb
     driverClassName: org.h2.Driver
     url: jdbc:h2:mem:channeldb
-    initialize: false
+    initialize: true
     username: sa
     password:
   kafka:

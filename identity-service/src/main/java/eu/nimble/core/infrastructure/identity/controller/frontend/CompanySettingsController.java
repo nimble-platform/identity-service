@@ -5,16 +5,12 @@ import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
-import eu.nimble.core.infrastructure.identity.repository.CertificateRepository;
-import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
-import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
-import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
+import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
+import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.CertificateType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.QualifyingPartyType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.QualityIndicatorType;
+import eu.nimble.core.infrastructure.identity.utils.UblUtils;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
 import io.swagger.annotations.Api;
@@ -25,21 +21,22 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static eu.nimble.core.infrastructure.identity.utils.UblAdapter.DOCUMENT_TYPE_COMPANY_LOGO;
+import static eu.nimble.core.infrastructure.identity.utils.UblAdapter.DOCUMENT_TYPE_COMPANY_PHOTO;
 import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
 import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.COMPLETENESS_OF_COMPANY_TRADE_DETAILS;
+import static org.codehaus.groovy.runtime.DefaultGroovyMethods.collect;
 
 /**
  * Created by Johannes Innerbichler on 04/07/17.
@@ -62,6 +59,9 @@ public class CompanySettingsController {
     private CertificateRepository certificateRepository;
 
     @Autowired
+    private DocumentReferenceRepository documentReferenceRepository;
+
+    @Autowired
     private NegotiationSettingsRepository negotiationSettingsRepository;
 
     @Autowired
@@ -79,19 +79,30 @@ public class CompanySettingsController {
             @ApiParam(value = "Id of company to retrieve settings from.", required = true) @PathVariable Long companyID) {
 
         // search relevant parties
-        Optional<PartyType> party = partyRepository.findByHjid(companyID).stream().findFirst();
+        Optional<PartyType> partyOptional = partyRepository.findByHjid(companyID).stream().findFirst();
 
         // check if party was found
-        if (party.isPresent() == false) {
+        if (partyOptional.isPresent() == false) {
             logger.info("Requested party with Id {} not found", companyID);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
+        PartyType party = partyOptional.get();
 
-        Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(party.get()).stream().findFirst();
+        Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(partyOptional.get()).stream().findFirst();
 
-        logger.debug("Returning requested settings for party with Id {}", party.get().getHjid());
+        logger.debug("Returning requested settings for party with Id {}", party.getHjid());
 
-        CompanySettings settings = UblAdapter.adaptCompanySettings(party.get(), qualifyingPartyOptional.orElse(null));
+        // fetch only identifiers of images in order to avoid fetch of entire binary files.
+        List<DocumentReferenceType> logos = partyRepository.findDocumentIds(party.getHjid(), DOCUMENT_TYPE_COMPANY_LOGO).stream()
+                .map(id -> shallowDocumentReference(id, DOCUMENT_TYPE_COMPANY_LOGO))
+                .collect(Collectors.toList());
+        party.getDocumentReference().addAll(logos);
+        List<DocumentReferenceType> images = partyRepository.findDocumentIds(party.getHjid(), DOCUMENT_TYPE_COMPANY_PHOTO).stream()
+                .map(id -> shallowDocumentReference(id, DOCUMENT_TYPE_COMPANY_PHOTO))
+                .collect(Collectors.toList());
+        party.getDocumentReference().addAll(images);
+
+        CompanySettings settings = UblAdapter.adaptCompanySettings(party, qualifyingPartyOptional.orElse(null));
         return new ResponseEntity<>(settings, HttpStatus.OK);
     }
 
@@ -134,6 +145,81 @@ public class CompanySettingsController {
         kafkaSender.broadcastCompanyUpdate(existingCompany.getID(), bearer);
 
         return new ResponseEntity<>(newSettings, HttpStatus.ACCEPTED);
+    }
+
+    @ApiOperation(value = "Upload company image")
+    @RequestMapping(value = "/image", produces = {"application/json"}, method = RequestMethod.POST)
+    public ResponseEntity<DocumentReferenceType> uploadImage(
+            @RequestHeader(value = "Authorization") String bearer,
+            @RequestParam(value = "isLogo", defaultValue = "false") String isLogo,
+            @RequestParam(value = "file") MultipartFile imageFile) throws IOException {
+
+//        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+//            return new ResponseEntity<>("Only legal representatives are allowed add images", HttpStatus.UNAUTHORIZED);
+
+
+        UaaUser user = identityUtils.getUserfromBearer(bearer);
+        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(CompanyNotFoundException::new);
+
+        logger.info("Storing image for company with ID " + company.getID());
+
+        Boolean logoFlag = "true".equals(isLogo);
+        DocumentReferenceType imageDocument = UblAdapter.adaptCompanyPhoto(imageFile, logoFlag);
+        documentReferenceRepository.save(imageDocument);
+
+        company.getDocumentReference().add(imageDocument);
+        partyRepository.save(company);
+
+        imageDocument.getAttachment().setEmbeddedDocumentBinaryObject(null);
+        imageDocument.setID(imageDocument.getHjid().toString());
+        return ResponseEntity.ok(imageDocument);
+    }
+
+    @ApiOperation(value = "Download company image")
+    @RequestMapping(value = "/image/{imageId}", produces = {"application/json"}, method = RequestMethod.GET)
+    public ResponseEntity<Resource> downloadImage(
+            @ApiParam(value = "Id of company to retrieve settings from.", required = true) @PathVariable Long imageId) {
+
+        // collect image resource
+        DocumentReferenceType imageDocument = documentReferenceRepository.findOne(imageId);
+        if (imageDocument == null)
+            throw new DocumentNotFoundException();
+        BinaryObjectType imageObject = imageDocument.getAttachment().getEmbeddedDocumentBinaryObject();
+        Resource imageResource = new ByteArrayResource(imageObject.getValue());
+
+        logger.info("Downloading image with Id " + imageId);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(imageObject.getMimeCode()))
+                .body(imageResource);
+    }
+
+    @ApiOperation(value = "Delete company image")
+    @RequestMapping(value = "/image/{imageId}", produces = {"application/json"}, method = RequestMethod.DELETE)
+    public ResponseEntity<?> deleteImage(
+            @RequestHeader(value = "Authorization") String bearer,
+            @ApiParam(value = "Id of company to retrieve settings from.", required = true) @PathVariable Long imageId) throws IOException {
+
+        logger.info("Deleting image with Id " + imageId);
+
+        UaaUser user = identityUtils.getUserfromBearer(bearer);
+        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(CompanyNotFoundException::new);
+
+        // remove from list in party
+        if (company.getDocumentReference().stream().anyMatch(dr -> imageId.equals(dr.getHjid())) == false)
+            throw new DocumentNotFoundException("No associated document found.");
+        List<DocumentReferenceType> updatedList = company.getDocumentReference().stream()
+                .filter(dr -> imageId.equals(dr.getHjid())== false)
+                .collect(Collectors.toList());
+        company.setDocumentReference(updatedList);
+        partyRepository.save(company);
+
+        // delete object
+        if (documentReferenceRepository.exists(imageId) == false)
+            throw new DocumentNotFoundException("No document for Id found.");
+        documentReferenceRepository.delete(imageId);
+
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/certificate")
@@ -298,5 +384,24 @@ public class CompanySettingsController {
 
     @ResponseStatus(code = HttpStatus.NOT_FOUND, reason = "company not found")
     private static class CompanyNotFoundException extends RuntimeException {
+    }
+
+    @ResponseStatus(code = HttpStatus.NOT_FOUND, reason = "document not found")
+    private static class DocumentNotFoundException extends RuntimeException {
+
+        public DocumentNotFoundException() {
+        }
+
+        public DocumentNotFoundException(String message) {
+            super(message);
+        }
+    }
+
+    private static DocumentReferenceType shallowDocumentReference(BigInteger identifier, String documentType) {
+        DocumentReferenceType documentReference = new DocumentReferenceType();
+        documentReference.setID(identifier.toString());
+        documentReference.setHjid(identifier.longValue());
+        documentReference.setDocumentType(documentType);
+        return documentReference;
     }
 }

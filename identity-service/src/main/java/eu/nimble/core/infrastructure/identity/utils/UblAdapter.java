@@ -21,6 +21,9 @@ import java.util.stream.Collectors;
 public class UblAdapter {
 
     public static final String VAT_TAX_TYPE_CODE = "VAT";
+    public static final String DOCUMENT_TYPE_COMPANY_PHOTO = "CompanyPhoto";
+    public static final String DOCUMENT_TYPE_COMPANY_LOGO = "CompanyLogo";
+    public static final String DOCUMENT_TYPE_EXTERNAL_RESOURCE = "ExternalResource";
 
     public static CompanySettings adaptCompanySettings(PartyType party, QualifyingPartyType qualifyingParty) {
         CompanySettings settings = new CompanySettings();
@@ -51,7 +54,8 @@ public class UblAdapter {
         if (party.getPpapCompatibilityLevel() != null)
             settings.getTradeDetails().setPpapCompatibilityLevel(party.getPpapCompatibilityLevel().intValue());
 
-//        settings.setCertificates(UblAdapter.adaptCertificates(party.getCertificate()));a
+        // set certificates
+        settings.setCertificates(UblAdapter.adaptCertificates(party.getCertificate()));
 
         // set preferred product categories
         Set<String> preferredProductCategories = party.getPreferredItemClassificationCode().stream()
@@ -65,6 +69,7 @@ public class UblAdapter {
                 .collect(Collectors.toSet());
         settings.setRecentlyUsedProductCategories(recentlyUsedProductCategories);
 
+        // set industry sectors
         List<String> industrySectors = party.getIndustrySector().stream().map(CodeType::getValue).collect(Collectors.toList());
         settings.getDetails().setIndustrySectors(industrySectors);
 
@@ -115,11 +120,13 @@ public class UblAdapter {
                 .map(scheme -> scheme.getTaxScheme().getTaxTypeCode().getValue())
                 .findFirst().orElse(null));
         companyDetails.setAddress(adaptAddress(party.getPostalAddress()));
+        if (party.getIndustryClassificationCode() != null)
+            companyDetails.setBusinessType(party.getIndustryClassificationCode().getValue());
 
         if (qualifyingParty != null) {
             companyDetails.setVerificationInformation(qualifyingParty.getBusinessIdentityEvidenceID());
             companyDetails.setBusinessKeywords(qualifyingParty.getBusinessClassificationScheme().getDescription());
-            if( qualifyingParty.getOperatingYearsQuantity() != null && qualifyingParty.getOperatingYearsQuantity().getValue() != null)
+            if (qualifyingParty.getOperatingYearsQuantity() != null && qualifyingParty.getOperatingYearsQuantity().getValue() != null)
                 companyDetails.setYearOfCompanyRegistration(qualifyingParty.getOperatingYearsQuantity().getValue().intValue());
         }
 
@@ -130,28 +137,45 @@ public class UblAdapter {
 
         CompanyDescription companyDescription = new CompanyDescription();
         companyDescription.setWebsite(party.getWebsiteURI());
-        companyDescription.setSocialMediaList(party.getContact().getOtherCommunication()
-                .stream()
-                .map(CommunicationType::getValue)
-                .collect(Collectors.toList()));
+        if (party.getContact() != null && party.getContact().getOtherCommunication() != null) {
+            companyDescription.setSocialMediaList(party.getContact().getOtherCommunication()
+                    .stream()
+                    .map(CommunicationType::getValue)
+                    .collect(Collectors.toList()));
+        }
+
+        // photos
+        if (party.getDocumentReference() != null) {
+            List<String> companyPhotoIds = party.getDocumentReference().stream()
+                    .filter(dr -> DOCUMENT_TYPE_COMPANY_PHOTO.equals(dr.getDocumentType()))
+                    .map(dr -> dr.getHjid().toString())
+                    .collect(Collectors.toList());
+            companyDescription.setCompanyPhotoList(companyPhotoIds);
+
+            // company logo
+            String logoImageId = party.getDocumentReference().stream()
+                    .filter(dr -> DOCUMENT_TYPE_COMPANY_LOGO.equals(dr.getDocumentType()))
+                    .map(dr -> dr.getHjid().toString())
+                    .findFirst()
+                    .orElse(null);
+            companyDescription.setLogoImageId(logoImageId);
+
+            // external resources
+            List<String> externalResources = UblAdapter.adaptExternalResourcesType(party.getDocumentReference());
+            companyDescription.setExternalResources(externalResources);
+        }
 
         if (qualifyingPartyType != null) {
-            companyDescription.setCompanyStatement(qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().get(0));
+            if (qualifyingPartyType.getEconomicOperatorRole() != null && qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().isEmpty() == false)
+                companyDescription.setCompanyStatement(qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().get(0));
 
             // adapt events
             if (qualifyingPartyType.getEvent() != null) {
-                List<CompanyEvent> pastEvents = qualifyingPartyType.getEvent().stream()
-                        .filter(EventType::isCompletionIndicator)
+                List<CompanyEvent> events = qualifyingPartyType.getEvent().stream()
                         .map(UblAdapter::adaptEvent)
                         .collect(Collectors.toList());
-                List<CompanyEvent> upcomingEvents = qualifyingPartyType.getEvent().stream()
-                        .filter(e -> e.isCompletionIndicator() == false)
-                        .map(UblAdapter::adaptEvent)
-                        .collect(Collectors.toList());
-                companyDescription.setPastEvents(pastEvents);
-                companyDescription.setUpcomingEvents(upcomingEvents);
+                companyDescription.setEvents(events);
             }
-
         }
 
         return companyDescription;
@@ -271,7 +295,7 @@ public class UblAdapter {
         companyToChange.setName(settings.getDetails().getCompanyLegalName());
 
         // VAT number
-        if( settings.getDetails().getVatNumber() != null)
+        if (settings.getDetails().getVatNumber() != null)
             companyToChange.getPartyTaxScheme().add(adaptTaxSchema(settings.getDetails().getVatNumber()));
 
         // postal address
@@ -281,12 +305,14 @@ public class UblAdapter {
         companyToChange.setIndustryClassificationCode(adaptCodeType("IndustryClassificationCode", settings.getDetails().getBusinessType()));
 
         // website URL
-        companyToChange.setWebsiteURI(settings.getDescription().getWebsite());
+        if (settings.getDescription() != null) {
+            companyToChange.setWebsiteURI(settings.getDescription().getWebsite());
 
-        // social media list
-        ContactType socialMediaContact = new ContactType();
-        socialMediaContact.setOtherCommunication(adaptSocialMediaList(settings.getDescription().getSocialMediaList()));
-        companyToChange.setContact(socialMediaContact);
+            // social media list
+            ContactType socialMediaContact = new ContactType();
+            socialMediaContact.setOtherCommunication(adaptSocialMediaList(settings.getDescription().getSocialMediaList()));
+            companyToChange.setContact(socialMediaContact);
+        }
 
         // industry sectors
         List<CodeType> industrySectors = UblAdapter.adaptIndustrySectors(settings.getDetails().getIndustrySectors());
@@ -300,6 +326,10 @@ public class UblAdapter {
             if (alreadyInList == false)
                 companyToChange.getPerson().add(representative);
         }
+
+        // external resources
+        List<DocumentReferenceType> externalResources = UblAdapter.adaptExternalResources(settings.getDescription().getExternalResources());
+        companyToChange.getDocumentReference().addAll(externalResources);
 
         if (settings.getTradeDetails() != null) {
 
@@ -350,33 +380,61 @@ public class UblAdapter {
         }
 
         // company events
-        List<EventType> events = new ArrayList<>();
-        settings.getDescription().getPastEvents().stream()
-                .map(event -> adaptEvent(event, true))
-                .collect(Collectors.toCollection(() -> events));
-        settings.getDescription().getUpcomingEvents().stream()
-                .map(event -> adaptEvent(event, false))
-                .collect(Collectors.toCollection(() -> events));
-        qualifyingParty.setEvent(events);
+        if (settings.getDescription() != null) {
+            List<EventType> events = new ArrayList<>();
+            settings.getDescription().getEvents().stream()
+                    .map(UblAdapter::adaptEvent)
+                    .collect(Collectors.toCollection(() -> events));
+            qualifyingParty.setEvent(events);
 
-        // company statement
-        EconomicOperatorRoleType economicOperatorRole = new EconomicOperatorRoleType();
-        economicOperatorRole.setRoleDescription(Collections.singletonList(settings.getDescription().getCompanyStatement()));
-        qualifyingParty.setEconomicOperatorRole(economicOperatorRole);
+            // company statement
+            EconomicOperatorRoleType economicOperatorRole = new EconomicOperatorRoleType();
+            economicOperatorRole.setRoleDescription(Collections.singletonList(settings.getDescription().getCompanyStatement()));
+            qualifyingParty.setEconomicOperatorRole(economicOperatorRole);
+        }
 
         qualifyingParty.setParty(company);
 
         return qualifyingParty;
     }
 
-    public static EventType adaptEvent(CompanyEvent event, Boolean completionIndicator) {
+    public static List<DocumentReferenceType> adaptExternalResources(List<String> externalResources) {
+        return externalResources.stream()
+                .map(er -> {
+                    ExternalReferenceType externalReference = new ExternalReferenceType();
+                    externalReference.setURI(er);
+                    AttachmentType attachment = new AttachmentType();
+                    attachment.setExternalReference(externalReference);
+
+                    DocumentReferenceType documentReference = new DocumentReferenceType();
+                    documentReference.setDocumentType(DOCUMENT_TYPE_EXTERNAL_RESOURCE);
+                    documentReference.setAttachment(attachment);
+                    return documentReference;
+                })
+                .collect(Collectors.toList());
+    }
+
+
+    public static List<String> adaptExternalResourcesType(List<DocumentReferenceType> externalResources) {
+        return externalResources.stream()
+                .map(er -> {
+                    if (er.getAttachment() != null && er.getAttachment().getExternalReference() != null && DOCUMENT_TYPE_EXTERNAL_RESOURCE.equals(er.getDocumentType()))
+                        return er.getAttachment().getExternalReference().getURI();
+
+                    return null;
+                })
+                .collect(Collectors.toList());
+    }
+
+    public static EventType adaptEvent(CompanyEvent event) {
         EventType ublEvent = new EventType();
 
         // identifier
         ublEvent.setIdentificationID(event.getName());
 
-        // completion indicator
-        ublEvent.setCompletionIndicator(completionIndicator);
+//        // completion indicator
+//        Boolean completionIndicator = new Date().after(event.getDateTo());
+//        ublEvent.setCompletionIndicator(completionIndicator);
 
         // address
         LocationType location = new LocationType();
@@ -458,6 +516,22 @@ public class UblAdapter {
         return certificateType;
     }
 
+    public static DocumentReferenceType adaptCompanyPhoto(MultipartFile photoFile, Boolean isLogo) throws IOException {
+
+        BinaryObjectType photoBinary = new BinaryObjectType();
+        photoBinary.setValue(photoFile.getBytes());
+        photoBinary.setMimeCode(photoFile.getContentType());
+
+        AttachmentType attachment = new AttachmentType();
+        attachment.setEmbeddedDocumentBinaryObject(photoBinary);
+
+        DocumentReferenceType document = new DocumentReferenceType();
+        String documentType = isLogo ? DOCUMENT_TYPE_COMPANY_LOGO : DOCUMENT_TYPE_COMPANY_PHOTO;
+        document.setDocumentType(documentType);
+        document.setAttachment(attachment);
+        return document;
+    }
+
     public static List<CompanyCertificate> adaptCertificates(List<CertificateType> certificateTypes) {
         return certificateTypes.stream()
                 .map(certificateType ->
@@ -475,21 +549,6 @@ public class UblAdapter {
         qualityIndicator.setQuantity(quantity);
         qualityIndicator.setQualityParameter(parameterName.name());
         return qualityIndicator;
-    }
-
-    public static String adaptVatNumber(PartyType partyType) {
-
-        if (partyType == null)
-            return null;
-
-        String vatNumber = null;
-        Optional<PartyTaxSchemeType> partyTaxSchemeOpt = partyType.getPartyTaxScheme().stream().findFirst();
-        if (partyTaxSchemeOpt.isPresent()) {
-            PartyTaxSchemeType partyTaxScheme = partyTaxSchemeOpt.get();
-            if (partyTaxScheme.getTaxScheme() != null && partyTaxScheme.getTaxScheme().getTaxTypeCode() != null)
-                vatNumber = partyTaxScheme.getTaxScheme().getTaxTypeCode().getValue();
-        }
-        return vatNumber;
     }
 
     public static List<CodeType> adaptProductCategories(Set<String> categoryCodes) {
