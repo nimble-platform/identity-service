@@ -47,7 +47,7 @@ public class IdentityUtils {
     }
 
     public Optional<PartyType> getCompanyOfUser(UaaUser uaaUser) {
-        if( uaaUser == null)
+        if (uaaUser == null)
             return Optional.empty();
         return partyRepository.findByPerson(uaaUser.getUBLPerson()).stream().findFirst();
     }
@@ -71,41 +71,43 @@ public class IdentityUtils {
         List<Double> completenessWeights = new ArrayList<>();
         completenessWeights.add(StringUtils.isNotEmpty(companyDetails.getCompanyLegalName()) ? 1.0 : 0.0);
         completenessWeights.add(StringUtils.isNotEmpty(companyDetails.getVatNumber()) ? 1.0 : 0.0);
-        completenessWeights.add(StringUtils.isNotEmpty(companyDetails.getVerificationInformation()) ? 1.0 : 0.0);
+        completenessWeights.add(StringUtils.isNotEmpty(companyDetails.getBusinessType()) ? 1.0 : 0.0);
+        completenessWeights.add(companyDetails.getBusinessKeywords() != null && companyDetails.getBusinessKeywords().size() > 0 ? 1.0 : 0.0);
+        completenessWeights.add(companyDetails.getIndustrySectors() != null && companyDetails.getIndustrySectors().size() > 0 ? 1.0 : 0.0);
+        completenessWeights.add(companyDetails.getYearOfCompanyRegistration() != null ? 1.0 : 0.0);
+
         Address address = companyDetails.getAddress();
         if (address != null) {
             completenessWeights.add(StringUtils.isNotEmpty(address.getStreetName()) ? 1.0 : 0.0);
-            completenessWeights.add(StringUtils.isNotEmpty(address.getBuildingNumber()) ? 1.0 : 0.0);
             completenessWeights.add(StringUtils.isNotEmpty(address.getCityName()) ? 1.0 : 0.0);
             completenessWeights.add(StringUtils.isNotEmpty(address.getPostalCode()) ? 1.0 : 0.0);
             completenessWeights.add(StringUtils.isNotEmpty(address.getCountry()) ? 1.0 : 0.0);
         }
-        completenessWeights.add(StringUtils.isNotEmpty(companyDetails.getBusinessType()) ? 1.0 : 0.0);
-        completenessWeights.add(companyDetails.getBusinessKeywords() != null && companyDetails.getBusinessKeywords().size() > 0 ? 1.0 : 0.0);
-        completenessWeights.add(companyDetails.getYearOfCompanyRegistration() != null ? 1.0 : 0.0);
-        return completenessWeights.stream().mapToDouble(d->d).average().orElse(0.0);
+        return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
     }
 
     public static Double computeDescriptionCompleteness(CompanyDescription companyDescription) {
         List<Double> completenessWeights = new ArrayList<>();
         completenessWeights.add(StringUtils.isNotEmpty(companyDescription.getCompanyStatement()) ? 1.0 : 0.0);
         completenessWeights.add(StringUtils.isNotEmpty(companyDescription.getWebsite()) ? 1.0 : 0.0);
+        completenessWeights.add(companyDescription.getLogoImageId() != null ? 1.0 : 0.0);
+        completenessWeights.add(companyDescription.getCompanyPhotoList() != null && companyDescription.getCompanyPhotoList().size() > 0 ? 1.0 : 0.0);
         completenessWeights.add(companyDescription.getSocialMediaList() != null && companyDescription.getSocialMediaList().size() > 0 ? 1.0 : 0.0);
         completenessWeights.add(companyDescription.getEvents() != null && companyDescription.getEvents().size() > 0 ? 1.0 : 0.0);
-        return completenessWeights.stream().mapToDouble(d->d).average().orElse(0.0);
+        completenessWeights.add(companyDescription.getExternalResources() != null && companyDescription.getExternalResources().size() > 0 ? 1.0 : 0.0);
+        return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
     }
 
     public static Double computeCertificateCompleteness(PartyType party) {
         List<Double> completenessWeights = new ArrayList<>();
         completenessWeights.add(party.getCertificate() != null && party.getCertificate().size() > 0 ? 1.0 : 0.0);
-        return completenessWeights.stream().mapToDouble(d->d).average().orElse(0.0);
+        return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
     }
 
     public static Double computeTradeCompleteness(CompanyTradeDetails tradeDetails) {
         List<Double> completenessWeights = new ArrayList<>();
-        completenessWeights.add(tradeDetails.getPpapCompatibilityLevel() != null && tradeDetails.getPpapCompatibilityLevel() > 0.0 ? 1.0: 0.0);
         completenessWeights.add(tradeDetails.getDeliveryTerms() != null && tradeDetails.getDeliveryTerms().size() > 0 ? 1.0 : 0.0);
-        completenessWeights.add(tradeDetails.getPaymentMeans() != null && tradeDetails.getPaymentMeans().size() > 0 ? 1.0 : 0.0);
-        return completenessWeights.stream().mapToDouble(d->d).average().orElse(0.0);
+        completenessWeights.add(tradeDetails.getPpapCompatibilityLevel() != null && tradeDetails.getPpapCompatibilityLevel() > 0 ? 1.0 : 0.0);
+        return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
     }
 }
