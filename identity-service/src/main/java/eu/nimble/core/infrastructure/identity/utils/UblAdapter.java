@@ -23,6 +23,7 @@ public class UblAdapter {
     public static final String VAT_TAX_TYPE_CODE = "VAT";
     public static final String DOCUMENT_TYPE_COMPANY_PHOTO = "CompanyPhoto";
     public static final String DOCUMENT_TYPE_COMPANY_LOGO = "CompanyLogo";
+    public static final String DOCUMENT_TYPE_EXTERNAL_RESOURCE = "ExternalResource";
 
     public static CompanySettings adaptCompanySettings(PartyType party, QualifyingPartyType qualifyingParty) {
         CompanySettings settings = new CompanySettings();
@@ -144,7 +145,7 @@ public class UblAdapter {
         }
 
         // photos
-        if( party.getDocumentReference() != null) {
+        if (party.getDocumentReference() != null) {
             List<String> companyPhotoIds = party.getDocumentReference().stream()
                     .filter(dr -> DOCUMENT_TYPE_COMPANY_PHOTO.equals(dr.getDocumentType()))
                     .map(dr -> dr.getHjid().toString())
@@ -158,6 +159,10 @@ public class UblAdapter {
                     .findFirst()
                     .orElse(null);
             companyDescription.setLogoImageId(logoImageId);
+
+            // external resources
+            List<String> externalResources = UblAdapter.adaptExternalResourcesType(party.getDocumentReference());
+            companyDescription.setExternalResources(externalResources);
         }
 
         if (qualifyingPartyType != null) {
@@ -322,6 +327,10 @@ public class UblAdapter {
                 companyToChange.getPerson().add(representative);
         }
 
+        // external resources
+        List<DocumentReferenceType> externalResources = UblAdapter.adaptExternalResources(settings.getDescription().getExternalResources());
+        companyToChange.getDocumentReference().addAll(externalResources);
+
         if (settings.getTradeDetails() != null) {
 
             if (companyToChange.getPurchaseTerms() == null)
@@ -387,6 +396,34 @@ public class UblAdapter {
         qualifyingParty.setParty(company);
 
         return qualifyingParty;
+    }
+
+    public static List<DocumentReferenceType> adaptExternalResources(List<String> externalResources) {
+        return externalResources.stream()
+                .map(er -> {
+                    ExternalReferenceType externalReference = new ExternalReferenceType();
+                    externalReference.setURI(er);
+                    AttachmentType attachment = new AttachmentType();
+                    attachment.setExternalReference(externalReference);
+
+                    DocumentReferenceType documentReference = new DocumentReferenceType();
+                    documentReference.setDocumentType(DOCUMENT_TYPE_EXTERNAL_RESOURCE);
+                    documentReference.setAttachment(attachment);
+                    return documentReference;
+                })
+                .collect(Collectors.toList());
+    }
+
+
+    public static List<String> adaptExternalResourcesType(List<DocumentReferenceType> externalResources) {
+        return externalResources.stream()
+                .map(er -> {
+                    if (er.getAttachment() != null && er.getAttachment().getExternalReference() != null && DOCUMENT_TYPE_EXTERNAL_RESOURCE.equals(er.getDocumentType()))
+                        return er.getAttachment().getExternalReference().getURI();
+
+                    return null;
+                })
+                .collect(Collectors.toList());
     }
 
     public static EventType adaptEvent(CompanyEvent event) {

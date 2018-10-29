@@ -30,6 +30,8 @@ public class CompanyDescription {
     @ApiModelProperty(value = "List of company related events")
     private List<CompanyEvent> events = new ArrayList<>();
 
+    private List<String> externalResources = new ArrayList<>();
+
     public String getCompanyStatement() {
         return companyStatement;
     }
@@ -76,5 +78,13 @@ public class CompanyDescription {
 
     public void setEvents(List<CompanyEvent> events) {
         this.events = events;
+    }
+
+    public List<String> getExternalResources() {
+        return externalResources;
+    }
+
+    public void setExternalResources(List<String> externalResources) {
+        this.externalResources = externalResources;
     }
 }

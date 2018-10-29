@@ -96,11 +96,11 @@ public class CompanySettingsController {
         List<DocumentReferenceType> logos = partyRepository.findDocumentIds(party.getHjid(), DOCUMENT_TYPE_COMPANY_LOGO).stream()
                 .map(id -> shallowDocumentReference(id, DOCUMENT_TYPE_COMPANY_LOGO))
                 .collect(Collectors.toList());
+        party.getDocumentReference().addAll(logos);
         List<DocumentReferenceType> images = partyRepository.findDocumentIds(party.getHjid(), DOCUMENT_TYPE_COMPANY_PHOTO).stream()
                 .map(id -> shallowDocumentReference(id, DOCUMENT_TYPE_COMPANY_PHOTO))
                 .collect(Collectors.toList());
-        images.addAll(logos);
-        party.setDocumentReference(images);
+        party.getDocumentReference().addAll(images);
 
         CompanySettings settings = UblAdapter.adaptCompanySettings(party, qualifyingPartyOptional.orElse(null));
         return new ResponseEntity<>(settings, HttpStatus.OK);

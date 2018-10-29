@@ -99,6 +99,7 @@ public class CompanySettingsControllerTests {
         Address eventAddress = new Address("event street", "event building", "event city", "event postal", "event country");
         Date eventDate = new Date();
         companyDescription.getEvents().add(new CompanyEvent("event name", eventAddress, eventDate, eventDate, "event description"));
+        companyDescription.setExternalResources(Arrays.asList("URL 1", "URL 2"));
 
         CompanyTradeDetails companyTradeDetails = new CompanyTradeDetails();
         companyTradeDetails.setPpapCompatibilityLevel(5);
@@ -152,6 +153,9 @@ public class CompanySettingsControllerTests {
                 .andExpect(jsonPath("$.description.socialMediaList[1]", is("social media 2")))
                 .andExpect(jsonPath("$.description.events.length()", is(1)))
                 .andExpect(jsonPath("$.description.events[0].dateTo", is(format.format(eventDate))))
+                .andExpect(jsonPath("$.description.externalResources.length()", is(2)))
+                .andExpect(jsonPath("$.description.externalResources[0]", is("URL 1")))
+                .andExpect(jsonPath("$.description.externalResources[1]", is("URL 2")))
                 // check certificates
                 .andExpect(jsonPath("$.certificates.length()", is(0))) // no certs added
                 // check trade details
