@@ -328,8 +328,12 @@ public class UblAdapter {
         }
 
         // external resources
-        List<DocumentReferenceType> externalResources = UblAdapter.adaptExternalResources(settings.getDescription().getExternalResources());
-        companyToChange.getDocumentReference().addAll(externalResources);
+        List<DocumentReferenceType> existingExternalResources = companyToChange.getDocumentReference().stream()
+                .filter(d -> DOCUMENT_TYPE_EXTERNAL_RESOURCE.equals(d.getDocumentType()))
+                .collect(Collectors.toList());
+        List<DocumentReferenceType> newExternalResources = UblAdapter.adaptExternalResources(settings.getDescription().getExternalResources());
+        companyToChange.getDocumentReference().removeAll(existingExternalResources);
+        companyToChange.getDocumentReference().addAll(newExternalResources);
 
         if (settings.getTradeDetails() != null) {
 
@@ -417,12 +421,9 @@ public class UblAdapter {
 
     public static List<String> adaptExternalResourcesType(List<DocumentReferenceType> externalResources) {
         return externalResources.stream()
-                .map(er -> {
-                    if (er.getAttachment() != null && er.getAttachment().getExternalReference() != null && DOCUMENT_TYPE_EXTERNAL_RESOURCE.equals(er.getDocumentType()))
-                        return er.getAttachment().getExternalReference().getURI();
-
-                    return null;
-                })
+                .filter(er -> DOCUMENT_TYPE_EXTERNAL_RESOURCE.equals(er.getDocumentType()))
+                .filter(er -> er.getAttachment() != null && er.getAttachment().getExternalReference() != null)
+                .map(er -> er.getAttachment().getExternalReference().getURI())
                 .collect(Collectors.toList());
     }
 
