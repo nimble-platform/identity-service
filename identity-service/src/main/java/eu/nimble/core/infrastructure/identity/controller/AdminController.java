@@ -2,6 +2,7 @@ package eu.nimble.core.infrastructure.identity.controller;
 
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
+import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -54,18 +55,18 @@ public class AdminController {
             @Override
             public Predicate toPredicate(Root<PartyType> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
 
-                return builder.equal(root.get("name"), "sdfsadf");
+                return builder.equal(root.get("name"), "name");
             }
         };
 
-        Page<PartyType> resultPage = partyRepository.findAll(verifiedCompanySpecification, new PageRequest(page, size, Sort.Direction.ASC, "ID"));
+        Page<PartyType> resultPage = partyRepository.findAll(new PageRequest(page, size, Sort.Direction.ASC, "ID"));
         if (page > resultPage.getTotalPages())
             throw new ResourceNotFoundException();
 
         // ToDo: filter companies by verification state
 
         // remove binaries since they cannot be serialised to JSON
-        resultPage.getContent().forEach(IdentityUtils::removeBinaries);
+        resultPage.getContent().forEach(UblUtils::removeBinaries);
 
         return ResponseEntity.ok(resultPage);
     }

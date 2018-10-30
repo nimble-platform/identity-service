@@ -7,9 +7,8 @@ import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.QualifyingPartyType;
+import eu.nimble.core.infrastructure.identity.utils.UblUtils;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -81,7 +80,7 @@ public class PartyController {
         if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             party.setPerson(new ArrayList<>());
 
-        IdentityUtils.removeBinaries(party);
+        UblUtils.removeBinaries(party);
 
         logger.debug("Returning requested party with Id {}", party.getHjid());
         return new ResponseEntity<>(party, HttpStatus.OK);
@@ -112,7 +111,7 @@ public class PartyController {
 
 
         // remove binaries for response
-        parties.forEach(IdentityUtils::removeBinaries);
+        parties.forEach(UblUtils::removeBinaries);
 
         logger.debug("Returning requested parties with Ids {}", partyIds);
         return new ResponseEntity<>(parties, HttpStatus.OK);
@@ -136,7 +135,7 @@ public class PartyController {
         List<PartyType> parties = partyRepository.findByPerson(person);
 
         // remove binaries for response
-        parties.forEach(IdentityUtils::removeBinaries);
+        parties.forEach(UblUtils::removeBinaries);
 
         return new ResponseEntity<>(parties, HttpStatus.OK);
     }
@@ -245,18 +244,5 @@ public class PartyController {
         public String getName() {
             return name;
         }
-    }
-
-    public static PartyType removeBinaries(PartyType partyType) {
-        for (CertificateType cert : partyType.getCertificate()) {
-            cert.setDocumentReference(null);
-        }
-        if (partyType.getDocumentReference() != null) {
-            for (DocumentReferenceType documentReference : partyType.getDocumentReference()) {
-                if (documentReference.getAttachment() != null)
-                    documentReference.getAttachment().setEmbeddedDocumentBinaryObject(null);
-            }
-        }
-        return partyType;
     }
 }

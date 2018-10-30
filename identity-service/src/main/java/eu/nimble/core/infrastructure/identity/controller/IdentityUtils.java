@@ -67,13 +67,6 @@ public class IdentityUtils {
         return requestingCompany.get().getID().equals(targetCompany.get().getID());
     }
 
-    public static PartyType removeBinaries(PartyType partyType) {
-        for(CertificateType cert : partyType.getCertificate()) {
-            cert.setDocumentReference(null);
-        }
-        return partyType;
-    }
-
     public static Double computeDetailsCompleteness(CompanyDetails companyDetails) {
 
         List<Double> completenessWeights = new ArrayList<>();
