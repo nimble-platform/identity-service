@@ -1,111 +1,79 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
+import io.swagger.annotations.ApiModelProperty;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
- * Created by Johannes Innerbichler on 04/07/17.
+ * Created by Johannes Innerbichler on 02.10.18.
  */
-@SuppressWarnings("unused")
 public class CompanySettings {
-    private String name;
-    private String vatNumber;
-    private String verificationInformation;
-    private String website;
-    private Address address;
-    private List<PaymentMeans> paymentMeans = new ArrayList<>();
-    private List<DeliveryTerms> deliveryTerms = new ArrayList<>();
-    private Integer ppapCompatibilityLevel;
+
+    @ApiModelProperty(value = "Identifier of company")
+    private String companyID;
+
+    @ApiModelProperty(value = "General details related to the company")
+    private CompanyDetails details = new CompanyDetails();
+
+    @ApiModelProperty(value = "Descriptive data of the company")
+    private CompanyDescription description = new CompanyDescription();
+
+    @ApiModelProperty(value = "Trade details of the company")
+    private CompanyTradeDetails tradeDetails = new CompanyTradeDetails();
+
+    @ApiModelProperty(value = "Certificates of company")
     private List<CompanyCertificate> certificates = new ArrayList<>();
+
+    @ApiModelProperty(value = "List of preferred product categories")
     private Set<String> preferredProductCategories = new HashSet<>();
+
+    @ApiModelProperty(value = "List of recently used product categories")
     private Set<String> recentlyUsedProductCategories = new HashSet<>();
-    private List<String> industrySectors = new ArrayList<>();
 
     public CompanySettings() {
     }
 
-    public CompanySettings(String name, String vatNumber, String verificationInformation, String website, Address address,
-                           List<PaymentMeans> paymentMeans, List<DeliveryTerms> deliveryTerms, Integer ppapCompatibilityLevel,
-                           List<CompanyCertificate> certificates, Set<String> preferredProductCategories, Set<String> recentlyUsedProductCategories,
-                           List<String> industrySectors) {
-        this.name = name;
-        this.vatNumber = vatNumber;
-        this.verificationInformation = verificationInformation;
-        this.website = website;
-        this.address = address;
-        this.paymentMeans = paymentMeans;
-        this.deliveryTerms = deliveryTerms;
-        this.ppapCompatibilityLevel = ppapCompatibilityLevel;
+    public CompanySettings(String companyID, CompanyDetails details, CompanyDescription description, CompanyTradeDetails tradeDetails,
+                           List<CompanyCertificate> certificates, Set<String> preferredProductCategories,
+                           Set<String> recentlyUsedProductCategories) {
+        this.companyID = companyID;
+        this.details = details;
+        this.description = description;
+        this.tradeDetails = tradeDetails;
         this.certificates = certificates;
         this.preferredProductCategories = preferredProductCategories;
         this.recentlyUsedProductCategories = recentlyUsedProductCategories;
-        this.industrySectors = industrySectors;
     }
 
-    public String getVatNumber() {
-        return vatNumber;
+    public String getCompanyID() {
+        return companyID;
     }
 
-    public void setVatNumber(String vatNumber) {
-        this.vatNumber = vatNumber;
+    public void setCompanyID(String companyID) {
+        this.companyID = companyID;
     }
 
-    public String getVerificationInformation() {
-        return verificationInformation;
+    public CompanyDetails getDetails() {
+        return details;
     }
 
-    public void setVerificationInformation(String verificationInformation) {
-        this.verificationInformation = verificationInformation;
+    public void setDetails(CompanyDetails details) {
+        this.details = details;
     }
 
-    public String getWebsite() {
-        return website;
+    public CompanyDescription getDescription() {
+        return description;
     }
 
-    public void setWebsite(String website) {
-        this.website = website;
+    public void setDescription(CompanyDescription description) {
+        this.description = description;
     }
 
-    public List<PaymentMeans> getPaymentMeans() {
-        return paymentMeans;
-    }
-
-    public void setPaymentMeans(List<PaymentMeans> paymentMeans) {
-        this.paymentMeans = paymentMeans;
-    }
-
-    public Address getAddress() {
-        return address;
-    }
-
-    public void setAddress(Address address) {
-        this.address = address;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public List<DeliveryTerms> getDeliveryTerms() {
-        return deliveryTerms;
-    }
-
-    public void setDeliveryTerms(List<DeliveryTerms> deliveryTerms) {
-        this.deliveryTerms = deliveryTerms;
-    }
-
-    public Integer getPpapCompatibilityLevel() {
-        return ppapCompatibilityLevel;
-    }
-
-    public void setPpapCompatibilityLevel(Integer ppapCompatibilityLevel) {
-        this.ppapCompatibilityLevel = ppapCompatibilityLevel;
+    public CompanyTradeDetails getTradeDetails() {
+        return tradeDetails;
     }
 
     public List<CompanyCertificate> getCertificates() {
@@ -114,6 +82,10 @@ public class CompanySettings {
 
     public void setCertificates(List<CompanyCertificate> certificates) {
         this.certificates = certificates;
+    }
+
+    public void setTradeDetails(CompanyTradeDetails tradeDetails) {
+        this.tradeDetails = tradeDetails;
     }
 
     public Set<String> getPreferredProductCategories() {
@@ -130,13 +102,5 @@ public class CompanySettings {
 
     public void setRecentlyUsedProductCategories(Set<String> recentlyUsedProductCategories) {
         this.recentlyUsedProductCategories = recentlyUsedProductCategories;
-    }
-
-    public List<String> getIndustrySectors() {
-        return industrySectors;
-    }
-
-    public void setIndustrySectors(List<String> industrySectors) {
-        this.industrySectors = industrySectors;
     }
 }

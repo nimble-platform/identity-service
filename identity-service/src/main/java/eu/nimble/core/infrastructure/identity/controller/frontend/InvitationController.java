@@ -30,7 +30,7 @@ import java.util.*;
 @Controller
 public class InvitationController {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserIdentityController.class);
+    private static final Logger logger = LoggerFactory.getLogger(InvitationController.class);
 
     @Autowired
     private PartyRepository partyRepository;

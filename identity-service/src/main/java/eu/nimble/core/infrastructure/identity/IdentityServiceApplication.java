@@ -18,8 +18,6 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
-import java.net.URISyntaxException;
-
 @Configuration
 @EnableDiscoveryClient
 @SpringBootApplication
@@ -45,7 +43,7 @@ public class IdentityServiceApplication extends SpringBootServletInitializer {
         };
     }
 
-    public static void main(String[] args) throws URISyntaxException {
+    public static void main(String[] args) {
         new SpringApplicationBuilder(IdentityServiceApplication.class).web(true).run(args);
     }
 }

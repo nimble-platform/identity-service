@@ -1,29 +1,42 @@
 package eu.nimble.core.infrastructure.identity.controller.frontend;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import eu.nimble.core.infrastructure.identity.IdentityServiceApplication;
 import eu.nimble.core.infrastructure.identity.IdentityUtilsTestConfiguration;
 import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
-import eu.nimble.core.infrastructure.identity.entity.dto.Address;
-import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
-import eu.nimble.core.infrastructure.identity.entity.dto.DeliveryTerms;
-import eu.nimble.core.infrastructure.identity.entity.dto.PaymentMeans;
+import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
+import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.QualityIndicatorType;
+import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import static org.junit.Assert.*;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.kafka.test.rule.KafkaEmbedded;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+
+import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -43,6 +56,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(IdentityUtilsTestConfiguration.class)
 public class CompanySettingsControllerTests {
 
+    private static final String DATE_FORMAT = "yyyy-MM-dd";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -52,6 +67,12 @@ public class CompanySettingsControllerTests {
     @Autowired
     private PartyRepository partyRepository;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @ClassRule
+    public static KafkaEmbedded embeddedKafka = new KafkaEmbedded(1, true, "topic");
+
     @Test
     public void testCreateCompanySettings() throws Exception {
 
@@ -60,58 +81,98 @@ public class CompanySettingsControllerTests {
         partyRepository.save(company);
 
         // WHEN: updating company settings
+        CompanyDetails companyDetails = new CompanyDetails();
+        companyDetails.setCompanyLegalName("company name");
+        companyDetails.setVatNumber("vat number");
+        companyDetails.setVerificationInformation("verification number");
+        companyDetails.setAddress(new Address("street name", "building number", "city name", "postal code", "country"));
+        companyDetails.setBusinessKeywords(Arrays.asList("k1", "k2"));
+        companyDetails.setBusinessType("business type");
+        companyDetails.setYearOfCompanyRegistration(2001);
+        companyDetails.getIndustrySectors().add("industry sector 1");
+        companyDetails.getIndustrySectors().add("industry sector 2");
+
+        CompanyDescription companyDescription = new CompanyDescription();
+        companyDescription.setCompanyStatement("company statement");
+        companyDescription.setWebsite("website");
+        companyDescription.setSocialMediaList(Arrays.asList("social media 1", "social media 2"));
+        Address eventAddress = new Address("event street", "event building", "event city", "event postal", "event country");
+        Date eventDate = new Date();
+        companyDescription.getEvents().add(new CompanyEvent("event name", eventAddress, eventDate, eventDate, "event description"));
+        companyDescription.setExternalResources(Arrays.asList("URL 1", "URL 2"));
+
+        CompanyTradeDetails companyTradeDetails = new CompanyTradeDetails();
+        companyTradeDetails.setPpapCompatibilityLevel(5);
+        companyTradeDetails.getPaymentMeans().add(new PaymentMeans("instruction note"));
+        companyTradeDetails.getDeliveryTerms().add(new DeliveryTerms("special terms", new Address(), 5));
+
         CompanySettings companySettings = new CompanySettings();
-        companySettings.setName("company name");
-        companySettings.setVatNumber("vat number");
-        companySettings.setVerificationInformation("verification number");
-        companySettings.setWebsite("website");
-        companySettings.setAddress(new Address("street name", "building number", "city name", "postal code", "country"));
-        companySettings.getPaymentMeans().add(new PaymentMeans("instruction note"));
-        companySettings.getDeliveryTerms().add(new DeliveryTerms("special terms", new Address(), 5));
-        companySettings.setPpapCompatibilityLevel(5);
+        companySettings.setDetails(companyDetails);
+        companySettings.setDescription(companyDescription);
+        companySettings.setTradeDetails(companyTradeDetails);
         companySettings.getPreferredProductCategories().add("category 1");
         companySettings.getPreferredProductCategories().add("category 2");
         companySettings.getRecentlyUsedProductCategories().add("category 3");
         companySettings.getRecentlyUsedProductCategories().add("category 4");
-        companySettings.getIndustrySectors().add("industry sector 1");
-        companySettings.getIndustrySectors().add("industry sector 2");
 
-        Gson gson = new Gson();
+        Gson gson = new GsonBuilder().setDateFormat(DATE_FORMAT).create();
         this.mockMvc.perform(put("/company-settings/" + company.getID())
                 .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
                 .content(gson.toJson(companySettings)))
                 .andExpect(status().isAccepted());
 
         // THEN: getting settings should be updated
+        SimpleDateFormat format = new SimpleDateFormat(DATE_FORMAT);
         this.mockMvc.perform(get("/company-settings/" + company.getID()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.vatNumber", is("vat number")))
-                .andExpect(jsonPath("$.verificationInformation", is("verification number")))
-                .andExpect(jsonPath("$.website", is("website")))
-                .andExpect(jsonPath("$.address.streetName", is("street name")))
-                .andExpect(jsonPath("$.address.buildingNumber", is("building number")))
-                .andExpect(jsonPath("$.address.cityName", is("city name")))
-                .andExpect(jsonPath("$.address.postalCode", is("postal code")))
-                .andExpect(jsonPath("$.address.country", is("country")))
-                .andExpect(jsonPath("$.certificates.length()", is(0)))
+                // check details
+                .andExpect(jsonPath("$.details.companyLegalName", is("company name")))
+                .andExpect(jsonPath("$.details.vatNumber", is("vat number")))
+                .andExpect(jsonPath("$.details.verificationInformation", is("verification number")))
+                .andExpect(jsonPath("$.details.address.streetName", is("street name")))
+                .andExpect(jsonPath("$.details.address.buildingNumber", is("building number")))
+                .andExpect(jsonPath("$.details.address.cityName", is("city name")))
+                .andExpect(jsonPath("$.details.address.postalCode", is("postal code")))
+                .andExpect(jsonPath("$.details.address.country", is("country")))
+                .andExpect(jsonPath("$.details.businessKeywords.length()", is(2)))
+                .andExpect(jsonPath("$.details.businessType", is("business type")))
+                .andExpect(jsonPath("$.details.businessKeywords[0]", is("k1")))
+                .andExpect(jsonPath("$.details.businessKeywords[1]", is("k2")))
+                .andExpect(jsonPath("$.details.yearOfCompanyRegistration", is(2001)))
+                .andExpect(jsonPath("$.details.industrySectors.length()", is(2)))
+                .andExpect(jsonPath("$.details.industrySectors[0]", is("industry sector 1")))
+                .andExpect(jsonPath("$.details.industrySectors[1]", is("industry sector 2")))
+                // check description
+                .andExpect(jsonPath("$.description.companyStatement", is("company statement")))
+                .andExpect(jsonPath("$.description.website", is("website")))
+                .andExpect(jsonPath("$.description.socialMediaList.length()", is(2)))
+                .andExpect(jsonPath("$.description.socialMediaList[0]", is("social media 1")))
+                .andExpect(jsonPath("$.description.socialMediaList[1]", is("social media 2")))
+                .andExpect(jsonPath("$.description.events.length()", is(1)))
+                .andExpect(jsonPath("$.description.events[0].dateTo", is(format.format(eventDate))))
+                .andExpect(jsonPath("$.description.externalResources.length()", is(2)))
+                .andExpect(jsonPath("$.description.externalResources[0]", is("URL 1")))
+                .andExpect(jsonPath("$.description.externalResources[1]", is("URL 2")))
+                // check certificates
+                .andExpect(jsonPath("$.certificates.length()", is(0))) // no certs added
+                // check trade details
+                .andExpect(jsonPath("$.tradeDetails.ppapCompatibilityLevel", is(5)))
+                .andExpect(jsonPath("$.tradeDetails.paymentMeans.length()", is(1)))
+                .andExpect(jsonPath("$.tradeDetails.paymentMeans.[0].instructionNote", is("instruction note")))
+                .andExpect(jsonPath("$.tradeDetails.deliveryTerms.length()", is(1)))
+                .andExpect(jsonPath("$.tradeDetails.deliveryTerms[0].specialTerms", is("special terms")))
+                .andExpect(jsonPath("$.tradeDetails.deliveryTerms[0].estimatedDeliveryTime", is(5)))
+                // product categories
                 .andExpect(jsonPath("$.preferredProductCategories.length()", is(2)))
-                .andExpect(jsonPath("$.paymentMeans.length()", is(1)))
-                .andExpect(jsonPath("$.paymentMeans.[0].instructionNote", is("instruction note")))
-                .andExpect(jsonPath("$.deliveryTerms.length()", is(1)))
-                .andExpect(jsonPath("$.deliveryTerms[0].specialTerms", is("special terms")))
-                .andExpect(jsonPath("$.deliveryTerms[0].estimatedDeliveryTime", is(5)))
                 .andExpect(jsonPath("$.preferredProductCategories.length()", is(2)))
                 .andExpect(jsonPath("$.preferredProductCategories", hasItem("category 1")))
                 .andExpect(jsonPath("$.preferredProductCategories", hasItem("category 2")))
                 .andExpect(jsonPath("$.recentlyUsedProductCategories.length()", is(2)))
                 .andExpect(jsonPath("$.recentlyUsedProductCategories", hasItem("category 3")))
-                .andExpect(jsonPath("$.recentlyUsedProductCategories", hasItem("category 4")))
-                .andExpect(jsonPath("$.verificationInformation", is("verification number")))
-                .andExpect(jsonPath("$.industrySectors.length()", is(2)))
-                .andExpect(jsonPath("$.industrySectors[0]", is("industry sector 1")))
-                .andExpect(jsonPath("$.industrySectors[1]", is("industry sector 2")));
+                .andExpect(jsonPath("$.recentlyUsedProductCategories", hasItem("category 4")));
     }
 
     @Test
@@ -223,6 +284,80 @@ public class CompanySettingsControllerTests {
                 .accept(MediaType.APPLICATION_JSON))
                 // THEN: 4xx error should occur
                 .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @SuppressWarnings("ConstantConditions")
+    public void testProfileCompleteness() throws Exception {
+
+        // GIVEN: existing company on platform
+        PartyType company = identityUtils.getCompanyOfUser(null).get();
+        partyRepository.save(company);
+
+        CompanySettings companySettings = new CompanySettings();
+
+        Gson gson = new Gson();
+        this.mockMvc.perform(put("/company-settings/" + company.getID())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
+                .content(gson.toJson(companySettings)))
+                .andExpect(status().isAccepted())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+
+        String responseAsString = this.mockMvc.perform(get("/company-settings/" + company.getID() + "/completeness"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        PartyType responseParty = objectMapper.readValue(responseAsString, PartyType.class);
+
+        // check quality indicator which should all be zero
+        QualityIndicatorType profileCompleteness = UblUtils.extractQualityIndicator(responseParty, PROFILE_COMPLETENESS).orElse(null);
+        QualityIndicatorType descriptionCompleteness = UblUtils.extractQualityIndicator(responseParty, COMPLETENESS_OF_COMPANY_DESCRIPTION).orElse(null);
+        QualityIndicatorType detailCompleteness = UblUtils.extractQualityIndicator(responseParty, COMPLETENESS_OF_COMPANY_GENERAL_DETAILS).orElse(null);
+        QualityIndicatorType certificationCompleteness = UblUtils.extractQualityIndicator(responseParty, COMPLETENESS_OF_COMPANY_CERTIFICATE_DETAILS).orElse(null);
+        QualityIndicatorType tradeCompleteness = UblUtils.extractQualityIndicator(responseParty, COMPLETENESS_OF_COMPANY_TRADE_DETAILS).orElse(null);
+
+        assertFalse(profileCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertFalse(descriptionCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertFalse(detailCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertFalse(certificationCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertFalse(tradeCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+
+        // WHEN: updating company settings
+        CompanyDetails companyDetails = new CompanyDetails();
+        companyDetails.setCompanyLegalName("company name");
+        companySettings.setDetails(companyDetails);
+        CompanyDescription companyDescription = new CompanyDescription();
+        companyDescription.setCompanyStatement("company statement");
+        companySettings.setDescription(companyDescription);
+        CompanyTradeDetails companyTradeDetails = new CompanyTradeDetails();
+        companyTradeDetails.setPpapCompatibilityLevel(5);
+        companySettings.setTradeDetails(companyTradeDetails);
+
+        this.mockMvc.perform(put("/company-settings/" + company.getID())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
+                .content(gson.toJson(companySettings)))
+                .andExpect(status().isAccepted())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+        responseAsString = this.mockMvc.perform(get("/company-settings/" + company.getID() + "/completeness"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        responseParty = objectMapper.readValue(responseAsString, PartyType.class);
+
+        // THEN: completeness indicators should be updated
+        profileCompleteness = UblUtils.extractQualityIndicator(responseParty, PROFILE_COMPLETENESS).orElse(null);
+        descriptionCompleteness = UblUtils.extractQualityIndicator(responseParty, COMPLETENESS_OF_COMPANY_DESCRIPTION).orElse(null);
+        detailCompleteness = UblUtils.extractQualityIndicator(responseParty, COMPLETENESS_OF_COMPANY_GENERAL_DETAILS).orElse(null);
+        certificationCompleteness = UblUtils.extractQualityIndicator(responseParty, COMPLETENESS_OF_COMPANY_CERTIFICATE_DETAILS).orElse(null);
+        tradeCompleteness = UblUtils.extractQualityIndicator(responseParty, COMPLETENESS_OF_COMPANY_TRADE_DETAILS).orElse(null);
+
+        assertTrue(profileCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertTrue(descriptionCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertTrue(detailCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertFalse(certificationCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertTrue(tradeCompleteness.getQuantity().getValue().doubleValue() > 0.0);
     }
 
     public NegotiationSettings initNegotiationSettings() throws Exception {

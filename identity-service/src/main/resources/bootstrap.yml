@@ -2,7 +2,7 @@ server:
   port: ${PORT:9096}
 spring:
   application:
-    name: identity-service
+    name: identity-service${APPLICATION_NAME_SUFFIX:}
   cloud:
     config:
       enabled: ${CONFIG_SERVER_ENABLED:true}
@@ -14,19 +14,20 @@ spring:
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     properties:
       hibernate:
         temp:
           use_jdbc_metadata_defaults: false
-    generate-ddl: true
   datasource:
     driverClassName: org.postgresql.Driver
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:identityDB}
     username: ${POSTGRES_USER:root}
     password: ${POSTGRES_PASSWORD:changeme}
-    maxActive: 5
-    maxIdle: 5
+    maxActive: 3
+    maxIdle: 3
+    tomcat:
+      default-auto-commit: false
   mail:
     debug: false  # disable printing email to log output
     host: ${SMTP_HOST:localhost}
@@ -38,6 +39,18 @@ spring:
     properties.mail.smtp.starttls.enable: true
   jackson:
     default-property-inclusion: NON_NULL
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    consumer:
+      group-id: identity-service:${KAFKA_CONSUMER_GROUP_ID_SUFFIX:}
+    properties:
+      sasl:
+        jaas:
+          config: ${KAFKA_JAAS_CONFIG}
+  http:
+    multipart:
+      max-file-size: 10Mb
+      max-request-size: 10Mb
 
 logstash:
   uri: ${LOGSTASH_URI:localhost:5000}
@@ -63,6 +76,9 @@ nimble:
       accessTokenUri: ${OAUTH_CLIENT_ACCESSTOKEN_URI}
   frontend:
     url: ${FRONTEND_URL:http://localhost:9092}
+  kafka:
+    topics:
+      companyUpdates: ${KAFKA_TOPIC_COMPANY_UPDATES:company-updates}
 
 ---
 
@@ -72,6 +88,10 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: update
+    properties:
+      hibernate:
+        temp:
+          use_jdbc_metadata_defaults: true
   h2:
     console:
       enabled: true
@@ -79,11 +99,10 @@ spring:
   datasource:
     name: identitydb
     driverClassName: org.h2.Driver
-#    url: jdbc:h2:mem:test;DB_CLOSE_DELAY=-1
-    url: jdbc:h2:file:~/identitydb;
-    initialize: true
+    url: jdbc:h2:file:~/identitydb_h2;
+    initialize: false
     username: sa
-    password: sa
+    password:
   mail:
     debug: true  # prints email to log output
     host: localhost # in-v3.mailjet.com
@@ -107,6 +126,14 @@ spring:
     name: channeldb
     driverClassName: org.h2.Driver
     url: jdbc:h2:mem:channeldb
-    initialize: false
+    initialize: true
     username: sa
     password:
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
+    consumer:
+      group-id: "test-identity-service"
+    properties:
+      sasl:
+        jaas:
+          config: ""

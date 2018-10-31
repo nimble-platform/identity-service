@@ -1,15 +1,21 @@
 package eu.nimble.core.infrastructure.identity.uaa;
 
 import com.google.common.collect.Sets;
-import eu.nimble.core.infrastructure.identity.controller.frontend.UserIdentityController;
+import eu.nimble.core.infrastructure.identity.controller.frontend.IdentityController;
 import org.apache.commons.lang.WordUtils;
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
+import org.keycloak.admin.client.resource.BasicAuthFilter;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.admin.client.token.TokenService;
+import org.keycloak.common.util.Time;
+import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
@@ -20,17 +26,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Form;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.keycloak.OAuth2Constants.CLIENT_ID;
+import static org.keycloak.OAuth2Constants.GRANT_TYPE;
+import static org.keycloak.OAuth2Constants.REFRESH_TOKEN;
+
 @SuppressWarnings("Convert2MethodRef")
 @Service
 public class KeycloakAdmin {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserIdentityController.class);
+    private static final Logger logger = LoggerFactory.getLogger(KeycloakAdmin.class);
 
     public static final String NIMBLE_USER_ROLE = "nimble_user";
     public static final String INITIAL_REPRESENTATIVE_ROLE = "initial_representative";
@@ -49,6 +61,7 @@ public class KeycloakAdmin {
     @PostConstruct
     @SuppressWarnings("unused")
     public void init() {
+        ResteasyClient client = new ResteasyClientBuilder().connectionPoolSize(10).build();
         this.keycloak = KeycloakBuilder.builder()
                 .serverUrl(config.getServerUrl())
                 .realm(config.getRealm())
@@ -57,7 +70,7 @@ public class KeycloakAdmin {
                 .password(config.getAdmin().getPassword())
                 .clientId(config.getAdmin().getCliendId())
                 .clientSecret(config.getAdmin().getCliendSecret())
-                .resteasyClient(new ResteasyClientBuilder().connectionPoolSize(10).build())
+                .resteasyClient(client)
                 .build();
     }
 
