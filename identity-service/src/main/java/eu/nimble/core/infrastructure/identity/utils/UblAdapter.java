@@ -118,6 +118,7 @@ public class UblAdapter {
                 .stream()
                 .filter(scheme -> scheme != null && scheme.getTaxScheme() != null && scheme.getTaxScheme().getTaxTypeCode() != null)
                 .filter(scheme -> VAT_TAX_TYPE_CODE.equals(scheme.getTaxScheme().getTaxTypeCode().getName()))
+                .filter(scheme -> scheme.getTaxScheme().getTaxTypeCode().getValue() != null)
                 .map(scheme -> scheme.getTaxScheme().getTaxTypeCode().getValue())
                 .findFirst().orElse(null));
         companyDetails.setAddress(adaptAddress(party.getPostalAddress()));
