@@ -314,6 +314,14 @@ public class UblAdapter {
             ContactType socialMediaContact = new ContactType();
             socialMediaContact.setOtherCommunication(adaptSocialMediaList(settings.getDescription().getSocialMediaList()));
             companyToChange.setContact(socialMediaContact);
+
+            // external resources
+            List<DocumentReferenceType> existingExternalResources = companyToChange.getDocumentReference().stream()
+                    .filter(d -> DOCUMENT_TYPE_EXTERNAL_RESOURCE.equals(d.getDocumentType()))
+                    .collect(Collectors.toList());
+            List<DocumentReferenceType> newExternalResources = UblAdapter.adaptExternalResources(settings.getDescription().getExternalResources());
+            companyToChange.getDocumentReference().removeAll(existingExternalResources);
+            companyToChange.getDocumentReference().addAll(newExternalResources);
         }
 
         // industry sectors
@@ -329,13 +337,6 @@ public class UblAdapter {
                 companyToChange.getPerson().add(representative);
         }
 
-        // external resources
-        List<DocumentReferenceType> existingExternalResources = companyToChange.getDocumentReference().stream()
-                .filter(d -> DOCUMENT_TYPE_EXTERNAL_RESOURCE.equals(d.getDocumentType()))
-                .collect(Collectors.toList());
-        List<DocumentReferenceType> newExternalResources = UblAdapter.adaptExternalResources(settings.getDescription().getExternalResources());
-        companyToChange.getDocumentReference().removeAll(existingExternalResources);
-        companyToChange.getDocumentReference().addAll(newExternalResources);
 
         if (settings.getTradeDetails() != null) {
 
