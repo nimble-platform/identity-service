@@ -37,6 +37,7 @@ node('nimble-jenkins-slave') {
     if (env.BRANCH_NAME == 'master') {
 
         stage('Push Docker') {
+            sh 'mvn -f identity-service/pom.xml docker:push'
             sh 'docker push nimbleplatform/identity-service:latest'
         }
 
