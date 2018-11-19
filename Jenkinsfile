@@ -46,7 +46,7 @@ node('nimble-jenkins-slave') {
         }
 
         stage('Deploy FMP') {
-            sh 'ssh fmp-prod "cd /srv/nimble-fmp/ && sudo ./run-fmp-prod.sh restart-single identity-service"'
+            sh 'ssh fmp-prod "cd /srv/nimble-fmp/ && ./run-fmp-prod.sh restart-single identity-service"'
         }
     }
 }
