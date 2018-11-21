@@ -6,7 +6,7 @@
 
     <groupId>eu.nimble.core.infrastructure.identity</groupId>
     <artifactId>identity-service-parent</artifactId>
-    <version>5.0.1</version>
+    <version>static-parent-version</version>
     <name>Parent Project for Identity Service</name>
     <packaging>pom</packaging>
 

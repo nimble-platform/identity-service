@@ -38,7 +38,7 @@ node('nimble-jenkins-slave') {
 
         stage('Push Docker') {
             sh 'mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version' // fetch dependencies
-            sh 'docker push nimbleplatform/identity-service:$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v \'\\[\')'
+            sh 'docker push nimbleplatform/identity-service:$(mvn -f identity-service/pom.xml org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v \'\\[\')'
             sh 'docker push nimbleplatform/identity-service:latest'
         }
 
