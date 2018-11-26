@@ -28,35 +28,26 @@ node('nimble-jenkins-slave') {
         stage('Deploy') {
             sh 'ssh staging "cd /srv/nimble-staging/ && ./run-staging.sh restart-single identity-service"'
         }
-    } else {
-        stage('Build Docker') {
-            sh 'mvn -f identity-service/pom.xml docker:build'
-        }
     }
 
     if (env.BRANCH_NAME == 'master') {
 
+        stage('Build Docker') {
+            sh 'mvn -f identity-service/pom.xml docker:build'
+        }
+
         stage('Push Docker') {
-            sh 'mvn -f identity-service/pom.xml docker:push'
+            sh 'mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version' // fetch dependencies
+            sh 'docker push nimbleplatform/identity-service:$(mvn -f identity-service/pom.xml org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v \'\\[\')'
             sh 'docker push nimbleplatform/identity-service:latest'
         }
 
-        stage('Deploy') {
+        stage('Deploy MVP') {
             sh 'ssh nimble "cd /data/deployment_setup/prod/ && sudo ./run-prod.sh restart-single identity-service"'
         }
+
+        stage('Deploy FMP') {
+            sh 'ssh fmp-prod "cd /srv/nimble-fmp/ && ./run-fmp-prod.sh restart-single identity-service"'
+        }
     }
-
-//    if (env.BRANCH_NAME == 'master') {
-//        stage('Push Docker') {
-//            withDockerRegistry([credentialsId: 'NimbleDocker']) {
-//                sh 'docker push nimbleplatform/identity-service:latest'
-//            }
-//        }
-
-//
-//        stage('Apply to Cluster') {
-//            sh 'ssh nimble "cd /data/nimble_setup/ && sudo ./run-prod.sh restart-single identity-service"'
-////            sh 'kubectl apply -f kubernetes/deploy.yml -n prod --validate=false'
-//        }
-//    }
 }
