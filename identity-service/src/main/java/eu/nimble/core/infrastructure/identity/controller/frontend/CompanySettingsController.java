@@ -45,6 +45,8 @@ import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
 @Api(value = "company-settings", description = "API for handling settings of companies.")
 public class CompanySettingsController {
 
+    private final Long MAX_IMAGE_SIZE = 256L * 1024L; // in bytes
+
     private static final Logger logger = LoggerFactory.getLogger(CompanySettingsController.class);
 
     @Autowired
@@ -148,6 +150,9 @@ public class CompanySettingsController {
 
 //        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
 //            return new ResponseEntity<>("Only legal representatives are allowed add images", HttpStatus.UNAUTHORIZED);
+
+        if (imageFile.getSize() > MAX_IMAGE_SIZE)
+            throw new FileTooLargeException();
 
         UaaUser user = identityUtils.getUserfromBearer(bearer);
         PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(CompanyNotFoundException::new);
@@ -375,6 +380,10 @@ public class CompanySettingsController {
 
     @ResponseStatus(code = HttpStatus.NOT_FOUND, reason = "company not found")
     private static class CompanyNotFoundException extends RuntimeException {
+    }
+
+    @ResponseStatus(code = HttpStatus.NOT_ACCEPTABLE, reason = "File size exceeds limit")
+    private static class FileTooLargeException extends RuntimeException {
     }
 
     @ResponseStatus(code = HttpStatus.NOT_FOUND, reason = "document not found")
