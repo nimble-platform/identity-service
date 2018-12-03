@@ -116,7 +116,9 @@ public class UblAdapter {
         companyDetails.setCompanyLegalName(party.getName());
         companyDetails.setVatNumber(party.getPartyTaxScheme()
                 .stream()
-                .filter(scheme -> scheme.getTaxScheme().getTaxTypeCode().getName().equals(VAT_TAX_TYPE_CODE))
+                .filter(scheme -> scheme != null && scheme.getTaxScheme() != null && scheme.getTaxScheme().getTaxTypeCode() != null)
+                .filter(scheme -> VAT_TAX_TYPE_CODE.equals(scheme.getTaxScheme().getTaxTypeCode().getName()))
+                .filter(scheme -> scheme.getTaxScheme().getTaxTypeCode().getValue() != null)
                 .map(scheme -> scheme.getTaxScheme().getTaxTypeCode().getValue())
                 .findFirst().orElse(null));
         companyDetails.setAddress(adaptAddress(party.getPostalAddress()));
@@ -312,6 +314,14 @@ public class UblAdapter {
             ContactType socialMediaContact = new ContactType();
             socialMediaContact.setOtherCommunication(adaptSocialMediaList(settings.getDescription().getSocialMediaList()));
             companyToChange.setContact(socialMediaContact);
+
+            // external resources
+            List<DocumentReferenceType> existingExternalResources = companyToChange.getDocumentReference().stream()
+                    .filter(d -> DOCUMENT_TYPE_EXTERNAL_RESOURCE.equals(d.getDocumentType()))
+                    .collect(Collectors.toList());
+            List<DocumentReferenceType> newExternalResources = UblAdapter.adaptExternalResources(settings.getDescription().getExternalResources());
+            companyToChange.getDocumentReference().removeAll(existingExternalResources);
+            companyToChange.getDocumentReference().addAll(newExternalResources);
         }
 
         // industry sectors
@@ -327,9 +337,6 @@ public class UblAdapter {
                 companyToChange.getPerson().add(representative);
         }
 
-        // external resources
-        List<DocumentReferenceType> externalResources = UblAdapter.adaptExternalResources(settings.getDescription().getExternalResources());
-        companyToChange.getDocumentReference().addAll(externalResources);
 
         if (settings.getTradeDetails() != null) {
 
@@ -417,12 +424,9 @@ public class UblAdapter {
 
     public static List<String> adaptExternalResourcesType(List<DocumentReferenceType> externalResources) {
         return externalResources.stream()
-                .map(er -> {
-                    if (er.getAttachment() != null && er.getAttachment().getExternalReference() != null && DOCUMENT_TYPE_EXTERNAL_RESOURCE.equals(er.getDocumentType()))
-                        return er.getAttachment().getExternalReference().getURI();
-
-                    return null;
-                })
+                .filter(er -> DOCUMENT_TYPE_EXTERNAL_RESOURCE.equals(er.getDocumentType()))
+                .filter(er -> er.getAttachment() != null && er.getAttachment().getExternalReference() != null)
+                .map(er -> er.getAttachment().getExternalReference().getURI())
                 .collect(Collectors.toList());
     }
 

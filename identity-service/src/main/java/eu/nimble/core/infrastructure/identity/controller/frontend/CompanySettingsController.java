@@ -7,9 +7,7 @@ import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
-import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
-import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
@@ -21,7 +19,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,11 +33,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static eu.nimble.core.infrastructure.identity.utils.UblAdapter.DOCUMENT_TYPE_COMPANY_LOGO;
-import static eu.nimble.core.infrastructure.identity.utils.UblAdapter.DOCUMENT_TYPE_COMPANY_PHOTO;
+import static eu.nimble.core.infrastructure.identity.utils.UblAdapter.*;
 import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
-import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.COMPLETENESS_OF_COMPANY_TRADE_DETAILS;
-import static org.codehaus.groovy.runtime.DefaultGroovyMethods.collect;
 
 /**
  * Created by Johannes Innerbichler on 04/07/17.
@@ -46,6 +44,8 @@ import static org.codehaus.groovy.runtime.DefaultGroovyMethods.collect;
 @SuppressWarnings("SpringJavaAutowiredFieldsWarningInspection")
 @Api(value = "company-settings", description = "API for handling settings of companies.")
 public class CompanySettingsController {
+
+    private final Long MAX_IMAGE_SIZE = 256L * 1024L; // in bytes
 
     private static final Logger logger = LoggerFactory.getLogger(CompanySettingsController.class);
 
@@ -92,15 +92,8 @@ public class CompanySettingsController {
 
         logger.debug("Returning requested settings for party with Id {}", party.getHjid());
 
-        // fetch only identifiers of images in order to avoid fetch of entire binary files.
-        List<DocumentReferenceType> logos = partyRepository.findDocumentIds(party.getHjid(), DOCUMENT_TYPE_COMPANY_LOGO).stream()
-                .map(id -> shallowDocumentReference(id, DOCUMENT_TYPE_COMPANY_LOGO))
-                .collect(Collectors.toList());
-        party.getDocumentReference().addAll(logos);
-        List<DocumentReferenceType> images = partyRepository.findDocumentIds(party.getHjid(), DOCUMENT_TYPE_COMPANY_PHOTO).stream()
-                .map(id -> shallowDocumentReference(id, DOCUMENT_TYPE_COMPANY_PHOTO))
-                .collect(Collectors.toList());
-        party.getDocumentReference().addAll(images);
+        // pre fetch image metadata without binaries
+        enrichImageMetadate(party);
 
         CompanySettings settings = UblAdapter.adaptCompanySettings(party, qualifyingPartyOptional.orElse(null));
         return new ResponseEntity<>(settings, HttpStatus.OK);
@@ -144,6 +137,7 @@ public class CompanySettingsController {
         // broadcast changes
         kafkaSender.broadcastCompanyUpdate(existingCompany.getID(), bearer);
 
+        newSettings = adaptCompanySettings(existingCompany, qualifyingParty);
         return new ResponseEntity<>(newSettings, HttpStatus.ACCEPTED);
     }
 
@@ -157,6 +151,8 @@ public class CompanySettingsController {
 //        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
 //            return new ResponseEntity<>("Only legal representatives are allowed add images", HttpStatus.UNAUTHORIZED);
 
+        if (imageFile.getSize() > MAX_IMAGE_SIZE)
+            throw new FileTooLargeException();
 
         UaaUser user = identityUtils.getUserfromBearer(bearer);
         PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(CompanyNotFoundException::new);
@@ -209,7 +205,7 @@ public class CompanySettingsController {
         if (company.getDocumentReference().stream().anyMatch(dr -> imageId.equals(dr.getHjid())) == false)
             throw new DocumentNotFoundException("No associated document found.");
         List<DocumentReferenceType> updatedList = company.getDocumentReference().stream()
-                .filter(dr -> imageId.equals(dr.getHjid())== false)
+                .filter(dr -> imageId.equals(dr.getHjid()) == false)
                 .collect(Collectors.toList());
         company.setDocumentReference(updatedList);
         partyRepository.save(company);
@@ -386,15 +382,34 @@ public class CompanySettingsController {
     private static class CompanyNotFoundException extends RuntimeException {
     }
 
+    @ResponseStatus(code = HttpStatus.NOT_ACCEPTABLE, reason = "File size exceeds limit")
+    private static class FileTooLargeException extends RuntimeException {
+    }
+
     @ResponseStatus(code = HttpStatus.NOT_FOUND, reason = "document not found")
     private static class DocumentNotFoundException extends RuntimeException {
-
-        public DocumentNotFoundException() {
+        DocumentNotFoundException() {
         }
 
-        public DocumentNotFoundException(String message) {
+        DocumentNotFoundException(String message) {
             super(message);
         }
+    }
+
+    private void enrichImageMetadate(PartyType party) {
+        // fetch only identifiers of images in order to avoid fetch of entire binary files
+        List<DocumentReferenceType> imageDocuments = party.getDocumentReference().stream()
+                .filter(d -> DOCUMENT_TYPE_COMPANY_LOGO.equals(d.getDocumentType()) || DOCUMENT_TYPE_COMPANY_PHOTO.equals(d.getDocumentType()))
+                .collect(Collectors.toList());
+        party.getDocumentReference().removeAll(imageDocuments);
+        List<DocumentReferenceType> logos = partyRepository.findDocumentIds(party.getHjid(), DOCUMENT_TYPE_COMPANY_LOGO).stream()
+                .map(id -> shallowDocumentReference(id, DOCUMENT_TYPE_COMPANY_LOGO))
+                .collect(Collectors.toList());
+        party.getDocumentReference().addAll(logos);
+        List<DocumentReferenceType> images = partyRepository.findDocumentIds(party.getHjid(), DOCUMENT_TYPE_COMPANY_PHOTO).stream()
+                .map(id -> shallowDocumentReference(id, DOCUMENT_TYPE_COMPANY_PHOTO))
+                .collect(Collectors.toList());
+        party.getDocumentReference().addAll(images);
     }
 
     private static DocumentReferenceType shallowDocumentReference(BigInteger identifier, String documentType) {
