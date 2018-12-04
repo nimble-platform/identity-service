@@ -1,21 +1,15 @@
 package eu.nimble.core.infrastructure.identity.uaa;
 
 import com.google.common.collect.Sets;
-import eu.nimble.core.infrastructure.identity.controller.frontend.IdentityController;
 import org.apache.commons.lang.WordUtils;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
-import org.keycloak.admin.client.resource.BasicAuthFilter;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
-import org.keycloak.admin.client.token.TokenService;
-import org.keycloak.common.util.Time;
-import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
@@ -26,17 +20,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import javax.ws.rs.BadRequestException;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Form;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static org.keycloak.OAuth2Constants.CLIENT_ID;
-import static org.keycloak.OAuth2Constants.GRANT_TYPE;
-import static org.keycloak.OAuth2Constants.REFRESH_TOKEN;
 
 @SuppressWarnings("Convert2MethodRef")
 @Service
@@ -49,7 +37,9 @@ public class KeycloakAdmin {
     public static final String LEGAL_REPRESENTATIVE_ROLE = "legal_representative";
     public static final String PLATFORM_MANAGER_ROLE = "platform_manager";
 
-    public static final List<String> NON_USER_ROLES = Arrays.asList("platform_manager", "uma_authorization",
+    public static final String PLATFORM_MANAGER_GROUP = "Platform Manager";
+
+    public static final List<String> NON_ASSIGNABLE_ROLES = Arrays.asList("platform_manager", "uma_authorization",
             "offline_access", "admin", "create-realm",
             "create-realm", "nimble_user", "initial_representative");
 
@@ -117,19 +107,25 @@ public class KeycloakAdmin {
         return createdUser.toRepresentation().getId();
     }
 
-    public Map<String, String> getRoles() {
+    public Map<String, String> getAssignableRoles() {
         RealmResource realmResource = this.keycloak.realm(config.getRealm());
 
         return realmResource.roles().list().stream()
-                .filter(r -> NON_USER_ROLES.contains(r.getName()) == false)
+                .filter(r -> NON_ASSIGNABLE_ROLES.contains(r.getName()) == false)
                 .collect(Collectors.toMap(r -> r.getId(), r -> r.getName()));
     }
 
     public Set<String> getUserRoles(String userId) {
+        return getUserRoles(userId, new ArrayList<>());
+    }
+
+    public Set<String> getUserRoles(String userId, List<String> excludeRoles) {
+
+        List<String> finalExcludeRoles = (excludeRoles == null) ? new ArrayList<>() : excludeRoles;
         UserResource userResource = fetchUserResource(userId);
         return userResource.roles().realmLevel().listAll().stream()
                 .map(r -> r.getName())
-                .filter(role -> NON_USER_ROLES.contains(role) == false)
+                .filter(role -> finalExcludeRoles.contains(role) == false)
                 .collect(Collectors.toSet());
     }
 
@@ -185,7 +181,7 @@ public class KeycloakAdmin {
 
     public int applyRoles(String userID, Set<String> rolesToApply) {
         // setting proper set of roles
-        Set<String> currentRoles = getUserRoles(userID);
+        Set<String> currentRoles = getUserRoles(userID, NON_ASSIGNABLE_ROLES);
         Set<String> rolesToRemove = Sets.difference(currentRoles, rolesToApply);
         Set<String> rolesToAdd = Sets.difference(rolesToApply, currentRoles);
         logger.info("Applying new roles to user {}: add: {}, remove: {}", userID, rolesToAdd, rolesToRemove);

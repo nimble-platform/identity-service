@@ -15,10 +15,12 @@ import org.thymeleaf.context.Context;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
 @Service
+@SuppressWarnings("Duplicates")
 public class EmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
@@ -95,6 +97,18 @@ public class EmailService {
         String subject = "NIMBLE: New company registered";
 
         this.send(emails.toArray(new String[]{}), subject, "new_company", context);
+    }
+
+    public void notifyVerifiedCompany(String email, PersonType legalRepresentative, PartyType company) {
+
+        Context context = new Context();
+        context.setVariable("firstName", legalRepresentative.getFirstName());
+        context.setVariable("familyName", legalRepresentative.getFamilyName());
+        context.setVariable("companyName", company.getName());
+
+        String subject = "Your company has been verified on NIMBLE";
+
+        this.send(new String[]{email}, subject, "company_verified", context);
     }
 
     private void send(String[] to, String subject, String template, Context context) {

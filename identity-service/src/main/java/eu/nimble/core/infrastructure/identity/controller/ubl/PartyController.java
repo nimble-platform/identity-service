@@ -15,6 +15,9 @@ import io.swagger.annotations.ApiParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -84,6 +87,22 @@ public class PartyController {
 
         logger.debug("Returning requested party with Id {}", party.getHjid());
         return new ResponseEntity<>(party, HttpStatus.OK);
+    }
+
+
+    @ApiOperation(value = "getAllParties", notes = "Get all parties in a paginated manner", response = Page.class)
+    @RequestMapping(value = "/parties/all", method = RequestMethod.GET)
+    ResponseEntity<Page<PartyType>> getAllParties(@RequestParam(value = "page", required = false, defaultValue = "1") int pageNumber,
+                                                  @RequestParam(value = "size", required = false, defaultValue = "10") int pageSize) {
+
+        logger.debug("Requesting all parties page {}", pageNumber);
+
+        Page<PartyType> partyPage = partyRepository.findAll(new PageRequest(pageNumber, pageSize, new Sort(Sort.Direction.ASC, "name")));
+
+        // remove binaries for response
+        partyPage.getContent().forEach(UblUtils::removeBinaries);
+
+        return new ResponseEntity<>(partyPage, HttpStatus.OK);
     }
 
     @SuppressWarnings("PointlessBooleanExpression")

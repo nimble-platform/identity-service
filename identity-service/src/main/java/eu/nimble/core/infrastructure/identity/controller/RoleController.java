@@ -47,7 +47,7 @@ public class RoleController {
 
         logger.info("Fetching list of user roles");
 
-        Map<String, String> roles = keycloakAdmin.getRoles();
+        Map<String, String> roles = keycloakAdmin.getAssignableRoles();
 
         // prettify names
         roles = roles.entrySet().stream().collect(Collectors.toMap(

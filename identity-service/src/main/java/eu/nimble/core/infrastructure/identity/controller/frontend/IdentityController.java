@@ -278,7 +278,7 @@ public class IdentityController {
             logger.info("User " + credentials.getUsername() + " wants to login...");
             accessToken = oAuthClient.getToken(credentials.getUsername(), credentials.getPassword());
         } catch (OAuth2AccessDeniedException ex) {
-            logger.info("User " + credentials.getUsername() + " not found.");
+            logger.error("User " + credentials.getUsername() + " not found in Keycloak?", ex);
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
 

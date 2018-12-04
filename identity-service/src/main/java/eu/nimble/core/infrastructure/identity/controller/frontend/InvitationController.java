@@ -153,7 +153,7 @@ public class InvitationController {
                 String username = invitation.getEmail();
                 UaaUser uaaUser = uaaUserRepository.findOneByUsername(username);
                 if (uaaUser != null) {
-                    Set<String> roles = keycloakAdmin.getUserRoles(uaaUser.getExternalID());
+                    Set<String> roles = keycloakAdmin.getUserRoles(uaaUser.getExternalID(), KeycloakAdmin.NON_ASSIGNABLE_ROLES);
                     invitation.setRoleIDs(new ArrayList<>(roles));
                 }
             }
