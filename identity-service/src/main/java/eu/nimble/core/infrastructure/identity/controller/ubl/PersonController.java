@@ -42,6 +42,8 @@ public class PersonController {
     ResponseEntity<PersonType> getPerson(
             @ApiParam(value = "Id of person to retrieve.", required = true) @PathVariable Long personId) {
 
+        logger.debug("Requesting person information for {}", personId);
+
         // search for persons
         List<PersonType> foundPersons = personRepository.findByHjid(personId);
 

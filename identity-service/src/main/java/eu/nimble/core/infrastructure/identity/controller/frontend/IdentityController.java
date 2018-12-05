@@ -5,10 +5,7 @@ import eu.nimble.core.infrastructure.identity.controller.frontend.dto.CompanyReg
 import eu.nimble.core.infrastructure.identity.controller.frontend.dto.UserRegistration;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
-import eu.nimble.core.infrastructure.identity.entity.dto.Address;
-import eu.nimble.core.infrastructure.identity.entity.dto.CompanyRegistration;
-import eu.nimble.core.infrastructure.identity.entity.dto.Credentials;
-import eu.nimble.core.infrastructure.identity.entity.dto.FrontEndUser;
+import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
@@ -22,7 +19,6 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -301,6 +297,24 @@ public class IdentityController {
         logger.info("User " + credentials.getUsername() + " successfully logged in.");
 
         return new ResponseEntity<>(frontEndUser, HttpStatus.OK);
+    }
+
+
+    @ApiOperation(value = "", notes = "Reset a users password")
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Password reset was successful"),
+        @ApiResponse(code = 400, message = "Password could not be reset")})
+    @RequestMapping(value = "/reset-password", consumes = {"application/json"}, method = RequestMethod.POST)
+    ResponseEntity<?> resetPassword(
+            @RequestHeader(value = "Authorization") String bearerToken,
+            @ApiParam(value = "Old and new credentials", required = true) @RequestBody ResetPassword resetPasswordCredentials) throws IOException {
+
+        UaaUser user = identityUtils.getUserfromBearer(bearerToken);
+
+        // request password change
+        boolean success = keycloakAdmin.resetPassword(user, resetPasswordCredentials.getOldPassword(), resetPasswordCredentials.getNewPassword());
+
+        return success ? ResponseEntity.ok().build() : ResponseEntity.badRequest().build();
     }
 
     @ApiOperation(value = "", notes = "Get user info", response = Map.class, tags = {})

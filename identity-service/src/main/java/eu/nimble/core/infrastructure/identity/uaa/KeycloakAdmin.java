@@ -1,6 +1,7 @@
 package eu.nimble.core.infrastructure.identity.uaa;
 
 import com.google.common.collect.Sets;
+import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import org.apache.commons.lang.WordUtils;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
@@ -17,6 +18,8 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -46,6 +49,9 @@ public class KeycloakAdmin {
     @Autowired
     private KeycloakConfig config;
 
+    @Autowired
+    private OAuthClient oAuthClient;
+
     private Keycloak keycloak;
 
     @PostConstruct
@@ -73,10 +79,7 @@ public class KeycloakAdmin {
         UsersResource userResource = realmResource.users();
 
         // create proper credentials
-        CredentialRepresentation passwordCredentials = new CredentialRepresentation();
-        passwordCredentials.setTemporary(false);
-        passwordCredentials.setType(CredentialRepresentation.PASSWORD);
-        passwordCredentials.setValue(password);
+        CredentialRepresentation passwordCredentials = createPasswordCredentials(password);
 
         // create user
         UserRepresentation user = new UserRepresentation();
@@ -163,6 +166,24 @@ public class KeycloakAdmin {
         return realmResource.users().get(userId);
     }
 
+    public boolean resetPassword(UaaUser user, String oldPassword, String newPassword) {
+
+        try {
+            // verify existing password
+            OAuth2AccessToken accessToken = oAuthClient.getToken(user.getUsername(), oldPassword);
+            if (accessToken == null)
+                return false;
+
+            // set new password
+            CredentialRepresentation passwordCredential = createPasswordCredentials(newPassword);
+            this.keycloak.realm(config.getRealm()).users().get(user.getExternalID()).resetPassword(passwordCredential);
+        } catch (OAuth2AccessDeniedException ex) {
+            logger.info("Authentication error while setting new password");
+            return false;
+        }
+
+        return true;
+    }
 
     private String extractCreatedId(Response response) {
         URI location = response.getLocation();
@@ -194,5 +215,13 @@ public class KeycloakAdmin {
 
     public static List<String> prettfiyRoleIDs(List<String> roleIDs) {
         return roleIDs.stream().map(r -> WordUtils.capitalize(r.replace("_", " "))).collect(Collectors.toList());
+    }
+
+    private static CredentialRepresentation createPasswordCredentials(String password) {
+        CredentialRepresentation passwordCredentials = new CredentialRepresentation();
+        passwordCredentials.setTemporary(false);
+        passwordCredentials.setType(CredentialRepresentation.PASSWORD);
+        passwordCredentials.setValue(password);
+        return passwordCredentials;
     }
 }
