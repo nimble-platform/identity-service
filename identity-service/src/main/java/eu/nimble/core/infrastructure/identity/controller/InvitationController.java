@@ -134,7 +134,7 @@ public class InvitationController {
     }
 
     @ApiOperation(value = "", notes = "Get pending invitations.", response = UserInvitation.class, responseContainer = "List", tags = {})
-    @RequestMapping(value = "/invitations", produces = {"application/json"}, method = RequestMethod.GET)
+    @RequestMapping(value = "/company_members", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<?> pendingInvitations(@RequestHeader(value = "Authorization") String bearer) throws IOException {
         UaaUser user = identityUtils.getUserfromBearer(bearer);
 
