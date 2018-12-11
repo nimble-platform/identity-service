@@ -80,6 +80,11 @@ nimble:
     topics:
       companyUpdates: ${KAFKA_TOPIC_COMPANY_UPDATES:company-updates}
 
+management:
+  health:
+    mail:
+      enabled: ${EMAIL_HEALTH_ENABLED:true}
+
 ---
 
 spring:
