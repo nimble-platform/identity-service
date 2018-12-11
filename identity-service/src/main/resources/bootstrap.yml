@@ -35,8 +35,8 @@ spring:
     defaultFrom: ${SMTP_DEFAULT_FROM:}
     username: ${SMTP_USERNAME:}
     password: ${SMTP_PASSWORD:}
-    smtp.auth: true
-    properties.mail.smtp.starttls.enable: true
+    smtp.auth: ${SMTP_AUTH:true}
+    properties.mail.smtp.starttls.enable: ${SMTP_STARTTLS:true}
   jackson:
     default-property-inclusion: NON_NULL
   kafka:

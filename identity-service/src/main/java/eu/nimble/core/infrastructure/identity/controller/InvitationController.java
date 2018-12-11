@@ -140,33 +140,33 @@ public class InvitationController {
 
         Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(user);
         if (companyOpt.isPresent() == false) {
-            logger.info("Pending Invitations: Requested party for user {} not found.", user.getUsername());
+            logger.info("Company members: Requested party for user {} not found.", user.getUsername());
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         PartyType company = companyOpt.get();
 
-        List<UserInvitation> invitations = userInvitationRepository.findByCompanyId(company.getID());
+        List<UserInvitation> members = userInvitationRepository.findByCompanyId(company.getID());
 
         // add initial user (i.e. initial representative)
-        List<String> invitationEmails = invitations.stream().map(UserInvitation::getEmail).collect(Collectors.toList());
+        List<String> invitationEmails = members.stream().map(UserInvitation::getEmail).collect(Collectors.toList());
         company.getPerson().stream()
                 .filter(p -> !invitationEmails.contains(p.getContact().getElectronicMail()))
                 .map(m -> new UserInvitation(m.getContact().getElectronicMail(), company.getID(), null, null, false))
-                .forEach(invitations::add);;
+                .forEach(members::add);;
 
         // update roles
-        for (UserInvitation invitation : invitations) {
-            if (invitation.getPending() == false) {
-                String username = invitation.getEmail();
+        for (UserInvitation member : members) {
+            if (member.getPending() == false) {
+                String username = member.getEmail();
                 UaaUser uaaUser = uaaUserRepository.findOneByUsername(username);
                 if (uaaUser != null) {
                     Set<String> roles = keycloakAdmin.getUserRoles(uaaUser.getExternalID(), KeycloakAdmin.NON_ASSIGNABLE_ROLES);
-                    invitation.setRoleIDs(new ArrayList<>(roles));
+                    member.setRoleIDs(new ArrayList<>(roles));
                 }
             }
         }
 
-        return new ResponseEntity<>(invitations, HttpStatus.OK);
+        return new ResponseEntity<>(members, HttpStatus.OK);
     }
 
 
