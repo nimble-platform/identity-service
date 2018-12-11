@@ -1,8 +1,7 @@
-package eu.nimble.core.infrastructure.identity.controller.frontend;
+package eu.nimble.core.infrastructure.identity.controller;
 
-import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
-import eu.nimble.core.infrastructure.identity.controller.frontend.dto.CompanyRegistrationResponse;
-import eu.nimble.core.infrastructure.identity.controller.frontend.dto.UserRegistration;
+import eu.nimble.core.infrastructure.identity.controller.dto.CompanyRegistrationResponse;
+import eu.nimble.core.infrastructure.identity.controller.dto.UserRegistration;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;

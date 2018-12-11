@@ -1,6 +1,5 @@
-package eu.nimble.core.infrastructure.identity.controller.frontend;
+package eu.nimble.core.infrastructure.identity.controller;
 
-import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;

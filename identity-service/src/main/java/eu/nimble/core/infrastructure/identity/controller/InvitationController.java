@@ -1,6 +1,5 @@
-package eu.nimble.core.infrastructure.identity.controller.frontend;
+package eu.nimble.core.infrastructure.identity.controller;
 
-import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
@@ -26,6 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 public class InvitationController {
@@ -145,10 +145,17 @@ public class InvitationController {
         }
         PartyType company = companyOpt.get();
 
-        List<UserInvitation> pendingInvitations = userInvitationRepository.findByCompanyId(company.getID());
+        List<UserInvitation> invitations = userInvitationRepository.findByCompanyId(company.getID());
+
+        // add initial user (i.e. initial representative)
+        List<String> invitationEmails = invitations.stream().map(UserInvitation::getEmail).collect(Collectors.toList());
+        company.getPerson().stream()
+                .filter(p -> !invitationEmails.contains(p.getContact().getElectronicMail()))
+                .map(m -> new UserInvitation(m.getContact().getElectronicMail(), company.getID(), null, null, false))
+                .forEach(invitations::add);;
 
         // update roles
-        for (UserInvitation invitation : pendingInvitations) {
+        for (UserInvitation invitation : invitations) {
             if (invitation.getPending() == false) {
                 String username = invitation.getEmail();
                 UaaUser uaaUser = uaaUserRepository.findOneByUsername(username);
@@ -159,7 +166,7 @@ public class InvitationController {
             }
         }
 
-        return new ResponseEntity<>(pendingInvitations, HttpStatus.OK);
+        return new ResponseEntity<>(invitations, HttpStatus.OK);
     }
 
 

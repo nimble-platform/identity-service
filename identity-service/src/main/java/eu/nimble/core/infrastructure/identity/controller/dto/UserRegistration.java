@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity.controller.frontend.dto;
+package eu.nimble.core.infrastructure.identity.controller.dto;
 
 import eu.nimble.core.infrastructure.identity.entity.dto.Credentials;
 import eu.nimble.core.infrastructure.identity.entity.dto.FrontEndUser;
