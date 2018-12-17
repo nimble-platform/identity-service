@@ -8,26 +8,31 @@ node('nimble-jenkins-slave') {
         sh 'git submodule update'
     }
 
-    stage('Run Tests') {
-        sh 'mvn clean test'
-    }
-
-    stage('Build Java') {
-        sh 'mvn clean install -DskipTests'
-    }
+//    stage('Run Tests') {
+//        sh 'mvn clean test'
+//    }
+//
+//    stage('Build Java') {
+//        sh 'mvn clean install -DskipTests'
+//    }
 
     if (env.BRANCH_NAME == 'staging') {
-        stage('Build Docker') {
-            sh 'mvn -f identity-service/pom.xml docker:build -DdockerImageTag=staging'
+
+        stage('Test') {
+            sh 'env'
         }
 
-        stage('Push Docker') {
-            sh 'docker push nimbleplatform/identity-service:staging'
-        }
-
-        stage('Deploy') {
-            sh 'ssh staging "cd /srv/nimble-staging/ && ./run-staging.sh restart-single identity-service"'
-        }
+//        stage('Build Docker') {
+//            sh 'mvn -f identity-service/pom.xml docker:build -DdockerImageTag=staging'
+//        }
+//
+//        stage('Push Docker') {
+//            sh 'docker push nimbleplatform/identity-service:staging'
+//        }
+//
+//        stage('Deploy') {
+//            sh 'ssh staging "cd /srv/nimble-staging/ && ./run-staging.sh restart-single identity-service"'
+//        }
     }
 
     if (env.BRANCH_NAME == 'master') {

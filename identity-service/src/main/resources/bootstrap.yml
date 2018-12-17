@@ -83,7 +83,7 @@ nimble:
 management:
   health:
     mail:
-      enabled: ${EMAIL_HEALTH_ENABLED:true}
+      enabled: ${EMAIL_HEALTH_ENABLED:true  }
 
 ---
 
