@@ -16,11 +16,11 @@ node('nimble-jenkins-slave') {
 //        sh 'mvn clean install -DskipTests'
 //    }
 
-    if (env.BRANCH_NAME == 'staging') {
+    stage('Test') {
+        sh 'env'
+    }
 
-        stage('Test') {
-            sh 'env'
-        }
+    if (env.BRANCH_NAME == 'staging') {
 
 //        stage('Build Docker') {
 //            sh 'mvn -f identity-service/pom.xml docker:build -DdockerImageTag=staging'
