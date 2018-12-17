@@ -2,6 +2,9 @@
 
 node('nimble-jenkins-slave') {
 
+    stage('Test') {
+        sh 'env'
+    }
 
     if (env.BRANCH_NAME == 'staging') {
 
