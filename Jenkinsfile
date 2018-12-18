@@ -2,6 +2,9 @@
 
 node('nimble-jenkins-slave') {
 
+    // -----------------------------------------------
+    // --------------- Staging Branch ----------------
+    // -----------------------------------------------
     if (env.BRANCH_NAME == 'staging') {
 
         stage('Clone and Update') {
@@ -31,6 +34,9 @@ node('nimble-jenkins-slave') {
         }
     }
 
+    // -----------------------------------------------
+    // ---------------- Master Branch ----------------
+    // -----------------------------------------------
     if (env.BRANCH_NAME == 'master') {
 
         stage('Clone and Update') {
@@ -48,7 +54,9 @@ node('nimble-jenkins-slave') {
         }
     }
 
-    // check for release (e.g. tagged with 0.0.1)
+    // -----------------------------------------------
+    // ---------------- Release Tags -----------------
+    // -----------------------------------------------
     if( env.TAG_NAME ==~ /^\d+.\d+.\d+$/) {
 
         stage('Clone and Update') {
