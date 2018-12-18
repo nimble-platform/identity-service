@@ -57,6 +57,11 @@ node('nimble-jenkins-slave') {
             sh 'git submodule update'
         }
 
+        stage('Set version') {
+            sh 'mvn versions:set -DnewVersion=' + env.TAG_NAME
+            sh 'mvn -f identity-service/pom.xml versions:set -DnewVersion=' + env.TAG_NAME
+        }
+
         stage('Run Tests') {
             sh 'mvn clean test'
         }
@@ -69,19 +74,17 @@ node('nimble-jenkins-slave') {
             sh 'mvn -f identity-service/pom.xml docker:build'
         }
 
+        stage('Push Docker') {
+            sh 'docker push nimbleplatform/identity-service:' + env.TAG_NAME
+            sh 'docker push nimbleplatform/identity-service:latest'
+        }
 
-//        stage('Push Docker') {
-//            sh 'mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version' // fetch dependencies
-//            sh 'docker push nimbleplatform/identity-service:$(mvn -f identity-service/pom.xml org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v \'\\[\')'
-//            sh 'docker push nimbleplatform/identity-service:latest'
-//        }
-//
-//        stage('Deploy MVP') {
-//            sh 'ssh nimble "cd /data/deployment_setup/prod/ && sudo ./run-prod.sh restart-single identity-service"'
-//        }
-//
-//        stage('Deploy FMP') {
-//            sh 'ssh fmp-prod "cd /srv/nimble-fmp/ && ./run-fmp-prod.sh restart-single identity-service"'
-//        }
+        stage('Deploy MVP') {
+            sh 'ssh nimble "cd /data/deployment_setup/prod/ && sudo ./run-prod.sh restart-single identity-service"'
+        }
+
+        stage('Deploy FMP') {
+            sh 'ssh fmp-prod "cd /srv/nimble-fmp/ && ./run-fmp-prod.sh restart-single identity-service"'
+        }
     }
 }
