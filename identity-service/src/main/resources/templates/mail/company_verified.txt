@@ -8,4 +8,4 @@ Downtimes and bugs have to be expected.
 We welcome comments and feedback - use the help button!
 
 Sincerely,
-    your platform manager
+    your platform mawnager

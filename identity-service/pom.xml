@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>identity-service</artifactId>
-    <version>5.0.2</version>
+    <version>6.2.1</version>
     <name>Service for managing identities on the platform.</name>
     <packaging>jar</packaging>
 
@@ -34,7 +34,7 @@
     <parent>
         <groupId>eu.nimble.core.infrastructure.identity</groupId>
         <artifactId>identity-service-parent</artifactId>
-        <version>static-parent-version</version>
+        <version>6.0.6</version>
     </parent>
 
     <dependencyManagement>
