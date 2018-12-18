@@ -2,21 +2,22 @@
 
 node('nimble-jenkins-slave') {
 
-    stage('Clone and Update') {
-        git(url: 'https://github.com/nimble-platform/identity-service.git', branch: env.BRANCH_NAME)
-        sh 'git submodule init'
-        sh 'git submodule update'
-    }
-
-    stage('Run Tests') {
-        sh 'mvn clean test'
-    }
-
-    stage('Build Java') {
-        sh 'mvn clean install -DskipTests'
-    }
-
     if (env.BRANCH_NAME == 'staging') {
+
+        stage('Clone and Update') {
+            git(url: 'https://github.com/nimble-platform/identity-service.git', branch: env.BRANCH_NAME)
+            sh 'git submodule init'
+            sh 'git submodule update'
+        }
+
+        stage('Run Tests') {
+            sh 'mvn clean test'
+        }
+
+        stage('Build Java') {
+            sh 'mvn clean install -DskipTests'
+        }
+
         stage('Build Docker') {
             sh 'mvn -f identity-service/pom.xml docker:build -DdockerImageTag=staging'
         }
@@ -32,13 +33,49 @@ node('nimble-jenkins-slave') {
 
     if (env.BRANCH_NAME == 'master') {
 
+        stage('Clone and Update') {
+            git(url: 'https://github.com/nimble-platform/identity-service.git', branch: env.BRANCH_NAME)
+            sh 'git submodule init'
+            sh 'git submodule update'
+        }
+
+        stage('Run Tests') {
+            sh 'mvn clean test'
+        }
+
+        stage('Build Java') {
+            sh 'mvn clean install -DskipTests'
+        }
+    }
+
+    // check for release (e.g. tagged with 0.0.1)
+    if( env.TAG_NAME ==~ /^\d+.\d+.\d+$/) {
+
+        stage('Clone and Update') {
+            git(url: 'https://github.com/nimble-platform/identity-service.git', branch: 'master')
+            sh 'git submodule init'
+            sh 'git submodule update'
+        }
+
+        stage('Set version') {
+            sh 'mvn versions:set -DnewVersion=' + env.TAG_NAME
+            sh 'mvn -f identity-service/pom.xml versions:set -DnewVersion=' + env.TAG_NAME
+        }
+
+        stage('Run Tests') {
+            sh 'mvn clean test'
+        }
+
+        stage('Build Java') {
+            sh 'mvn clean install -DskipTests'
+        }
+
         stage('Build Docker') {
             sh 'mvn -f identity-service/pom.xml docker:build'
         }
 
         stage('Push Docker') {
-            sh 'mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version' // fetch dependencies
-            sh 'docker push nimbleplatform/identity-service:$(mvn -f identity-service/pom.xml org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v \'\\[\')'
+            sh 'docker push nimbleplatform/identity-service:' + env.TAG_NAME
             sh 'docker push nimbleplatform/identity-service:latest'
         }
 
