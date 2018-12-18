@@ -73,9 +73,7 @@ public class IdentityUtils {
         completenessWeights.add(StringUtils.isNotEmpty(companyDetails.getCompanyLegalName()) ? 1.0 : 0.0);
         completenessWeights.add(StringUtils.isNotEmpty(companyDetails.getVatNumber()) ? 1.0 : 0.0);
         completenessWeights.add(StringUtils.isNotEmpty(companyDetails.getBusinessType()) ? 1.0 : 0.0);
-        completenessWeights.add(companyDetails.getBusinessKeywords() != null && companyDetails.getBusinessKeywords().size() > 0 ? 1.0 : 0.0);
         completenessWeights.add(companyDetails.getIndustrySectors() != null && companyDetails.getIndustrySectors().size() > 0 ? 1.0 : 0.0);
-        completenessWeights.add(companyDetails.getYearOfCompanyRegistration() != null ? 1.0 : 0.0);
 
         Address address = companyDetails.getAddress();
         if (address != null) {
