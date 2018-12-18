@@ -3,12 +3,11 @@ package eu.nimble.core.infrastructure.identity.controller.ubl;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
-import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
-import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
+import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -16,6 +15,9 @@ import io.swagger.annotations.ApiParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -36,8 +38,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
-import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
 
 /**
  * Created by Johannes Innerbichler on 26/04/17.
@@ -83,10 +83,26 @@ public class PartyController {
         if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             party.setPerson(new ArrayList<>());
 
-        removeBinaries(party);
+        UblUtils.removeBinaries(party);
 
         logger.debug("Returning requested party with Id {}", party.getHjid());
         return new ResponseEntity<>(party, HttpStatus.OK);
+    }
+
+
+    @ApiOperation(value = "getAllParties", notes = "Get all parties in a paginated manner", response = Page.class)
+    @RequestMapping(value = "/parties/all", method = RequestMethod.GET)
+    ResponseEntity<Page<PartyType>> getAllParties(@RequestParam(value = "page", required = false, defaultValue = "1") int pageNumber,
+                                                  @RequestParam(value = "size", required = false, defaultValue = "10") int pageSize) {
+
+        logger.debug("Requesting all parties page {}", pageNumber);
+
+        Page<PartyType> partyPage = partyRepository.findAll(new PageRequest(pageNumber, pageSize, new Sort(Sort.Direction.ASC, "name")));
+
+        // remove binaries for response
+        partyPage.getContent().forEach(UblUtils::removeBinaries);
+
+        return new ResponseEntity<>(partyPage, HttpStatus.OK);
     }
 
     @SuppressWarnings("PointlessBooleanExpression")
@@ -114,7 +130,7 @@ public class PartyController {
 
 
         // remove binaries for response
-        parties.forEach(PartyController::removeBinaries);
+        parties.forEach(UblUtils::removeBinaries);
 
         logger.debug("Returning requested parties with Ids {}", partyIds);
         return new ResponseEntity<>(parties, HttpStatus.OK);
@@ -138,7 +154,7 @@ public class PartyController {
         List<PartyType> parties = partyRepository.findByPerson(person);
 
         // remove binaries for response
-        parties.forEach(PartyController::removeBinaries);
+        parties.forEach(UblUtils::removeBinaries);
 
         return new ResponseEntity<>(parties, HttpStatus.OK);
     }
@@ -247,18 +263,5 @@ public class PartyController {
         public String getName() {
             return name;
         }
-    }
-
-    public static PartyType removeBinaries(PartyType partyType) {
-        for (CertificateType cert : partyType.getCertificate()) {
-            cert.setDocumentReference(null);
-        }
-        if (partyType.getDocumentReference() != null) {
-            for (DocumentReferenceType documentReference : partyType.getDocumentReference()) {
-                if (documentReference.getAttachment() != null)
-                    documentReference.getAttachment().setEmbeddedDocumentBinaryObject(null);
-            }
-        }
-        return partyType;
     }
 }

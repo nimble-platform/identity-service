@@ -1,6 +1,5 @@
-package eu.nimble.core.infrastructure.identity.controller.frontend;
+package eu.nimble.core.infrastructure.identity.controller;
 
-import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
@@ -26,6 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 public class InvitationController {
@@ -133,33 +133,40 @@ public class InvitationController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    @ApiOperation(value = "", notes = "Get pending invitations.", response = UserInvitation.class, responseContainer = "List", tags = {})
-    @RequestMapping(value = "/invitations", produces = {"application/json"}, method = RequestMethod.GET)
+    @ApiOperation(value = "", notes = "Get list of company members.", response = UserInvitation.class, responseContainer = "List", tags = {})
+    @RequestMapping(value = "/company_members", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<?> pendingInvitations(@RequestHeader(value = "Authorization") String bearer) throws IOException {
         UaaUser user = identityUtils.getUserfromBearer(bearer);
 
         Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(user);
         if (companyOpt.isPresent() == false) {
-            logger.info("Pending Invitations: Requested party for user {} not found.", user.getUsername());
+            logger.info("Company members: Requested party for user {} not found.", user.getUsername());
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         PartyType company = companyOpt.get();
 
-        List<UserInvitation> pendingInvitations = userInvitationRepository.findByCompanyId(company.getID());
+        List<UserInvitation> members = userInvitationRepository.findByCompanyId(company.getID());
+
+        // add initial user (i.e. initial representative)
+        List<String> invitationEmails = members.stream().map(UserInvitation::getEmail).collect(Collectors.toList());
+        company.getPerson().stream()
+                .filter(p -> !invitationEmails.contains(p.getContact().getElectronicMail()))
+                .map(m -> new UserInvitation(m.getContact().getElectronicMail(), company.getID(), null, null, false))
+                .forEach(members::add);;
 
         // update roles
-        for (UserInvitation invitation : pendingInvitations) {
-            if (invitation.getPending() == false) {
-                String username = invitation.getEmail();
+        for (UserInvitation member : members) {
+            if (member.getPending() == false) {
+                String username = member.getEmail();
                 UaaUser uaaUser = uaaUserRepository.findOneByUsername(username);
                 if (uaaUser != null) {
-                    Set<String> roles = keycloakAdmin.getUserRoles(uaaUser.getExternalID());
-                    invitation.setRoleIDs(new ArrayList<>(roles));
+                    Set<String> roles = keycloakAdmin.getUserRoles(uaaUser.getExternalID(), KeycloakAdmin.NON_ASSIGNABLE_ROLES);
+                    member.setRoleIDs(new ArrayList<>(roles));
                 }
             }
         }
 
-        return new ResponseEntity<>(pendingInvitations, HttpStatus.OK);
+        return new ResponseEntity<>(members, HttpStatus.OK);
     }
 
 

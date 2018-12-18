@@ -29,7 +29,7 @@ public class UserInvitation {
     private String companyId;
 
     @Column
-    @ElementCollection(targetClass=String.class)
+    @ElementCollection(targetClass = String.class)
     private List<String> roleIDs;
 
     @ManyToOne
@@ -44,12 +44,16 @@ public class UserInvitation {
     }
 
     public UserInvitation(String email, String companyId, List<String> roleIDs, UaaUser sender) {
+        this(email, companyId, roleIDs, sender, true);
+    }
+
+    public UserInvitation(String email, String companyId, List<String> roleIDs, UaaUser sender, Boolean isPending) {
         this.email = email;
         this.companyId = companyId;
         this.sender = sender;
         this.roleIDs = roleIDs;
 
-        this.isPending = true;
+        this.isPending = isPending;
     }
 
     public String getEmail() {

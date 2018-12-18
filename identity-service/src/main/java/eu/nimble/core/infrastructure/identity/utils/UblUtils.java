@@ -1,14 +1,14 @@
 package eu.nimble.core.infrastructure.identity.utils;
 
 import com.google.common.collect.Sets;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.CertificateType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.DocumentReferenceType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.QualityIndicatorType;
 import eu.nimble.service.model.ubl.extension.QualityIndicatorParameter;
 
 import java.lang.reflect.Field;
 import java.util.*;
-
-import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.PROFILE_COMPLETENESS;
 
 /**
  * Created by Johannes Innerbichler on 27/06/17.
@@ -91,5 +91,18 @@ public class UblUtils {
 
     public static <V> List<V> toModifyableList(V... objects) {
         return new ArrayList<>(Arrays.asList(objects));
+    }
+
+    public static PartyType removeBinaries(PartyType partyType) {
+        for (CertificateType cert : partyType.getCertificate()) {
+            cert.setDocumentReference(null);
+        }
+        if (partyType.getDocumentReference() != null) {
+            for (DocumentReferenceType documentReference : partyType.getDocumentReference()) {
+                if (documentReference.getAttachment() != null)
+                    documentReference.getAttachment().setEmbeddedDocumentBinaryObject(null);
+            }
+        }
+        return partyType;
     }
 }
