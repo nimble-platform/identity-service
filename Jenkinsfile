@@ -53,7 +53,7 @@ node('nimble-jenkins-slave') {
     }
 
     // check for release (e.g. tagged with 0.0.1)
-    if( env.BRANCH_NAME ==~ /^\d+.\d+.\d+$/) {
+    if( env.TAG_NAME ==~ /^\d+.\d+.\d+$/) {
 
         stage('Clone and Update') {
             git(url: 'https://github.com/nimble-platform/identity-service.git', branch: 'master')
@@ -72,6 +72,7 @@ node('nimble-jenkins-slave') {
         stage('Build Docker') {
             sh 'mvn -f identity-service/pom.xml docker:build'
         }
+
 
 //        stage('Push Docker') {
 //            sh 'mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version' // fetch dependencies
