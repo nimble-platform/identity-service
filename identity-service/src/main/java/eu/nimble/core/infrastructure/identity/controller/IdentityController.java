@@ -249,7 +249,7 @@ public class IdentityController {
         companyRegistration.setAccessToken(tokenResponse.getValue());
 
         // broadcast changes
-//        kafkaSender.broadcastCompanyUpdate(newCompany.getID(), bearer);
+        kafkaSender.broadcastCompanyUpdate(newCompany.getID(), bearer);
 
         logger.info("Registered company with id {} for user with id {}", companyRegistration.getCompanyID(), companyRegistration.getUserID());
 
