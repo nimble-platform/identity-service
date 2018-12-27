@@ -90,7 +90,7 @@ public class AdminControllerTests {
         companyRegistration = objectMapper.readValue(responseAsString, CompanyRegistration.class);
 
         // check list of all parties whether it contains newly registered company
-        this.mockMvc.perform(get("/parties/all"))
+        this.mockMvc.perform(get("/parties/all?page=0"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
