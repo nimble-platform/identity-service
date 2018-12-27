@@ -28,6 +28,9 @@ spring:
     maxIdle: 3
     tomcat:
       default-auto-commit: false
+      commit-on-return: false  # ToDo: test
+    dbcp:
+      default-auto-commit: false
   mail:
     debug: false  # disable printing email to log output
     host: ${SMTP_HOST:localhost}

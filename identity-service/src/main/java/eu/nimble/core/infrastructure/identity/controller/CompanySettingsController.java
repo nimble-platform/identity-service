@@ -92,7 +92,7 @@ public class CompanySettingsController {
         logger.debug("Returning requested settings for party with Id {}", party.getHjid());
 
         // pre fetch image metadata without binaries
-        enrichImageMetadate(party);
+        enrichImageMetadata(party);
 
         CompanySettings settings = UblAdapter.adaptCompanySettings(party, qualifyingPartyOptional.orElse(null));
         return new ResponseEntity<>(settings, HttpStatus.OK);
@@ -395,7 +395,7 @@ public class CompanySettingsController {
         }
     }
 
-    private void enrichImageMetadate(PartyType party) {
+    private void enrichImageMetadata(PartyType party) {
         // fetch only identifiers of images in order to avoid fetch of entire binary files
         List<DocumentReferenceType> imageDocuments = party.getDocumentReference().stream()
                 .filter(d -> DOCUMENT_TYPE_COMPANY_LOGO.equals(d.getDocumentType()) || DOCUMENT_TYPE_COMPANY_PHOTO.equals(d.getDocumentType()))
