@@ -97,7 +97,7 @@ public class PartyController {
 
         logger.debug("Requesting all parties page {}", pageNumber);
 
-        Page<PartyType> partyPage = partyRepository.findAll(new PageRequest(pageNumber-1, pageSize, new Sort(Sort.Direction.ASC, "name")));
+        Page<PartyType> partyPage = partyRepository.findAll(new PageRequest(pageNumber - 1, pageSize, new Sort(Sort.Direction.ASC, "name")));
 
         // remove binaries for response
         partyPage.getContent().forEach(UblUtils::removeBinaries);

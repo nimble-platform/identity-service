@@ -2,6 +2,8 @@ package eu.nimble.core.infrastructure.identity.repository;
 
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -21,6 +23,9 @@ public interface PartyRepository extends PagingAndSortingRepository<PartyType, L
 
     @Transactional
     Iterable<PartyType> findAll(Sort sort);
+
+    @Transactional
+    Page<PartyType> findAll(Pageable pageable);
 
     List<PartyType> findByHjid(Long hijd);
 
