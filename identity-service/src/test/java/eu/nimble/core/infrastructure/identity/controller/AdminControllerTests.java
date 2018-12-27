@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import eu.nimble.core.infrastructure.identity.IdentityServiceApplication;
-import eu.nimble.core.infrastructure.identity.IdentityUtilsTestConfiguration;
+import eu.nimble.core.infrastructure.identity.DefaultTestConfiguration;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.repository.*;
@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @FixMethodOrder
-@Import(IdentityUtilsTestConfiguration.class)
+@Import(DefaultTestConfiguration.class)
 public class AdminControllerTests {
 
     private static final String DATE_FORMAT = "yyyy-MM-dd";

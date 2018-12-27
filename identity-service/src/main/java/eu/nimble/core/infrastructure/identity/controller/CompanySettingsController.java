@@ -126,11 +126,13 @@ public class CompanySettingsController {
 
         // set preferred product categories
         List<CodeType> preferredProductCategories = UblAdapter.adaptProductCategories(newSettings.getPreferredProductCategories());
-        existingCompany.setPreferredItemClassificationCode(preferredProductCategories);
+        existingCompany.getPreferredItemClassificationCode().clear();
+        existingCompany.getPreferredItemClassificationCode().addAll(preferredProductCategories);
 
         // set recently used product categories
         List<CodeType> recentlyUsedProductCategories = UblAdapter.adaptProductCategories(newSettings.getRecentlyUsedProductCategories());
-        existingCompany.setMostRecentItemsClassificationCode(recentlyUsedProductCategories);
+        existingCompany.getMostRecentItemsClassificationCode().clear();
+        existingCompany.getMostRecentItemsClassificationCode().addAll(recentlyUsedProductCategories);
 
         partyRepository.save(existingCompany);
 

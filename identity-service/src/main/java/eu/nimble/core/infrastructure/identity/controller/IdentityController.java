@@ -211,8 +211,10 @@ public class IdentityController {
 
         // create purchase terms
         TradingPreferences purchaseTerms = new TradingPreferences();
-        purchaseTerms.setDeliveryTerms(Collections.singletonList(blankDeliveryTerms));   // ToDo: improve for sales terms
-        purchaseTerms.setPaymentMeans(Collections.singletonList(paymentMeans));   // ToDo: improve for sales terms
+        purchaseTerms.getDeliveryTerms().clear();
+        purchaseTerms.getDeliveryTerms().add(blankDeliveryTerms);   // ToDo: improve for sales terms
+        purchaseTerms.getPaymentMeans().clear();
+        purchaseTerms.getPaymentMeans().add(paymentMeans);
         newCompany.setPurchaseTerms(purchaseTerms);
 
         // update id of company
