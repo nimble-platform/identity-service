@@ -1,6 +1,8 @@
 package eu.nimble.core.infrastructure.identity.controller;
 
 import eu.nimble.core.infrastructure.identity.service.AdminService;
+import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -10,12 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -33,6 +33,9 @@ public class AdminController {
 
     @Autowired
     private AdminService adminService;
+
+    @Autowired
+    private IdentityUtils identityUtils;
 
     @ApiOperation(value = "Retrieve unverified companies", response = Page.class)
     @RequestMapping(value = "/unverified_companies", produces = {"application/json"}, method = RequestMethod.GET)
@@ -53,9 +56,11 @@ public class AdminController {
 
     @ApiOperation(value = "Verify company")
     @RequestMapping(value = "/verify_company", method = RequestMethod.POST)
-    ResponseEntity<?> verifyCompany(@RequestParam(value = "companyId") long companyId) throws Exception {
+    ResponseEntity<?> verifyCompany(@RequestParam(value = "companyId") long companyId,
+                                    @RequestHeader(value = "Authorization") String bearer) throws Exception {
 
-        // ToDo: verify proper access policy (e.g. admin role)
+        if (identityUtils.hasRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
+            return new ResponseEntity<>("Only legal platform managers are allowed to verify companies", HttpStatus.UNAUTHORIZED);
 
         logger.info("Verifying company with id {}", companyId);
         adminService.verifyCompany(companyId);
@@ -65,9 +70,11 @@ public class AdminController {
 
     @ApiOperation(value = "Delete company")
     @RequestMapping(value = "/delete_company/{companyId}", method = RequestMethod.DELETE)
-    ResponseEntity<?> deleteCompany(@PathVariable(value = "companyId") long companyId) throws Exception {
+    ResponseEntity<?> deleteCompany(@PathVariable(value = "companyId") long companyId,
+                                    @RequestHeader(value = "Authorization") String bearer) throws Exception {
 
-        // ToDo: verify proper access policy (e.g. admin role)
+        if (identityUtils.hasRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
+            return new ResponseEntity<>("Only legal platform managers are allowed to delete companies", HttpStatus.UNAUTHORIZED);
 
         logger.info("Deleting company with id {}", companyId);
         adminService.deleteCompany(companyId);

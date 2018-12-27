@@ -90,7 +90,7 @@ public class AdminControllerTests {
         companyRegistration = objectMapper.readValue(responseAsString, CompanyRegistration.class);
 
         // check list of all parties whether it contains newly registered company
-        this.mockMvc.perform(get("/parties/all"))
+        this.mockMvc.perform(get("/parties/all?page=0"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -99,16 +99,17 @@ public class AdminControllerTests {
                 .andExpect(jsonPath("$.content[0].id", is(companyRegistration.getCompanyID().toString())));
 
         // check repositories
-        assertEquals(this.partyRepository.count(),1);
-        assertEquals(this.qualifyingPartyRepository.count(),1);
-        assertEquals(this.personRepository.count(),1);
-        assertEquals(this.uaaUserRepository.count(),1);
-        assertEquals(this.deliveryTermsRepository.count(),1);
-        assertEquals(this.paymentMeansRepository.count(),1);
-        assertEquals(this.documentReferenceRepository.count(),1);
+        assertEquals(1, this.partyRepository.count());
+        assertEquals(1, this.qualifyingPartyRepository.count());
+        assertEquals(1, this.personRepository.count());
+        assertEquals(1, this.uaaUserRepository.count());
+        assertEquals(1, this.deliveryTermsRepository.count());
+        assertEquals(1, this.paymentMeansRepository.count());
+        assertEquals(1, this.documentReferenceRepository.count());
 
         // WHEN: deleting company
-        this.mockMvc.perform(delete("/admin/delete_company/" + companyRegistration.getCompanyID()))
+        this.mockMvc.perform(delete("/admin/delete_company/" + companyRegistration.getCompanyID())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN"))
                 .andExpect(status().isOk());
 
         // THEN: company should be deleted
@@ -119,13 +120,13 @@ public class AdminControllerTests {
                 .andExpect(jsonPath("$.content.length()", is(0)));
 
         // check repositories
-        assertEquals(this.partyRepository.count(),0);
-        assertEquals(this.qualifyingPartyRepository.count(),0);
-        assertEquals(this.personRepository.count(),0);
-        assertEquals(this.uaaUserRepository.count(),0);
-        assertEquals(this.deliveryTermsRepository.count(),0);
-        assertEquals(this.paymentMeansRepository.count(),0);
-        assertEquals(this.documentReferenceRepository.count(),0);
+        assertEquals(0, this.partyRepository.count());
+        assertEquals(0, this.qualifyingPartyRepository.count());
+        assertEquals(0, this.personRepository.count());
+        assertEquals(0, this.uaaUserRepository.count());
+        assertEquals(0, this.deliveryTermsRepository.count());
+        assertEquals(0, this.paymentMeansRepository.count());
+        assertEquals(0, this.documentReferenceRepository.count());
     }
 
     private static CompanyRegistration createCompanyRegistration(PersonType user) {
