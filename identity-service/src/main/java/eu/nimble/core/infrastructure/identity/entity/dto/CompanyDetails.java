@@ -35,6 +35,20 @@ public class CompanyDetails {
     @ApiModelProperty(value = "List of industry sectors in which company is active in.")
     private List<String> industrySectors = new ArrayList<>();
 
+    public CompanyDetails() {
+    }
+
+    public CompanyDetails(String companyLegalName, String vatNumber, String verificationInformation, Address address, String businessType, List<String> businessKeywords, Integer yearOfCompanyRegistration, List<String> industrySectors) {
+        this.companyLegalName = companyLegalName;
+        this.vatNumber = vatNumber;
+        this.verificationInformation = verificationInformation;
+        this.address = address;
+        this.businessType = businessType;
+        this.businessKeywords = businessKeywords;
+        this.yearOfCompanyRegistration = yearOfCompanyRegistration;
+        this.industrySectors = industrySectors;
+    }
+
     public String getCompanyLegalName() {
         return companyLegalName;
     }

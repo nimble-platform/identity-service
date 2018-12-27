@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("SpringJavaAutowiredFieldsWarningInspection")
 public class IdentityController {
 
-    private static final String REFRESH_TOKEN_SESSION_KEY = "refresh_token";
+    public static final String REFRESH_TOKEN_SESSION_KEY = "refresh_token";
 
     private static final Logger logger = LoggerFactory.getLogger(IdentityController.class);
 
@@ -224,8 +224,8 @@ public class IdentityController {
         qualifyingPartyRepository.save(qualifyingParty);
 
         // add id to response object
-        companyRegistration.setCompanyID(Long.parseLong(newCompany.getID()));
-        companyRegistration.setUserID(Long.parseLong(userParty.getID()));
+        companyRegistration.setCompanyID(newCompany.getHjid());
+        companyRegistration.setUserID(userParty.getHjid());
 
         // adapt role of user and refresh access token
         try {

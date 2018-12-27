@@ -21,5 +21,4 @@ public interface NegotiationSettingsRepository extends PagingAndSortingRepositor
     @Modifying
     @Transactional
     long deleteByCompany(PartyType party);
-
 }

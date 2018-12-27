@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -63,8 +64,8 @@ public class AdminController {
     }
 
     @ApiOperation(value = "Delete company")
-    @RequestMapping(value = "/delete_company", method = RequestMethod.DELETE)
-    ResponseEntity<?> deleteCompany(@RequestParam(value = "companyId") long companyId) throws Exception {
+    @RequestMapping(value = "/delete_company/{companyId}", method = RequestMethod.DELETE)
+    ResponseEntity<?> deleteCompany(@PathVariable(value = "companyId") long companyId) throws Exception {
 
         // ToDo: verify proper access policy (e.g. admin role)
 
