@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
  */
 @Profile("test")
 @TestConfiguration
-public class IdentityUtilsTestConfiguration {
+public class DefaultTestConfiguration {
 
     @Bean
     @Primary
