@@ -92,7 +92,7 @@ public class PartyController {
 
     @ApiOperation(value = "getAllParties", notes = "Get all parties in a paginated manner", response = Page.class)
     @RequestMapping(value = "/parties/all", method = RequestMethod.GET)
-    ResponseEntity<Page<PartyType>> getAllParties(@RequestParam(value = "page", required = false, defaultValue = "1") int pageNumber,
+    ResponseEntity<Page<PartyType>> getAllParties(@RequestParam(value = "page", required = false, defaultValue = "0") int pageNumber,
                                                   @RequestParam(value = "size", required = false, defaultValue = "10") int pageSize) {
 
         logger.debug("Requesting all parties page {}", pageNumber);
