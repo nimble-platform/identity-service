@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -58,6 +59,18 @@ public class AdminController {
 
         logger.info("Verifying company with id {}", companyId);
         adminService.verifyCompany(companyId);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @ApiOperation(value = "Delete company")
+    @RequestMapping(value = "/delete_company/{companyId}", method = RequestMethod.DELETE)
+    ResponseEntity<?> deleteCompany(@PathVariable(value = "companyId") long companyId) throws Exception {
+
+        // ToDo: verify proper access policy (e.g. admin role)
+
+        logger.info("Deleting company with id {}", companyId);
+        adminService.deleteCompany(companyId);
 
         return ResponseEntity.ok().build();
     }

@@ -1,11 +1,11 @@
-package eu.nimble.core.infrastructure.identity.controller.frontend;
+package eu.nimble.core.infrastructure.identity.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import eu.nimble.core.infrastructure.identity.IdentityServiceApplication;
-import eu.nimble.core.infrastructure.identity.IdentityUtilsTestConfiguration;
-import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.DefaultTestConfiguration;
+import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
@@ -31,9 +31,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 
 import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
@@ -53,7 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @FixMethodOrder
-@Import(IdentityUtilsTestConfiguration.class)
+@Import(DefaultTestConfiguration.class)
 public class CompanySettingsControllerTests {
 
     private static final String DATE_FORMAT = "yyyy-MM-dd";
@@ -363,6 +361,8 @@ public class CompanySettingsControllerTests {
     public NegotiationSettings initNegotiationSettings() throws Exception {
         // GIVEN: existing company on platform
         PartyType company = identityUtils.getCompanyOfUser(null).get();
+        partyRepository.save(company);
+        company.setID(company.getHjid().toString());
         partyRepository.save(company);
 
         // WHEN: changing negotiation settings of company

@@ -8,6 +8,7 @@ import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
+import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
@@ -41,7 +42,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("SpringJavaAutowiredFieldsWarningInspection")
 public class IdentityController {
 
-    private static final String REFRESH_TOKEN_SESSION_KEY = "refresh_token";
+    public static final String REFRESH_TOKEN_SESSION_KEY = "refresh_token";
 
     private static final Logger logger = LoggerFactory.getLogger(IdentityController.class);
 
@@ -210,8 +211,10 @@ public class IdentityController {
 
         // create purchase terms
         TradingPreferences purchaseTerms = new TradingPreferences();
-        purchaseTerms.setDeliveryTerms(Collections.singletonList(blankDeliveryTerms));   // ToDo: improve for sales terms
-        purchaseTerms.setPaymentMeans(Collections.singletonList(paymentMeans));   // ToDo: improve for sales terms
+        purchaseTerms.getDeliveryTerms().clear();
+        purchaseTerms.getDeliveryTerms().add(blankDeliveryTerms);   // ToDo: improve for sales terms
+        purchaseTerms.getPaymentMeans().clear();
+        purchaseTerms.getPaymentMeans().add(paymentMeans);
         newCompany.setPurchaseTerms(purchaseTerms);
 
         // update id of company
@@ -223,8 +226,8 @@ public class IdentityController {
         qualifyingPartyRepository.save(qualifyingParty);
 
         // add id to response object
-        companyRegistration.setCompanyID(Long.parseLong(newCompany.getID()));
-        companyRegistration.setUserID(Long.parseLong(userParty.getID()));
+        companyRegistration.setCompanyID(newCompany.getHjid());
+        companyRegistration.setUserID(userParty.getHjid());
 
         // adapt role of user and refresh access token
         try {

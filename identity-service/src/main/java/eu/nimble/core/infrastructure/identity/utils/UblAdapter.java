@@ -48,7 +48,8 @@ public class UblAdapter {
             List<DeliveryTerms> deliveryTerms = party.getPurchaseTerms().getDeliveryTerms().stream()
                     .map(UblAdapter::adaptDeliveryTerms)
                     .collect(Collectors.toList());
-            settings.getTradeDetails().setDeliveryTerms(deliveryTerms);
+            settings.getTradeDetails().getDeliveryTerms().clear();
+            settings.getTradeDetails().getDeliveryTerms().addAll(deliveryTerms);
         }
 
         if (party.getPpapCompatibilityLevel() != null)
@@ -67,7 +68,8 @@ public class UblAdapter {
         Set<String> recentlyUsedProductCategories = party.getMostRecentItemsClassificationCode().stream()
                 .map(CodeType::getValue)
                 .collect(Collectors.toSet());
-        settings.setRecentlyUsedProductCategories(recentlyUsedProductCategories);
+        settings.getRecentlyUsedProductCategories().clear();
+        settings.getRecentlyUsedProductCategories().addAll(recentlyUsedProductCategories);
 
         // set industry sectors
         List<String> industrySectors = party.getIndustrySector().stream().map(CodeType::getValue).collect(Collectors.toList());
@@ -176,7 +178,8 @@ public class UblAdapter {
                 List<CompanyEvent> events = qualifyingPartyType.getEvent().stream()
                         .map(UblAdapter::adaptEvent)
                         .collect(Collectors.toList());
-                companyDescription.setEvents(events);
+                companyDescription.getEvents().clear();
+                companyDescription.getEvents().addAll(events);
             }
         }
 
@@ -326,7 +329,8 @@ public class UblAdapter {
 
         // industry sectors
         List<CodeType> industrySectors = UblAdapter.adaptIndustrySectors(settings.getDetails().getIndustrySectors());
-        companyToChange.setIndustrySector(industrySectors);
+        companyToChange.getIndustrySector().clear();
+        companyToChange.getIndustrySector().addAll(industrySectors);
 
         // check if representative is not already in list
         if (representative != null) {
@@ -347,13 +351,15 @@ public class UblAdapter {
             List<DeliveryTermsType> deliveryTerms = settings.getTradeDetails().getDeliveryTerms().stream()
                     .map(UblAdapter::adaptDeliveryTerms)
                     .collect(Collectors.toList());
-            companyToChange.getPurchaseTerms().setDeliveryTerms(deliveryTerms);
+            companyToChange.getPurchaseTerms().getDeliveryTerms().clear();
+            companyToChange.getPurchaseTerms().getDeliveryTerms().addAll(deliveryTerms);
 
             // payment means
             List<PaymentMeansType> paymentMeans = settings.getTradeDetails().getPaymentMeans().stream()
                     .map(UblAdapter::adaptPaymentMeans)
                     .collect(Collectors.toList());
-            companyToChange.getPurchaseTerms().setPaymentMeans(paymentMeans);
+            companyToChange.getPurchaseTerms().getPaymentMeans().clear();
+            companyToChange.getPurchaseTerms().getPaymentMeans().addAll(paymentMeans);
 
             // PPAP
             int ppapLevel = settings.getTradeDetails().getPpapCompatibilityLevel() != null ? settings.getTradeDetails().getPpapCompatibilityLevel() : 0;
@@ -392,7 +398,8 @@ public class UblAdapter {
             settings.getDescription().getEvents().stream()
                     .map(UblAdapter::adaptEvent)
                     .collect(Collectors.toCollection(() -> events));
-            qualifyingParty.setEvent(events);
+            qualifyingParty.getEvent().clear();
+            qualifyingParty.getEvent().addAll(events);
 
             // company statement
             EconomicOperatorRoleType economicOperatorRole = new EconomicOperatorRoleType();

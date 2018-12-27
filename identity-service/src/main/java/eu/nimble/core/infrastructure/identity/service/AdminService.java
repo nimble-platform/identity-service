@@ -1,8 +1,11 @@
 package eu.nimble.core.infrastructure.identity.service;
 
+import eu.nimble.core.infrastructure.identity.controller.ControllerUtils;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
+import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
+import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
@@ -33,6 +36,12 @@ public class AdminService {
 
     @Autowired
     private PartyRepository partyRepository;
+
+    @Autowired
+    private QualifyingPartyRepository qualifyingPartyRepository;
+
+    @Autowired
+    private NegotiationSettingsRepository negotiationSettingsRepository;
 
     @Autowired
     private KeycloakAdmin keycloakAdmin;
@@ -87,12 +96,12 @@ public class AdminService {
     }
 
     public boolean verifyCompany(Long companyId) throws Exception {
-        PartyType company = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(Exception::new); // Todo: add contextual exception
+        PartyType company = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         List<PersonType> companyMembers = company.getPerson();
 
         for (PersonType companyMember : companyMembers) {
-            UaaUser uaaUser = uaaUserRepository.findByUblPerson(companyMember).stream().findFirst().orElseThrow(Exception::new); // Todo: add contextual exception
+            UaaUser uaaUser = uaaUserRepository.findByUblPerson(companyMember).stream().findFirst().orElseThrow(ControllerUtils.PersonNotFoundException::new);
             List<String> roles = new ArrayList<>(keycloakAdmin.getUserRoles(uaaUser.getExternalID()));
             if (roles.contains(INITIAL_REPRESENTATIVE_ROLE)) {
                 keycloakAdmin.addRole(uaaUser.getExternalID(), LEGAL_REPRESENTATIVE_ROLE);
@@ -106,5 +115,24 @@ public class AdminService {
         }
 
         return false;
+    }
+
+    public long deleteCompany(Long companyId) throws ControllerUtils.CompanyNotFoundException {
+
+        // query company
+        PartyType company = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+
+        // delete associated company members
+        for (PersonType member : company.getPerson()) {
+            uaaUserRepository.deleteByUblPerson(member);
+        }
+
+        // delete associated qualifying party
+        qualifyingPartyRepository.deleteByParty(company);
+
+        // delete negotiation settings
+        negotiationSettingsRepository.deleteByCompany(company);
+
+        return partyRepository.deleteByHjid(companyId);
     }
 }

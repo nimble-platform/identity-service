@@ -18,12 +18,6 @@ public class CompanyRegistration   {
     @ApiModelProperty(value = "Settings of company")
     private CompanySettings settings;
 
-//    @ApiModelProperty(value = "General details related to the company")
-//    private CompanyDetails details = new CompanyDetails();
-//
-//    @ApiModelProperty(value = "Descriptive data of the company")
-//    private CompanyDescription description = new CompanyDescription();
-
     public Long getUserID() {
         return userID;
     }
@@ -47,22 +41,6 @@ public class CompanyRegistration   {
     public void setAccessToken(String accessToken) {
         this.accessToken = accessToken;
     }
-
-//    public CompanyDetails getDetails() {
-//        return details;
-//    }
-//
-//    public void setDetails(CompanyDetails details) {
-//        this.details = details;
-//    }
-//
-//    public CompanyDescription getDescription() {
-//        return description;
-//    }
-//
-//    public void setDescription(CompanyDescription description) {
-//        this.description = description;
-//    }
 
     public CompanySettings getSettings() {
         return settings;

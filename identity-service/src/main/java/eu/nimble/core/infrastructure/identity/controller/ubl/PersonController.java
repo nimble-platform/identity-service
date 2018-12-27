@@ -1,6 +1,6 @@
 package eu.nimble.core.infrastructure.identity.controller.ubl;
 
-import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;

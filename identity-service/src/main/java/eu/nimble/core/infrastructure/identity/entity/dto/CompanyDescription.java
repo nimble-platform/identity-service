@@ -32,6 +32,20 @@ public class CompanyDescription {
 
     private List<String> externalResources = new ArrayList<>();
 
+    public CompanyDescription() {
+    }
+
+    public CompanyDescription(String companyStatement, String website, List<String> companyPhotoList, String logoImageId,
+                              List<String> socialMediaList, List<CompanyEvent> events, List<String> externalResources) {
+        this.companyStatement = companyStatement;
+        this.website = website;
+        this.companyPhotoList = companyPhotoList;
+        this.logoImageId = logoImageId;
+        this.socialMediaList = socialMediaList;
+        this.events = events;
+        this.externalResources = externalResources;
+    }
+
     public String getCompanyStatement() {
         return companyStatement;
     }

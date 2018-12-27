@@ -2,7 +2,7 @@ package eu.nimble.core.infrastructure.identity.controller.ubl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
@@ -97,7 +97,7 @@ public class PartyController {
 
         logger.debug("Requesting all parties page {}", pageNumber);
 
-        Page<PartyType> partyPage = partyRepository.findAll(new PageRequest(pageNumber, pageSize, new Sort(Sort.Direction.ASC, "name")));
+        Page<PartyType> partyPage = partyRepository.findAll(new PageRequest(pageNumber-1, pageSize, new Sort(Sort.Direction.ASC, "name")));
 
         // remove binaries for response
         partyPage.getContent().forEach(UblUtils::removeBinaries);
