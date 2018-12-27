@@ -3,6 +3,7 @@ package eu.nimble.core.infrastructure.identity.service;
 import eu.nimble.core.infrastructure.identity.controller.ControllerUtils;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
+import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
@@ -38,6 +39,9 @@ public class AdminService {
 
     @Autowired
     private QualifyingPartyRepository qualifyingPartyRepository;
+
+    @Autowired
+    private NegotiationSettingsRepository negotiationSettingsRepository;
 
     @Autowired
     private KeycloakAdmin keycloakAdmin;
@@ -123,8 +127,11 @@ public class AdminService {
             uaaUserRepository.deleteByUblPerson(member);
         }
 
-        // delete associated quantifying party
+        // delete associated qualifying party
         qualifyingPartyRepository.deleteByParty(company);
+
+        // delete negotiation settings
+        negotiationSettingsRepository.deleteByCompany(company);
 
         return partyRepository.deleteByHjid(companyId);
     }
