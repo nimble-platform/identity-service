@@ -6,6 +6,7 @@ import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
+import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
@@ -151,10 +152,10 @@ public class CompanySettingsController {
 //            return new ResponseEntity<>("Only legal representatives are allowed add images", HttpStatus.UNAUTHORIZED);
 
         if (imageFile.getSize() > MAX_IMAGE_SIZE)
-            throw new FileTooLargeException();
+            throw new ControllerUtils.FileTooLargeException();
 
         UaaUser user = identityUtils.getUserfromBearer(bearer);
-        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(CompanyNotFoundException::new);
+        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         logger.info("Storing image for company with ID " + company.getID());
 
@@ -178,7 +179,7 @@ public class CompanySettingsController {
         // collect image resource
         DocumentReferenceType imageDocument = documentReferenceRepository.findOne(imageId);
         if (imageDocument == null)
-            throw new DocumentNotFoundException();
+            throw new ControllerUtils.DocumentNotFoundException();
         BinaryObjectType imageObject = imageDocument.getAttachment().getEmbeddedDocumentBinaryObject();
         Resource imageResource = new ByteArrayResource(imageObject.getValue());
 
@@ -198,11 +199,11 @@ public class CompanySettingsController {
         logger.info("Deleting image with Id " + imageId);
 
         UaaUser user = identityUtils.getUserfromBearer(bearer);
-        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(CompanyNotFoundException::new);
+        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         // remove from list in party
         if (company.getDocumentReference().stream().anyMatch(dr -> imageId.equals(dr.getHjid())) == false)
-            throw new DocumentNotFoundException("No associated document found.");
+            throw new ControllerUtils.DocumentNotFoundException("No associated document found.");
         List<DocumentReferenceType> updatedList = company.getDocumentReference().stream()
                 .filter(dr -> imageId.equals(dr.getHjid()) == false)
                 .collect(Collectors.toList());
@@ -211,7 +212,7 @@ public class CompanySettingsController {
 
         // delete object
         if (documentReferenceRepository.exists(imageId) == false)
-            throw new DocumentNotFoundException("No document for Id found.");
+            throw new ControllerUtils.DocumentNotFoundException("No document for Id found.");
         documentReferenceRepository.delete(imageId);
 
         return ResponseEntity.ok().build();
@@ -229,7 +230,7 @@ public class CompanySettingsController {
 //            return new ResponseEntity<>("Only legal representatives are allowed add certificates", HttpStatus.UNAUTHORIZED);
 
         UaaUser user = identityUtils.getUserfromBearer(bearer);
-        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(CompanyNotFoundException::new);
+        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         // create new certificate
         CertificateType certificate = UblAdapter.adaptCertificate(file, name, type, description);
@@ -265,7 +266,7 @@ public class CompanySettingsController {
             @ApiParam(value = "Id of certificate.", required = true) @PathVariable Long certificateId) throws IOException {
 
         UaaUser user = identityUtils.getUserfromBearer(bearer);
-        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(CompanyNotFoundException::new);
+        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         // update list of certificates
         List<CertificateType> filteredCerts = company.getCertificate().stream()
@@ -288,7 +289,7 @@ public class CompanySettingsController {
 
         // find company
         UaaUser user = identityUtils.getUserfromBearer(bearer);
-        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(CompanyNotFoundException::new);
+        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         // update settings
         NegotiationSettings existingSettings = findOrCreateNegotiationSettings(company);
@@ -308,7 +309,7 @@ public class CompanySettingsController {
     ResponseEntity<?> getNegotiationSettings(
             @ApiParam(value = "Id of company to retrieve settings from.", required = true) @PathVariable Long companyID) {
 
-        PartyType company = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(CompanyNotFoundException::new);
+        PartyType company = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
         NegotiationSettings negotiationSettings = findOrCreateNegotiationSettings(company);
 
         logger.info("Fetched negotiation settings {} for company {}", negotiationSettings.getId(), company.getID());
@@ -375,24 +376,6 @@ public class CompanySettingsController {
 
         logger.debug("Returning completeness of party with Id {0}", party.getHjid());
         return new ResponseEntity<>(completenessParty, HttpStatus.OK);
-    }
-
-    @ResponseStatus(code = HttpStatus.NOT_FOUND, reason = "company not found")
-    private static class CompanyNotFoundException extends RuntimeException {
-    }
-
-    @ResponseStatus(code = HttpStatus.NOT_ACCEPTABLE, reason = "File size exceeds limit")
-    private static class FileTooLargeException extends RuntimeException {
-    }
-
-    @ResponseStatus(code = HttpStatus.NOT_FOUND, reason = "document not found")
-    private static class DocumentNotFoundException extends RuntimeException {
-        DocumentNotFoundException() {
-        }
-
-        DocumentNotFoundException(String message) {
-            super(message);
-        }
     }
 
     private void enrichImageMetadata(PartyType party) {

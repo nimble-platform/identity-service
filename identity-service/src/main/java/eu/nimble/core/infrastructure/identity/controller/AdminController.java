@@ -61,4 +61,16 @@ public class AdminController {
 
         return ResponseEntity.ok().build();
     }
+
+    @ApiOperation(value = "Delete company")
+    @RequestMapping(value = "/delete_company", method = RequestMethod.DELETE)
+    ResponseEntity<?> deleteCompany(@RequestParam(value = "companyId") long companyId) throws Exception {
+
+        // ToDo: verify proper access policy (e.g. admin role)
+
+        logger.info("Deleting company with id {}", companyId);
+        adminService.deleteCompany(companyId);
+
+        return ResponseEntity.ok().build();
+    }
 }

@@ -2,7 +2,7 @@ package eu.nimble.core.infrastructure.identity.controller.ubl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import eu.nimble.core.infrastructure.identity.controller.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;

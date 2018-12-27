@@ -8,6 +8,7 @@ import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
+import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
@@ -248,7 +249,7 @@ public class IdentityController {
         companyRegistration.setAccessToken(tokenResponse.getValue());
 
         // broadcast changes
-        kafkaSender.broadcastCompanyUpdate(newCompany.getID(), bearer);
+//        kafkaSender.broadcastCompanyUpdate(newCompany.getID(), bearer);
 
         logger.info("Registered company with id {} for user with id {}", companyRegistration.getCompanyID(), companyRegistration.getUserID());
 
