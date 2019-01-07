@@ -527,11 +527,7 @@ public class UblAdapter {
         return certificateType;
     }
 
-    public static DocumentReferenceType adaptCompanyPhoto(MultipartFile photoFile, Boolean isLogo) throws IOException {
-
-        BinaryObjectType photoBinary = new BinaryObjectType();
-        photoBinary.setValue(photoFile.getBytes());
-        photoBinary.setMimeCode(photoFile.getContentType());
+    public static DocumentReferenceType adaptCompanyPhoto(BinaryObjectType photoBinary, Boolean isLogo) {
 
         AttachmentType attachment = new AttachmentType();
         attachment.setEmbeddedDocumentBinaryObject(photoBinary);

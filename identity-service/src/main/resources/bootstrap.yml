@@ -24,11 +24,20 @@ spring:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:identityDB}
     username: ${POSTGRES_USER:root}
     password: ${POSTGRES_PASSWORD:changeme}
+    binarycontentdb:
+      url: jdbc:postgresql://${BINARY_CONTENT_DB_HOST:localhost}:${BINARY_CONTENT_DB_PORT:5432}/${BINARY_CONTENT_DB_NAME:binarycontentdb}?currentSchema=public
+      username: ${BINARY_CONTENT_DB_USERNAME:postgres}
+      password: ${BINARY_CONTENT_DB_PASSWORD:nimble}
+      driver_class: org.postgresql.Driver
     maxActive: 3
     maxIdle: 3
+    minIdle: 3
     tomcat:
       default-auto-commit: false
-      commit-on-return: false  # ToDo: test
+      initial-size: 3
+      test-while-idle: true
+      time-between-eviction-runs-millis: 600000
+      min-evictable-idle-time-millis: 3600000
     dbcp:
       default-auto-commit: false
   mail:
@@ -82,6 +91,8 @@ nimble:
   kafka:
     topics:
       companyUpdates: ${KAFKA_TOPIC_COMPANY_UPDATES:company-updates}
+  binary-content:
+    url: ${BINARY_CONTENT_URL:}
 
 management:
   health:
@@ -111,6 +122,11 @@ spring:
     initialize: false
     username: sa
     password:
+    binarycontentdb:
+      url: jdbc:h2:mem:db2;AUTO_RECONNECT=TRUE;DB_CLOSE_DELAY=-1;INIT=create schema IF NOT EXISTS APPS
+      username: sa
+      password:
+      driver_class: org.h2.Driver
   mail:
     debug: true  # prints email to log output
     host: localhost # in-v3.mailjet.com

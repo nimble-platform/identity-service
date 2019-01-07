@@ -4,6 +4,7 @@ import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
+import eu.nimble.utility.persistence.binary.BinaryContentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,7 +22,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 
 @Configuration
 @EnableDiscoveryClient
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"eu.nimble.utility"})
 @EntityScan(basePackageClasses = {UaaUser.class, PartyType.class, PersonType.class, CodeType.class})
 @EnableCaching
 public class IdentityServiceApplication extends SpringBootServletInitializer {

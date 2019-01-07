@@ -11,6 +11,7 @@ import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
+import eu.nimble.utility.persistence.binary.BinaryContentService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -72,6 +73,9 @@ public class CompanySettingsController {
 
     @Autowired
     private KafkaSender kafkaSender;
+
+    @Autowired
+    private BinaryContentService binaryContentService;
 
     @ApiOperation(value = "Retrieve company settings", response = CompanySettings.class)
     @RequestMapping(value = "/{companyID}", produces = {"application/json"}, method = RequestMethod.GET)
@@ -162,7 +166,15 @@ public class CompanySettingsController {
         logger.info("Storing image for company with ID " + company.getID());
 
         Boolean logoFlag = "true".equals(isLogo);
-        DocumentReferenceType imageDocument = UblAdapter.adaptCompanyPhoto(imageFile, logoFlag);
+
+        // store the original object in separate database
+        BinaryObjectType binaryObject = new BinaryObjectType();
+        binaryObject.setValue(imageFile.getBytes());
+        binaryObject.setMimeCode(imageFile.getContentType());
+        binaryObject.setFileName(imageFile.getOriginalFilename());
+        binaryObject = binaryContentService.createContent(binaryObject);
+
+        DocumentReferenceType imageDocument = UblAdapter.adaptCompanyPhoto(binaryObject, logoFlag);
         documentReferenceRepository.save(imageDocument);
 
         company.getDocumentReference().add(imageDocument);
