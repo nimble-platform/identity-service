@@ -12,9 +12,9 @@ import org.springframework.stereotype.Component;
  * Created by suat on 22-Nov-18.
  */
 @Component
-public class DataSourceFactory {
+public class BinaryDataSourceFactory {
 
-    private final Logger logger = LoggerFactory.getLogger(DataSourceFactory.class);
+    private final Logger logger = LoggerFactory.getLogger(BinaryDataSourceFactory.class);
 
     @Autowired
     private Environment environment;

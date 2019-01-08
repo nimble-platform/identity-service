@@ -25,10 +25,10 @@ import javax.sql.DataSource;
 public class BinaryContentDBConfig {
 
     @Autowired
-    private DataSourceFactory dataSourceFactory;
+    private BinaryDataSourceFactory binaryDataSourceFactory;
 
     @Bean(name = "binarycontentdbDataSource")
     public DataSource binaryContentDbdataSource() {
-        return dataSourceFactory.createDatasource("binarycontentdb");
+        return binaryDataSourceFactory.createDatasource("binarycontentdb");
     }
 }

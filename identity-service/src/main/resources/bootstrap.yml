@@ -14,12 +14,13 @@ spring:
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     properties:
       hibernate:
         temp:
           use_jdbc_metadata_defaults: false
   datasource:
+    name: identitydb
     driverClassName: org.postgresql.Driver
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:identityDB}
     username: ${POSTGRES_USER:root}
