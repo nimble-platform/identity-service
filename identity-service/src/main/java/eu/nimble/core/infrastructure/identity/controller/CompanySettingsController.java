@@ -218,15 +218,8 @@ public class CompanySettingsController {
 
         UaaUser user = identityUtils.getUserfromBearer(bearer);
         PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
-
-        // remove from list in party
         if (company.getDocumentReference().stream().anyMatch(dr -> imageId.equals(dr.getHjid())) == false)
             throw new ControllerUtils.DocumentNotFoundException("No associated document found.");
-        List<DocumentReferenceType> updatedList = company.getDocumentReference().stream()
-                .filter(dr -> imageId.equals(dr.getHjid()) == false)
-                .collect(Collectors.toList());
-        company.setDocumentReference(updatedList);
-        partyRepository.save(company);
 
         if (documentReferenceRepository.exists(imageId) == false)
             throw new ControllerUtils.DocumentNotFoundException("No document for Id found.");
@@ -237,7 +230,14 @@ public class CompanySettingsController {
         binaryContentService.deleteContent(uri);
 
         // delete document of company
-        documentReferenceRepository.delete(imageId);
+        documentReferenceRepository.delete(imageDocument);
+
+        // remove from list in party
+        DocumentReferenceType toDelete = company.getDocumentReference().stream()
+                .filter(dr -> imageId.equals(dr.getHjid()))
+                .findFirst().orElseThrow(ControllerUtils.DocumentNotFoundException::new);
+        company.getDocumentReference().remove(toDelete);
+        partyRepository.save(company);
 
         return ResponseEntity.ok().build();
     }
