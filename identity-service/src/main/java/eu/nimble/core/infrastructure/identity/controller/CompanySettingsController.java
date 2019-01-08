@@ -300,15 +300,15 @@ public class CompanySettingsController {
         UaaUser user = identityUtils.getUserfromBearer(bearer);
         PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
-        // update list of certificates
-        List<CertificateType> filteredCerts = company.getCertificate().stream()
-                .filter(c -> c.getHjid().equals(certificateId) == false)
-                .collect(Collectors.toList());
-        company.setCertificate(filteredCerts);
-        partyRepository.save(company);
-
         if (certificateRepository.exists(certificateId) == false)
             throw new ControllerUtils.DocumentNotFoundException("No certificate for Id found.");
+
+        // update list of certificates
+        CertificateType toDelete = company.getCertificate().stream()
+                .filter(c -> c.getHjid().equals(certificateId))
+                .findFirst().orElseThrow(ControllerUtils.DocumentNotFoundException::new);
+        company.getCertificate().remove(toDelete);
+        partyRepository.save(company);
 
         // delete binary content
         CertificateType certificate = certificateRepository.findOne(certificateId);
@@ -316,7 +316,7 @@ public class CompanySettingsController {
         binaryContentService.deleteContent(uri);
 
         // delete certificate
-        certificateRepository.delete(certificateId);
+        certificateRepository.delete(certificate);
 
         return ResponseEntity.ok().build();
     }
