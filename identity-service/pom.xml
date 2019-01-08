@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>identity-service</artifactId>
-    <version>6.2.1</version>
+    <version>6.0.0-Staging</version>
     <name>Service for managing identities on the platform.</name>
     <packaging>jar</packaging>
 
@@ -34,7 +34,7 @@
     <parent>
         <groupId>eu.nimble.core.infrastructure.identity</groupId>
         <artifactId>identity-service-parent</artifactId>
-        <version>6.0.6</version>
+        <version>6.0.0-Staging</version>
     </parent>
 
     <dependencyManagement>
@@ -248,6 +248,11 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>eu.nimble.core.common</groupId>
+            <artifactId>utility</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
 
         <!-- UBL data format -->
         <dependency>

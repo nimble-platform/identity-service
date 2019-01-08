@@ -6,6 +6,7 @@ import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
+import eu.nimble.utility.persistence.initalizer.CustomDbInitializer;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -73,6 +74,12 @@ public class DefaultTestConfiguration {
         HttpSession httpSession = Mockito.mock(HttpSession.class);
         when(httpSession.getAttribute(same(REFRESH_TOKEN_SESSION_KEY))).thenReturn("random string");
         return httpSession;
+    }
+
+    @Bean
+    @Primary
+    public CustomDbInitializer customDbInitializer(){
+        return Mockito.mock(CustomDbInitializer.class);
     }
 }
 
