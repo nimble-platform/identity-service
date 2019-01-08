@@ -8,6 +8,7 @@ import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
 import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
+import eu.nimble.core.infrastructure.identity.utils.ImageUtils;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
@@ -47,7 +48,7 @@ import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
 @Api(value = "company-settings", description = "API for handling settings of companies.")
 public class CompanySettingsController {
 
-    private final Long MAX_IMAGE_SIZE = 256L * 1024L; // in bytes
+    private final Long MAX_IMAGE_SIZE = 10 * 1024L * 1024L; // in bytes
 
     private static final Logger logger = LoggerFactory.getLogger(CompanySettingsController.class);
 
@@ -168,9 +169,12 @@ public class CompanySettingsController {
 
         Boolean logoFlag = "true".equals(isLogo);
 
+        // scale image
+        byte[] scaledImage = ImageUtils.scaleImage(imageFile.getBytes(), false, imageFile.getContentType());
+
         // store the original object in separate database
         BinaryObjectType binaryObject = new BinaryObjectType();
-        binaryObject.setValue(imageFile.getBytes());
+        binaryObject.setValue(scaledImage);
         binaryObject.setMimeCode(imageFile.getContentType());
         binaryObject.setFileName(imageFile.getOriginalFilename());
         binaryObject = binaryContentService.createContent(binaryObject);
@@ -233,11 +237,13 @@ public class CompanySettingsController {
         documentReferenceRepository.delete(imageDocument);
 
         // remove from list in party
-        DocumentReferenceType toDelete = company.getDocumentReference().stream()
+        Optional<DocumentReferenceType> toDelete = company.getDocumentReference().stream()
                 .filter(dr -> imageId.equals(dr.getHjid()))
-                .findFirst().orElseThrow(ControllerUtils.DocumentNotFoundException::new);
-        company.getDocumentReference().remove(toDelete);
-        partyRepository.save(company);
+                .findFirst();
+        if (toDelete.isPresent()) {
+            company.getDocumentReference().remove(toDelete.get());
+            partyRepository.save(company);
+        }
 
         return ResponseEntity.ok().build();
     }
@@ -303,13 +309,6 @@ public class CompanySettingsController {
         if (certificateRepository.exists(certificateId) == false)
             throw new ControllerUtils.DocumentNotFoundException("No certificate for Id found.");
 
-        // update list of certificates
-        CertificateType toDelete = company.getCertificate().stream()
-                .filter(c -> c.getHjid().equals(certificateId))
-                .findFirst().orElseThrow(ControllerUtils.DocumentNotFoundException::new);
-        company.getCertificate().remove(toDelete);
-        partyRepository.save(company);
-
         // delete binary content
         CertificateType certificate = certificateRepository.findOne(certificateId);
         String uri = certificate.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getUri();
@@ -317,6 +316,15 @@ public class CompanySettingsController {
 
         // delete certificate
         certificateRepository.delete(certificate);
+
+        // update list of certificates
+        Optional<CertificateType> toDelete = company.getCertificate().stream()
+                .filter(c -> c.getHjid().equals(certificateId))
+                .findFirst();
+        if( toDelete.isPresent()) {
+            company.getCertificate().remove(toDelete.get());
+            partyRepository.save(company);
+        }
 
         return ResponseEntity.ok().build();
     }
