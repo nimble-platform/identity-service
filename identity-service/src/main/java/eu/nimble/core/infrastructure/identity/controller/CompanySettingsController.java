@@ -7,6 +7,7 @@ import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
 import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
@@ -149,13 +150,13 @@ public class CompanySettingsController {
 
     @ApiOperation(value = "Upload company image")
     @RequestMapping(value = "/image", produces = {"application/json"}, method = RequestMethod.POST)
-    public ResponseEntity<DocumentReferenceType> uploadImage(
+    public ResponseEntity<?> uploadImage(
             @RequestHeader(value = "Authorization") String bearer,
             @RequestParam(value = "isLogo", defaultValue = "false") String isLogo,
             @RequestParam(value = "file") MultipartFile imageFile) throws IOException {
 
-//        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
-//            return new ResponseEntity<>("Only legal representatives are allowed add images", HttpStatus.UNAUTHORIZED);
+        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+            return new ResponseEntity<>("Only legal representatives are allowed add images", HttpStatus.UNAUTHORIZED);
 
         if (imageFile.getSize() > MAX_IMAGE_SIZE)
             throw new ControllerUtils.FileTooLargeException();
@@ -173,15 +174,16 @@ public class CompanySettingsController {
         binaryObject.setMimeCode(imageFile.getContentType());
         binaryObject.setFileName(imageFile.getOriginalFilename());
         binaryObject = binaryContentService.createContent(binaryObject);
+        binaryObject.setValue(null); // reset value so it is not stored in database
 
         DocumentReferenceType imageDocument = UblAdapter.adaptCompanyPhoto(binaryObject, logoFlag);
         documentReferenceRepository.save(imageDocument);
 
-        company.getDocumentReference().add(imageDocument);
-        partyRepository.save(company);
+//        company.getDocumentReference().add(imageDocument);
+//        partyRepository.save(company);
 
-        imageDocument.getAttachment().setEmbeddedDocumentBinaryObject(null);
         imageDocument.setID(imageDocument.getHjid().toString());
+        imageDocument.getAttachment().getEmbeddedDocumentBinaryObject().setUri(null); // reset uri (images are handled differently)
         return ResponseEntity.ok(imageDocument);
     }
 
@@ -194,7 +196,9 @@ public class CompanySettingsController {
         DocumentReferenceType imageDocument = documentReferenceRepository.findOne(imageId);
         if (imageDocument == null)
             throw new ControllerUtils.DocumentNotFoundException();
-        BinaryObjectType imageObject = imageDocument.getAttachment().getEmbeddedDocumentBinaryObject();
+
+        String uri = imageDocument.getAttachment().getEmbeddedDocumentBinaryObject().getUri();
+        BinaryObjectType imageObject = binaryContentService.retrieveContent(uri);
         Resource imageResource = new ByteArrayResource(imageObject.getValue());
 
         logger.info("Downloading image with Id " + imageId);
@@ -224,9 +228,15 @@ public class CompanySettingsController {
         company.setDocumentReference(updatedList);
         partyRepository.save(company);
 
-        // delete object
         if (documentReferenceRepository.exists(imageId) == false)
             throw new ControllerUtils.DocumentNotFoundException("No document for Id found.");
+
+        // delete binary content
+        DocumentReferenceType imageDocument = documentReferenceRepository.findOne(imageId);
+        String uri = imageDocument.getAttachment().getEmbeddedDocumentBinaryObject().getUri();
+        binaryContentService.deleteContent(uri);
+
+        // delete document of company
         documentReferenceRepository.delete(imageId);
 
         return ResponseEntity.ok().build();
@@ -235,7 +245,7 @@ public class CompanySettingsController {
     @PostMapping("/certificate")
     public ResponseEntity<?> uploadCertificate(
             @RequestHeader(value = "Authorization") String bearer,
-            @RequestParam("file") MultipartFile file,
+            @RequestParam("file") MultipartFile certFile,
             @RequestParam("name") String name,
             @RequestParam("description") String description,
             @RequestParam("type") String type) throws IOException {
@@ -246,8 +256,15 @@ public class CompanySettingsController {
         UaaUser user = identityUtils.getUserfromBearer(bearer);
         PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
+        BinaryObjectType certificateBinary = new BinaryObjectType();
+        certificateBinary.setValue(certFile.getBytes());
+        certificateBinary.setFileName(certFile.getOriginalFilename());
+        certificateBinary.setMimeCode(certFile.getContentType());
+        certificateBinary = binaryContentService.createContent(certificateBinary);
+        certificateBinary.setValue(null); // reset value so it is not stored in database
+
         // create new certificate
-        CertificateType certificate = UblAdapter.adaptCertificate(file, name, type, description);
+        CertificateType certificate = UblAdapter.adaptCertificate(certificateBinary, name, type, description);
 
         // update and store company
         company.getCertificate().add(certificate);
@@ -264,7 +281,8 @@ public class CompanySettingsController {
         if (certificateType == null)
             return ResponseEntity.notFound().build();
 
-        BinaryObjectType certFile = certificateType.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject();
+        String uri = certificateType.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getUri();
+        BinaryObjectType certFile = binaryContentService.retrieveContent(uri);
         Resource certResource = new ByteArrayResource(certFile.getValue());
 
         return ResponseEntity.ok()
@@ -288,6 +306,14 @@ public class CompanySettingsController {
                 .collect(Collectors.toList());
         company.setCertificate(filteredCerts);
         partyRepository.save(company);
+
+        if (certificateRepository.exists(certificateId) == false)
+            throw new ControllerUtils.DocumentNotFoundException("No certificate for Id found.");
+
+        // delete binary content
+        CertificateType certificate = certificateRepository.findOne(certificateId);
+        String uri = certificate.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getUri();
+        binaryContentService.deleteContent(uri);
 
         // delete certificate
         certificateRepository.delete(certificateId);

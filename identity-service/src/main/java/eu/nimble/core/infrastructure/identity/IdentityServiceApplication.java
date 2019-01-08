@@ -16,13 +16,15 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 @Configuration
 @EnableDiscoveryClient
-@SpringBootApplication(scanBasePackages = {"eu.nimble.utility"})
+@SpringBootApplication(scanBasePackages = {"eu.nimble.utility.persistence.binary", "eu.nimble.utility.persistence.initalizer", "eu.nimble.core.infrastructure.identity"})
+@EnableJpaRepositories(basePackages = {"eu.nimble.core.infrastructure.identity"})
 @EntityScan(basePackageClasses = {UaaUser.class, PartyType.class, PersonType.class, CodeType.class})
 @EnableCaching
 public class IdentityServiceApplication extends SpringBootServletInitializer {

@@ -92,7 +92,7 @@ nimble:
     topics:
       companyUpdates: ${KAFKA_TOPIC_COMPANY_UPDATES:company-updates}
   binary-content:
-    url: ${BINARY_CONTENT_URL:}
+    url: ${IDENTITY_BINARY_CONTENT_URL:IdentityBinaryContentUri:}
 
 management:
   health:

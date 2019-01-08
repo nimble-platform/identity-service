@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
-
 import javax.sql.DataSource;
 
 /**
@@ -22,7 +21,7 @@ import javax.sql.DataSource;
         transactionManagerRef = "binarycontentdbTransactionManager",
         basePackages = {"eu.nimble.utility.persistence.binary"}
 )
-@ComponentScan(basePackages = {"eu.nimble.utility.config"})
+@ComponentScan(basePackages = {"eu.nimble.core.infrastructure.identity.config", "eu.nimble.utility.config"})
 public class BinaryContentDBConfig {
 
     @Autowired

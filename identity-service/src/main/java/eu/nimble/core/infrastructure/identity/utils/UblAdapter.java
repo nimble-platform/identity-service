@@ -505,14 +505,10 @@ public class UblAdapter {
         return codeType;
     }
 
-    public static CertificateType adaptCertificate(MultipartFile certFile, String name, String type, String description) throws IOException {
+    public static CertificateType adaptCertificate(BinaryObjectType certificateBinary, String name, String type, String description) throws IOException {
 
         CodeType codeType = adaptCodeType(name, null);
 
-        BinaryObjectType certificateBinary = new BinaryObjectType();
-        certificateBinary.setValue(certFile.getBytes());
-        certificateBinary.setFileName(certFile.getOriginalFilename());
-        certificateBinary.setMimeCode(certFile.getContentType());
         AttachmentType attachmentType = new AttachmentType();
         attachmentType.setEmbeddedDocumentBinaryObject(certificateBinary);
         DocumentReferenceType documentReferenceType = new DocumentReferenceType();
