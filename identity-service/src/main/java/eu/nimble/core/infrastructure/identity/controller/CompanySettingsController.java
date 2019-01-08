@@ -179,8 +179,8 @@ public class CompanySettingsController {
         DocumentReferenceType imageDocument = UblAdapter.adaptCompanyPhoto(binaryObject, logoFlag);
         documentReferenceRepository.save(imageDocument);
 
-//        company.getDocumentReference().add(imageDocument);
-//        partyRepository.save(company);
+        company.getDocumentReference().add(imageDocument);
+        partyRepository.save(company);
 
         imageDocument.setID(imageDocument.getHjid().toString());
         imageDocument.getAttachment().getEmbeddedDocumentBinaryObject().setUri(null); // reset uri (images are handled differently)
