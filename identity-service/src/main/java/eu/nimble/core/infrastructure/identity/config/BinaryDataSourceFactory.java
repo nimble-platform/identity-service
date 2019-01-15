@@ -37,9 +37,9 @@ public class BinaryDataSourceFactory {
         tds.setTestWhileIdle(Boolean.valueOf(environment.getProperty("spring.datasource.tomcat.test-while-idle").toUpperCase()));
         tds.setTimeBetweenEvictionRunsMillis(Integer.valueOf(environment.getProperty("spring.datasource.tomcat.time-between-eviction-runs-millis")));
         tds.setMinEvictableIdleTimeMillis(Integer.valueOf(environment.getProperty("spring.datasource.tomcat.min-evictable-idle-time-millis")));
-        tds.setMaxActive(Integer.valueOf(environment.getProperty("spring.datasource.maxActive")));
-        tds.setMaxIdle(Integer.valueOf(environment.getProperty("spring.datasource.maxIdle")));
-        tds.setMinIdle(Integer.valueOf(environment.getProperty("spring.datasource.minIdle")));
+        tds.setMaxActive(Integer.valueOf(environment.getProperty("spring.datasource.tomcat.max-active")));
+        tds.setMaxIdle(Integer.valueOf(environment.getProperty("spring.datasource.tomcat.max-idle")));
+        tds.setMinIdle(Integer.valueOf(environment.getProperty("spring.datasource.tomcat.min-idle")));
 
         return tds;
     }
