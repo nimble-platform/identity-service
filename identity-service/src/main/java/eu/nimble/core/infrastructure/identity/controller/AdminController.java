@@ -59,7 +59,7 @@ public class AdminController {
     ResponseEntity<?> verifyCompany(@RequestParam(value = "companyId") long companyId,
                                     @RequestHeader(value = "Authorization") String bearer) throws Exception {
 
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
+        if (identityUtils.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
             return new ResponseEntity<>("Only legal platform managers are allowed to verify companies", HttpStatus.UNAUTHORIZED);
 
         logger.info("Verifying company with id {}", companyId);
@@ -73,7 +73,7 @@ public class AdminController {
     ResponseEntity<?> deleteCompany(@PathVariable(value = "companyId") long companyId,
                                     @RequestHeader(value = "Authorization") String bearer) throws Exception {
 
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
+        if (identityUtils.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
             return new ResponseEntity<>("Only legal platform managers are allowed to delete companies", HttpStatus.UNAUTHORIZED);
 
         logger.info("Deleting company with id {}", companyId);

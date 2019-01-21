@@ -17,9 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class IdentityUtils {
@@ -41,9 +39,16 @@ public class IdentityUtils {
         return OpenIdConnectUserDetails.fromBearer(bearer);
     }
 
-    public boolean hasRole(String bearer, OAuthClient.Role role) throws IOException {
+    /**
+     * Checks if the bearer contains at least one of the given roles.
+     * @param bearer Token containing roles
+     * @param roles Roles to check
+     * @return True if at least one matching role was found.
+     * @throws IOException if roles could not be extracted from token
+     */
+    public boolean hasAnyRole(String bearer, OAuthClient.Role... roles) throws IOException {
         OpenIdConnectUserDetails details = getUserDetails(bearer);
-        return details.hasRole(role.toString());
+        return Arrays.stream(roles).anyMatch(r -> details.hasRole(r.toString()));
     }
 
     public Optional<PartyType> getCompanyOfUser(UaaUser uaaUser) {

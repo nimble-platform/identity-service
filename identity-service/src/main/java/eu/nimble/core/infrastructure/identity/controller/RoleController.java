@@ -75,7 +75,7 @@ public class RoleController {
 
         // Check if requesting user is legal representative
         OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityUtils.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
         // Check if users are in the same company
@@ -114,7 +114,7 @@ public class RoleController {
 
         // Check if requesting user is legal representative
         OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityUtils.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
         // Check if users are in the same company

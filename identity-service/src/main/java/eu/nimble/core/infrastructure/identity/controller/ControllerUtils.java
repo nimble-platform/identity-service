@@ -28,4 +28,8 @@ public class ControllerUtils {
             super(message);
         }
     }
+
+    @ResponseStatus(code = HttpStatus.FORBIDDEN, reason = "unauthorised access")
+    public static class UnauthorisedAccess extends RuntimeException {
+    }
 }

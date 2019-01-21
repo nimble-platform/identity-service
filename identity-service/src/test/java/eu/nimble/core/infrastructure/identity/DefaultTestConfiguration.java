@@ -43,7 +43,7 @@ public class DefaultTestConfiguration {
         when(identityUtilsMock.getCompanyOfUser(anyObject())).thenReturn(java.util.Optional.of(mockParty));
 
         // mock verification of roles
-        when(identityUtilsMock.hasRole(any(), any())).thenReturn(true);
+        when(identityUtilsMock.hasAnyRole(any(), anyVararg())).thenReturn(true);
 
         return identityUtilsMock;
     }

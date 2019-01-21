@@ -182,7 +182,7 @@ public class CompanySettingsControllerTests {
         NegotiationSettings negotiationSettings = this.initNegotiationSettings();
 
         // THEN: settings should be updated
-        this.mockMvc.perform(get("/company-settings/negotiation/" + negotiationSettings.getCompany().getID()))
+        this.mockMvc.perform(get(String.format("/company-settings/%s/negotiation/", negotiationSettings.getCompany().getID())))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -217,12 +217,13 @@ public class CompanySettingsControllerTests {
 
         // GIVEN: existing company on platform
         NegotiationSettings negotiationSettings = this.initNegotiationSettings();
+        String companyID = negotiationSettings.getCompany().getID();
 
         // WHEN: setting empty negotiation settings
         NegotiationSettings emptySettings = new NegotiationSettings();
 
         Gson gson = new Gson();
-        this.mockMvc.perform(put("/company-settings/negotiation")
+        this.mockMvc.perform(put(String.format("/company-settings/%s/negotiation", companyID)   )
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(gson.toJson(emptySettings))
                 .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
@@ -230,7 +231,7 @@ public class CompanySettingsControllerTests {
                 .andExpect(status().isOk());
 
         // THEN: settings should be empty
-        this.mockMvc.perform(get("/company-settings/negotiation/" + negotiationSettings.getCompany().getID()))
+        this.mockMvc.perform(get(String.format("/company-settings/%s/negotiation/", companyID)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -248,12 +249,13 @@ public class CompanySettingsControllerTests {
 
         // GIVEN: existing company on platform
         NegotiationSettings negotiationSettings = this.initNegotiationSettings();
+        String companyID = negotiationSettings.getCompany().getID();
 
         // WHEN: setting update negotiation settings
         negotiationSettings.getWarrantyPeriodUnits().add("new unit");
 
         Gson gson = new Gson();
-        this.mockMvc.perform(put("/company-settings/negotiation")
+        this.mockMvc.perform(put(String.format("/company-settings/%s/negotiation", companyID))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(gson.toJson(negotiationSettings))
                 .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
@@ -261,7 +263,7 @@ public class CompanySettingsControllerTests {
                 .andExpect(status().isOk());
 
         // THEN: settings should updated
-        this.mockMvc.perform(get("/company-settings/negotiation/" + negotiationSettings.getCompany().getID()))
+        this.mockMvc.perform(get(String.format("/company-settings/%s/negotiation/", companyID)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -381,7 +383,7 @@ public class CompanySettingsControllerTests {
         negotiationSettings.getPaymentTerms().add("pt_1");
 
         Gson gson = new Gson();
-        this.mockMvc.perform(put("/company-settings/negotiation")
+        this.mockMvc.perform(put(String.format("/company-settings/%s/negotiation", company.getID()))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(gson.toJson(negotiationSettings))
                 .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")

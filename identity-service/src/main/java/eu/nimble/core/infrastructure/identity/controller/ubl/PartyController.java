@@ -2,6 +2,7 @@ package eu.nimble.core.infrastructure.identity.controller.ubl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import eu.nimble.core.infrastructure.identity.controller.ControllerUtils;
 import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
@@ -69,21 +70,11 @@ public class PartyController {
             @RequestHeader(value = "Authorization") String bearer) throws IOException {
 
         // search relevant parties
-        List<PartyType> parties = partyRepository.findByHjid(partyId);
-
-        // check if party was found
-        if (parties.isEmpty()) {
-            logger.info("Requested party with Id {} not found", partyId);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-
-        PartyType party = parties.get(0);
+        PartyType party = partyRepository.findByHjid(partyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         // remove person depending on access rights
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityUtils.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             party.setPerson(new ArrayList<>());
-
-        UblUtils.removeBinaries(party);
 
         logger.debug("Returning requested party with Id {}", party.getHjid());
         return new ResponseEntity<>(party, HttpStatus.OK);
@@ -98,9 +89,6 @@ public class PartyController {
         logger.debug("Requesting all parties page {}", pageNumber);
 
         Page<PartyType> partyPage = partyRepository.findAll(new PageRequest(pageNumber, pageSize, new Sort(Sort.Direction.ASC, "name")));
-
-        // remove binaries for response
-        partyPage.getContent().forEach(UblUtils::removeBinaries);
 
         return new ResponseEntity<>(partyPage, HttpStatus.OK);
     }
@@ -128,10 +116,6 @@ public class PartyController {
             parties.add(party.get());
         }
 
-
-        // remove binaries for response
-        parties.forEach(UblUtils::removeBinaries);
-
         logger.debug("Returning requested parties with Ids {}", partyIds);
         return new ResponseEntity<>(parties, HttpStatus.OK);
     }
@@ -153,9 +137,6 @@ public class PartyController {
         PersonType person = foundPersons.get(0);
         List<PartyType> parties = partyRepository.findByPerson(person);
 
-        // remove binaries for response
-        parties.forEach(UblUtils::removeBinaries);
-
         return new ResponseEntity<>(parties, HttpStatus.OK);
     }
 
@@ -166,19 +147,10 @@ public class PartyController {
             @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long partyId,
             @RequestHeader(value = "Authorization") String bearer) throws IOException, JAXBException {
 
-        // search relevant parties
-        List<PartyType> parties = partyRepository.findByHjid(partyId);
-
-        // check if party was found
-        if (parties.isEmpty()) {
-            logger.info("Requested party with Id {} not found", partyId);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-
-        PartyType party = parties.get(0);
+        PartyType party = partyRepository.findByHjid(partyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         // remove person depending on access rights
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityUtils.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             party.setPerson(new ArrayList<>());
 
         StringWriter serializedCatalogueWriter = new StringWriter();
@@ -227,16 +199,9 @@ public class PartyController {
             @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long partyId,
             @RequestHeader(value = "Authorization") String bearer) {
 
-        // search relevant parties
-        Optional<PartyType> partyOptional = partyRepository.findByHjid(partyId).stream().findFirst();
+        PartyType party = partyRepository.findByHjid(partyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
-        // check if party was found
-        if (partyOptional.isPresent()) {
-            logger.info("Requested party with Id {} not found", partyId);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-
-        Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(partyOptional.get()).stream().findFirst();
+        Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(party).stream().findFirst();
 
         if (qualifyingPartyOptional.isPresent()) {
             logger.info("Requested party with Id {} not found", partyId);
