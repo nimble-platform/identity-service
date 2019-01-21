@@ -278,7 +278,6 @@ public class UblAdapter {
         PersonType person = new PersonType();
         person.setFirstName(frontEndUser.getFirstname());
         person.setFamilyName(frontEndUser.getLastname());
-//        adminPerson.setBirthDate(frontEndUser.getDateOfBirth()); // TODO: convert date
         person.setBirthplaceName(frontEndUser.getPlaceOBirth());
         ContactType contact = new ContactType();
         contact.setElectronicMail(frontEndUser.getEmail());

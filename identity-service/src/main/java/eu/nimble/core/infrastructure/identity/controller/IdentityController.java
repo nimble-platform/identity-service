@@ -212,7 +212,7 @@ public class IdentityController {
         // create purchase terms
         TradingPreferences purchaseTerms = new TradingPreferences();
         purchaseTerms.getDeliveryTerms().clear();
-        purchaseTerms.getDeliveryTerms().add(blankDeliveryTerms);   // ToDo: improve for sales terms
+        purchaseTerms.getDeliveryTerms().add(blankDeliveryTerms);
         purchaseTerms.getPaymentMeans().clear();
         purchaseTerms.getPaymentMeans().add(paymentMeans);
         newCompany.setPurchaseTerms(purchaseTerms);

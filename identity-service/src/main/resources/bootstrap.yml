@@ -14,7 +14,7 @@ spring:
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     properties:
       hibernate:
         temp:
@@ -31,12 +31,13 @@ spring:
       password: ${BINARY_CONTENT_DB_PASSWORD:nimble}
       driver_class: org.postgresql.Driver
     tomcat:
+      test-on-borrow: true
+      remove-abandoned: true
+      log-abandoned: true
       initial-size: 3
       max-active: 3
       max-idle: 3
       min-idle: 3
-      test-on-borrow: true
-      remove-abandoned: true
       test-while-idle: true
       time-between-eviction-runs-millis: 600000
       min-evictable-idle-time-millis: 3600000
