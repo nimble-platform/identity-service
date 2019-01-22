@@ -1,7 +1,7 @@
-package eu.nimble.core.infrastructure.identity.controller;
+package eu.nimble.core.infrastructure.identity.system;
 
-import eu.nimble.core.infrastructure.identity.controller.dto.CompanyRegistrationResponse;
-import eu.nimble.core.infrastructure.identity.controller.dto.UserRegistration;
+import eu.nimble.core.infrastructure.identity.system.dto.CompanyRegistrationResponse;
+import eu.nimble.core.infrastructure.identity.system.dto.UserRegistration;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
@@ -85,6 +85,9 @@ public class IdentityController {
     @Autowired
     private KafkaSender kafkaSender;
 
+    @Autowired
+    private UblUtils ublUtils;
+
     @ApiOperation(value = "Register a new user to the nimble.", response = FrontEndUser.class, tags = {})
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "User created", response = FrontEndUser.class),
@@ -115,19 +118,19 @@ public class IdentityController {
         }
 
         // create UBL party of user
-        PersonType newUserParty = UblAdapter.adaptPerson(frontEndUser);
-        personRepository.save(newUserParty);
+        PersonType newUser = UblAdapter.adaptPerson(frontEndUser);
+        personRepository.save(newUser);
 
         // update id of user
-        newUserParty.setID(UblUtils.identifierType(newUserParty.getHjid()));
-        personRepository.save(newUserParty);
+        newUser.setID(newUser.getHjid().toString());
+        personRepository.save(newUser);
 
         // create entry in identity DB
-        UaaUser uaaUser = new UaaUser(credentials.getUsername(), newUserParty, keycloakID);
+        UaaUser uaaUser = new UaaUser(credentials.getUsername(), newUser, keycloakID);
         uaaUserRepository.save(uaaUser);
 
         // update user data
-        frontEndUser.setUserID(Long.parseLong(newUserParty.getID()));
+        frontEndUser.setUserID(Long.parseLong(newUser.getID()));
         frontEndUser.setUsername(credentials.getUsername());
 
         // check if user was invited and add to company
@@ -144,7 +147,7 @@ public class IdentityController {
             PartyType company = companyOpt.get();
 
             // add new user
-            company.getPerson().add(newUserParty);
+            company.getPerson().add(newUser);
             partyRepository.save(company);
 
             // save new state of invitation
@@ -161,7 +164,7 @@ public class IdentityController {
                 }
             }
 
-            logger.info("Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(), newUserParty.getID(), company.getName(), company.getID());
+            logger.info("Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(), newUser.getID(), ublUtils.getName(company), UblAdapter.adaptPartyIdentifier(company));
         }
 
         logger.info("Registering a new user with email {} and id {}", frontEndUser.getEmail(), frontEndUser.getUserID());
@@ -200,13 +203,13 @@ public class IdentityController {
         // create delivery terms
         DeliveryTermsType blankDeliveryTerms = new DeliveryTermsType();
         deliveryTermsRepository.save(blankDeliveryTerms);
-        blankDeliveryTerms.setID(UblUtils.identifierType(blankDeliveryTerms.getHjid()));
+        blankDeliveryTerms.setID(blankDeliveryTerms.getHjid().toString());
         deliveryTermsRepository.save(blankDeliveryTerms);
 
         // create payment means
         PaymentMeansType paymentMeans = UblUtils.emptyUBLObject(new PaymentMeansType());
         paymentMeansRepository.save(paymentMeans);
-        paymentMeans.setID(UblUtils.identifierType(paymentMeans.getHjid()));
+        paymentMeans.setID(paymentMeans.getHjid().toString());
         paymentMeansRepository.save(paymentMeans);
 
         // create purchase terms
@@ -218,7 +221,7 @@ public class IdentityController {
         newCompany.setPurchaseTerms(purchaseTerms);
 
         // update id of company
-        newCompany.setID(UblUtils.identifierType(newCompany.getHjid()));
+        UblUtils.setID(newCompany, newCompany.getHjid().toString());
         partyRepository.save(newCompany);
 
         // create qualifying party
@@ -251,7 +254,7 @@ public class IdentityController {
         companyRegistration.setAccessToken(tokenResponse.getValue());
 
         // broadcast changes
-        kafkaSender.broadcastCompanyUpdate(newCompany.getID(), bearer);
+        kafkaSender.broadcastCompanyUpdate(UblAdapter.adaptPartyIdentifier(newCompany), bearer);
 
         logger.info("Registered company with id {} for user with id {}", companyRegistration.getCompanyID(), companyRegistration.getUserID());
 
@@ -339,7 +342,7 @@ public class IdentityController {
             Optional<PartyType> potentialPartyType = partyRepository.findByPerson(personType).stream().findFirst();
             if (potentialPartyType.isPresent()) {
                 PartyType partyType = potentialPartyType.get();
-                userInfo.put("ublPartyID", partyType.getID());
+                userInfo.put("ublPartyID", UblAdapter.adaptPartyIdentifier(partyType));
             }
 
             return ResponseEntity.ok(userInfo);

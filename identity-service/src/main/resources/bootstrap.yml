@@ -72,6 +72,7 @@ logstash:
   uri: ${LOGSTASH_URI:localhost:5000}
 
 nimble:
+  defaultLanguageID: ENGLISH
   corsEnabled: ${CORS_ENBALED:false}
   uaa:
     url: ${UAA_URI:http://localhost:9090}

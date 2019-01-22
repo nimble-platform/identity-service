@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity.controller;
+package eu.nimble.core.infrastructure.identity.system;
 
 
 import eu.nimble.core.infrastructure.identity.entity.dto.statistics.PlatformIdentityStatistics;

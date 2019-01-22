@@ -1,14 +1,15 @@
-package eu.nimble.core.infrastructure.identity.controller.ubl;
+package eu.nimble.core.infrastructure.identity.system.ubl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import eu.nimble.core.infrastructure.identity.controller.ControllerUtils;
+import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
+import eu.nimble.core.infrastructure.identity.system.ControllerUtils;
 import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
-import eu.nimble.core.infrastructure.identity.utils.UblUtils;
+import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -33,10 +34,7 @@ import javax.xml.bind.Marshaller;
 import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -88,7 +86,7 @@ public class PartyController {
 
         logger.debug("Requesting all parties page {}", pageNumber);
 
-        Page<PartyType> partyPage = partyRepository.findAll(new PageRequest(pageNumber, pageSize, new Sort(Sort.Direction.ASC, "name")));
+        Page<PartyType> partyPage = partyRepository.findAll(new PageRequest(pageNumber, pageSize, new Sort(Sort.Direction.ASC, "partyName")));
 
         return new ResponseEntity<>(partyPage, HttpStatus.OK);
     }
@@ -183,7 +181,7 @@ public class PartyController {
             @ApiParam(value = "Excluded ids") @RequestParam(value = "exclude", required = false) List<String> exclude) {
 
         Set<PartyTuple> partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
-                .map(p -> new PartyTuple(p.getID(), p.getName()))
+                .map(p -> new PartyTuple(UblAdapter.adaptPartyIdentifier(p), UblAdapter.adaptPartyNames(p.getPartyName())))
                 .collect(Collectors.toSet());
 
         if (exclude != null)
@@ -214,9 +212,9 @@ public class PartyController {
 
     private static class PartyTuple {
         private String identifier;
-        private String name;
+        private Map<NimbleConfigurationProperties.LanguageID, String> name;
 
-        public PartyTuple(String identifier, String name) {
+        public PartyTuple(String identifier, Map<NimbleConfigurationProperties.LanguageID, String> name) {
             this.identifier = identifier;
             this.name = name;
         }
@@ -225,7 +223,7 @@ public class PartyController {
             return identifier;
         }
 
-        public String getName() {
+        public Map<NimbleConfigurationProperties.LanguageID, String> getName() {
             return name;
         }
     }

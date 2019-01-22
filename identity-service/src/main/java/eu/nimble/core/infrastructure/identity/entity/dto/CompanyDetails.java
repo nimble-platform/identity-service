@@ -1,10 +1,9 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
+import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by Johannes Innerbichler on 25.09.18.
@@ -12,7 +11,7 @@ import java.util.Set;
 public class CompanyDetails {
 
     @ApiModelProperty(value = "Legal name of the company")
-    private String companyLegalName = null;
+    private Map<NimbleConfigurationProperties.LanguageID, String> companyLegalName = null;
 
     @ApiModelProperty(value = "VAT identification number of the company")
     private String vatNumber = null;
@@ -27,7 +26,7 @@ public class CompanyDetails {
     private String businessType = null;
 
     @ApiModelProperty(value = "Keywords explaining business objective")
-    private List<String> businessKeywords = new ArrayList<>();
+    private Map<NimbleConfigurationProperties.LanguageID, String> businessKeywords = new HashMap<>();
 
     @ApiModelProperty(value = "Year since company is active")
     private Integer yearOfCompanyRegistration;
@@ -38,7 +37,9 @@ public class CompanyDetails {
     public CompanyDetails() {
     }
 
-    public CompanyDetails(String companyLegalName, String vatNumber, String verificationInformation, Address address, String businessType, List<String> businessKeywords, Integer yearOfCompanyRegistration, List<String> industrySectors) {
+    public CompanyDetails(Map<NimbleConfigurationProperties.LanguageID, String> companyLegalName, String vatNumber, String verificationInformation,
+                          Address address, String businessType, Map<NimbleConfigurationProperties.LanguageID, String> businessKeywords,
+                          Integer yearOfCompanyRegistration, List<String> industrySectors) {
         this.companyLegalName = companyLegalName;
         this.vatNumber = vatNumber;
         this.verificationInformation = verificationInformation;
@@ -49,11 +50,11 @@ public class CompanyDetails {
         this.industrySectors = industrySectors;
     }
 
-    public String getCompanyLegalName() {
+    public Map<NimbleConfigurationProperties.LanguageID, String> getCompanyLegalName() {
         return companyLegalName;
     }
 
-    public void setCompanyLegalName(String companyLegalName) {
+    public void setCompanyLegalName(Map<NimbleConfigurationProperties.LanguageID, String> companyLegalName) {
         this.companyLegalName = companyLegalName;
     }
 
@@ -89,11 +90,11 @@ public class CompanyDetails {
         this.businessType = businessType;
     }
 
-    public List<String> getBusinessKeywords() {
+    public Map<NimbleConfigurationProperties.LanguageID, String> getBusinessKeywords() {
         return businessKeywords;
     }
 
-    public void setBusinessKeywords(List<String> businessKeywords) {
+    public void setBusinessKeywords(Map<NimbleConfigurationProperties.LanguageID, String> businessKeywords) {
         this.businessKeywords = businessKeywords;
     }
 

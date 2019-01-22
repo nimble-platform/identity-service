@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity.controller;
+package eu.nimble.core.infrastructure.identity.system;
 
 import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
@@ -74,7 +74,7 @@ public class AdminController {
                                     @RequestHeader(value = "Authorization") String bearer) throws Exception {
 
         if (identityUtils.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
-            return new ResponseEntity<>("Only legal platform managers are allowed to delete companies", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>("Only platform managers are allowed to delete companies", HttpStatus.UNAUTHORIZED);
 
         logger.info("Deleting company with id {}", companyId);
         adminService.deleteCompany(companyId);

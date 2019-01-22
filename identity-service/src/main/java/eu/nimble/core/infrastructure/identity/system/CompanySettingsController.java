@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity.controller;
+package eu.nimble.core.infrastructure.identity.system;
 
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
@@ -9,6 +9,7 @@ import eu.nimble.core.infrastructure.identity.service.CertificateService;
 import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.utils.ImageUtils;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
+import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
@@ -128,7 +129,7 @@ public class CompanySettingsController {
         partyRepository.save(existingCompany);
 
         // broadcast changes
-        kafkaSender.broadcastCompanyUpdate(existingCompany.getID(), bearer);
+        kafkaSender.broadcastCompanyUpdate(UblAdapter.adaptPartyIdentifier(existingCompany), bearer);
 
         newSettings = adaptCompanySettings(existingCompany, qualifyingParty);
         return new ResponseEntity<>(newSettings, HttpStatus.ACCEPTED);
@@ -150,7 +151,7 @@ public class CompanySettingsController {
 
         PartyType company = getCompanySecure(companyID, bearer);
 
-        logger.info("Storing image for company with ID " + company.getID());
+        logger.info("Storing image for company with ID " + UblAdapter.adaptPartyIdentifier(company));
 
         Boolean logoFlag = "true".equals(isLogo);
 
@@ -339,10 +340,10 @@ public class CompanySettingsController {
         existingSettings.update(newSettings);
         existingSettings = negotiationSettingsRepository.save(existingSettings);
 
-        logger.info("Updated negotiation settings {} for company {}", existingSettings.getId(), company.getID());
+        logger.info("Updated negotiation settings {} for company {}", existingSettings.getId(), UblAdapter.adaptPartyIdentifier(company));
 
         // broadcast changes
-        kafkaSender.broadcastCompanyUpdate(company.getID(), bearer);
+        kafkaSender.broadcastCompanyUpdate(UblAdapter.adaptPartyIdentifier(company), bearer);
 
         return ResponseEntity.ok().build();
     }
@@ -355,7 +356,7 @@ public class CompanySettingsController {
         PartyType company = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
         NegotiationSettings negotiationSettings = findOrCreateNegotiationSettings(company);
 
-        logger.info("Fetched negotiation settings {} for company {}", negotiationSettings.getId(), company.getID());
+        logger.info("Fetched negotiation settings {} for company {}", negotiationSettings.getId(), UblAdapter.adaptPartyIdentifier(company));
 
         return ResponseEntity.ok().body(negotiationSettings);
     }
@@ -398,7 +399,7 @@ public class CompanySettingsController {
         qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_TRADE_DETAILS, overallCompleteness));
         PartyType completenessParty = new PartyType();
         completenessParty.setQualityIndicator(qualityIndicators);
-        completenessParty.setID(company.getID());
+        UblUtils.setID(completenessParty, UblAdapter.adaptPartyIdentifier(company));
 
         logger.debug("Returning completeness of party with Id {0}", company.getHjid());
         return new ResponseEntity<>(completenessParty, HttpStatus.OK);
