@@ -1,6 +1,6 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
-import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
+import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties.LanguageID;
 import io.swagger.annotations.ApiModelProperty;
 
 import java.util.*;
@@ -11,7 +11,7 @@ import java.util.*;
 public class CompanyDetails {
 
     @ApiModelProperty(value = "Legal name of the company")
-    private Map<NimbleConfigurationProperties.LanguageID, String> companyLegalName = null;
+    private Map<LanguageID, String> companyLegalName = null;
 
     @ApiModelProperty(value = "VAT identification number of the company")
     private String vatNumber = null;
@@ -26,7 +26,7 @@ public class CompanyDetails {
     private String businessType = null;
 
     @ApiModelProperty(value = "Keywords explaining business objective")
-    private Map<NimbleConfigurationProperties.LanguageID, String> businessKeywords = new HashMap<>();
+    private Map<LanguageID, String> businessKeywords = new HashMap<>();
 
     @ApiModelProperty(value = "Year since company is active")
     private Integer yearOfCompanyRegistration;
@@ -37,8 +37,8 @@ public class CompanyDetails {
     public CompanyDetails() {
     }
 
-    public CompanyDetails(Map<NimbleConfigurationProperties.LanguageID, String> companyLegalName, String vatNumber, String verificationInformation,
-                          Address address, String businessType, Map<NimbleConfigurationProperties.LanguageID, String> businessKeywords,
+    public CompanyDetails(Map<LanguageID, String> companyLegalName, String vatNumber, String verificationInformation,
+                          Address address, String businessType, Map<LanguageID, String> businessKeywords,
                           Integer yearOfCompanyRegistration, List<String> industrySectors) {
         this.companyLegalName = companyLegalName;
         this.vatNumber = vatNumber;
@@ -50,11 +50,11 @@ public class CompanyDetails {
         this.industrySectors = industrySectors;
     }
 
-    public Map<NimbleConfigurationProperties.LanguageID, String> getCompanyLegalName() {
+    public Map<LanguageID, String> getCompanyLegalName() {
         return companyLegalName;
     }
 
-    public void setCompanyLegalName(Map<NimbleConfigurationProperties.LanguageID, String> companyLegalName) {
+    public void setCompanyLegalName(Map<LanguageID, String> companyLegalName) {
         this.companyLegalName = companyLegalName;
     }
 
@@ -90,11 +90,11 @@ public class CompanyDetails {
         this.businessType = businessType;
     }
 
-    public Map<NimbleConfigurationProperties.LanguageID, String> getBusinessKeywords() {
+    public Map<LanguageID, String> getBusinessKeywords() {
         return businessKeywords;
     }
 
-    public void setBusinessKeywords(Map<NimbleConfigurationProperties.LanguageID, String> businessKeywords) {
+    public void setBusinessKeywords(Map<LanguageID, String> businessKeywords) {
         this.businessKeywords = businessKeywords;
     }
 
