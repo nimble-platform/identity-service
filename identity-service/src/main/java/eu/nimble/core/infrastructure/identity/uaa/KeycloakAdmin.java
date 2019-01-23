@@ -46,6 +46,8 @@ public class KeycloakAdmin {
             "offline_access", "admin", "create-realm",
             "create-realm", "nimble_user", "initial_representative");
 
+    public static final List<String> NON_NIMBLE_ROLES = Arrays.asList("uma_authorization", "offline_access", "admin", "create-realm", "create-realm");
+
     @Autowired
     private KeycloakConfig keycloakConfig;
 

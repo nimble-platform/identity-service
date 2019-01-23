@@ -89,7 +89,6 @@ public class AdminService {
             // check if unverified check whether at least on member has proper role
             Set<String> mergedRoles = memberRoles.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
             if (mergedRoles.isEmpty() == false && mergedRoles.contains(LEGAL_REPRESENTATIVE_ROLE) == false) {
-                UblUtils.removeBinaries(company);
                 unverifiedCompanies.add(company);
                 continue; // avoid multiple entries in list
             }

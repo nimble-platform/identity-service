@@ -81,12 +81,22 @@ public class IdentityService {
         try {
             // collect roles
             logger.debug("Fetching roles of user {}", user.getUsername());
-            roles = keycloakAdmin.getUserRoles(user.getExternalID());
+            roles = keycloakAdmin.getUserRoles(user.getExternalID(), KeycloakAdmin.NON_NIMBLE_ROLES );
         } catch (Exception ex) {
             logger.error("Error while fetch roles of user", ex);
         }
 
         return roles;
+    }
+
+    public void enrichWithRoles(PersonType person) {
+        Set<String> roles = fetchRoles(person);
+        person.getRole().clear();
+        person.getRole().addAll(roles);
+    }
+
+    public void enrichWithRoles(PartyType party) {
+        party.getPerson().forEach(this::enrichWithRoles);
     }
 
     public static Double computeDetailsCompleteness(CompanyDetails companyDetails) {
