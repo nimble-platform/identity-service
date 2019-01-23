@@ -183,7 +183,7 @@ public class IdentityController {
             HttpServletResponse response, HttpServletRequest request) {
 
         Address companyAddress = companyRegistration.getSettings().getDetails().getAddress();
-        if (companyAddress == null || companyRegistration.getSettings().getDetails().getCompanyLegalName() == null)
+        if (companyAddress == null || companyRegistration.getSettings().getDetails().getLegalName() == null)
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
         Optional<PersonType> userPartyOpt = personRepository.findByHjid(companyRegistration.getUserID()).stream().findFirst();

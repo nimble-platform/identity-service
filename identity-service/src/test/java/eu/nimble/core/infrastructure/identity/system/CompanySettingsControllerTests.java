@@ -89,7 +89,8 @@ public class CompanySettingsControllerTests {
 
         // WHEN: updating company settings
         CompanyDetails companyDetails = new CompanyDetails();
-        companyDetails.setCompanyLegalName(Collections.singletonMap(NimbleConfigurationProperties.LanguageID.ENGLISH, "company name"));
+        companyDetails.setBrandName(Collections.singletonMap(NimbleConfigurationProperties.LanguageID.ENGLISH, "brand name"));
+        companyDetails.setLegalName(Collections.singletonMap(NimbleConfigurationProperties.LanguageID.ENGLISH, "legal name"));
         companyDetails.setVatNumber("vat number");
         companyDetails.setVerificationInformation("verification number");
         companyDetails.setAddress(new Address("street name", "building number", "city name", "postal code", "country"));
@@ -137,7 +138,8 @@ public class CompanySettingsControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 // check details
-                .andExpect(jsonPath("$.details.companyLegalName.en", is("company name")))
+                .andExpect(jsonPath("$.details.brandName.en", is("brand name")))
+                .andExpect(jsonPath("$.details.legalName.en", is("legal name")))
                 .andExpect(jsonPath("$.details.vatNumber", is("vat number")))
                 .andExpect(jsonPath("$.details.verificationInformation", is("verification number")))
                 .andExpect(jsonPath("$.details.address.streetName", is("street name")))
@@ -337,7 +339,7 @@ public class CompanySettingsControllerTests {
 
         // WHEN: updating company settings
         CompanyDetails companyDetails = new CompanyDetails();
-        companyDetails.setCompanyLegalName(Collections.singletonMap(NimbleConfigurationProperties.LanguageID.ENGLISH, "company name"));
+        companyDetails.setLegalName(Collections.singletonMap(NimbleConfigurationProperties.LanguageID.ENGLISH, "company name"));
         companySettings.setDetails(companyDetails);
         CompanyDescription companyDescription = new CompanyDescription();
         companyDescription.setCompanyStatement("company statement");

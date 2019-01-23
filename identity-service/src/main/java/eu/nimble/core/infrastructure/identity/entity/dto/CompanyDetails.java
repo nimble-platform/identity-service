@@ -10,8 +10,11 @@ import java.util.*;
  */
 public class CompanyDetails {
 
+    @ApiModelProperty(value = "Trade name name of the company")
+    private Map<LanguageID, String> brandName = null;
+
     @ApiModelProperty(value = "Legal name of the company")
-    private Map<LanguageID, String> companyLegalName = null;
+    private Map<LanguageID, String> legalName = null;
 
     @ApiModelProperty(value = "VAT identification number of the company")
     private String vatNumber = null;
@@ -37,10 +40,11 @@ public class CompanyDetails {
     public CompanyDetails() {
     }
 
-    public CompanyDetails(Map<LanguageID, String> companyLegalName, String vatNumber, String verificationInformation,
-                          Address address, String businessType, Map<LanguageID, String> businessKeywords,
+    public CompanyDetails(Map<LanguageID, String> brandName, Map<LanguageID, String> legalName, String vatNumber,
+                          String verificationInformation, Address address, String businessType, Map<LanguageID, String> businessKeywords,
                           Integer yearOfCompanyRegistration, List<String> industrySectors) {
-        this.companyLegalName = companyLegalName;
+        this.brandName = brandName;
+        this.legalName = legalName;
         this.vatNumber = vatNumber;
         this.verificationInformation = verificationInformation;
         this.address = address;
@@ -50,12 +54,20 @@ public class CompanyDetails {
         this.industrySectors = industrySectors;
     }
 
-    public Map<LanguageID, String> getCompanyLegalName() {
-        return companyLegalName;
+    public Map<LanguageID, String> getBrandName() {
+        return brandName;
     }
 
-    public void setCompanyLegalName(Map<LanguageID, String> companyLegalName) {
-        this.companyLegalName = companyLegalName;
+    public void setBrandName(Map<LanguageID, String> brandName) {
+        this.brandName = brandName;
+    }
+
+    public Map<LanguageID, String> getLegalName() {
+        return legalName;
+    }
+
+    public void setLegalName(Map<LanguageID, String> legalName) {
+        this.legalName = legalName;
     }
 
     public String getVatNumber() {

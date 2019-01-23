@@ -115,7 +115,8 @@ public class UblAdapter {
 
         CompanyDetails companyDetails = new CompanyDetails();
 
-        companyDetails.setCompanyLegalName(UblAdapter.adaptPartyNames(party.getPartyName()));
+        companyDetails.setBrandName(UblAdapter.adaptTextType(party.getBrandName()));
+        companyDetails.setLegalName(UblAdapter.adaptPartyNames(party.getPartyName()));
         companyDetails.setVatNumber(party.getPartyTaxScheme()
                 .stream()
                 .filter(scheme -> scheme != null && scheme.getTaxScheme() != null && scheme.getTaxScheme().getTaxTypeCode() != null)
@@ -309,10 +310,15 @@ public class UblAdapter {
         if (companyToChange == null)
             companyToChange = new PartyType();
 
+        // brand name
+        List<TextType> brandNames = UblAdapter.adaptTextType(settings.getDetails().getBrandName());
+        companyToChange.getBrandName().clear();
+        companyToChange.getBrandName().addAll(brandNames);
+
         // legal name
-        List<PartyNameType> partyNameTypes = UblAdapter.adaptPartyNames(settings.getDetails().getCompanyLegalName());
+        List<PartyNameType> legalNames = UblAdapter.adaptPartyNames(settings.getDetails().getLegalName());
         companyToChange.getPartyName().clear();
-        companyToChange.getPartyName().addAll(partyNameTypes);
+        companyToChange.getPartyName().addAll(legalNames);
 
         // VAT number
         if (settings.getDetails().getVatNumber() != null)
@@ -601,6 +607,8 @@ public class UblAdapter {
     }
 
     public static List<TextType> adaptTextType(Map<NimbleConfigurationProperties.LanguageID, String> texts) {
+        if (texts == null)
+            return Collections.emptyList();
         return texts.entrySet().stream().map( t -> adaptTextType(t.getValue(), t.getKey())).collect(Collectors.toList());
     }
 

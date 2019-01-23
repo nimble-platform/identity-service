@@ -98,7 +98,7 @@ public class AdminControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.content.length()", is(1)))
-                .andExpect(jsonPath("$.content[0].partyName[0].name.value", is(companyRegistration.getSettings().getDetails().getCompanyLegalName().get(ENGLISH))))
+                .andExpect(jsonPath("$.content[0].partyName[0].name.value", is(companyRegistration.getSettings().getDetails().getLegalName().get(ENGLISH))))
                 .andExpect(jsonPath("$.content[0].partyIdentification[0].id", is(companyRegistration.getCompanyID().toString())));
 
         // check repositories
@@ -134,7 +134,8 @@ public class AdminControllerTests {
 
     private static CompanyRegistration createCompanyRegistration(PersonType user) {
 
-        CompanyDetails companyDetails = new CompanyDetails(Collections.singletonMap(ENGLISH, "company name"), "vat number", "verification info",
+        CompanyDetails companyDetails = new CompanyDetails(Collections.singletonMap(ENGLISH, "brand name"),
+                Collections.singletonMap(ENGLISH, "legal name"), "vat number", "verification info",
                 new Address(), "business type", Collections.singletonMap(ENGLISH, "business type"), 1970,
                 Collections.singletonList("industry sector"));
         CompanyDescription companyDescription = new CompanyDescription("statement", "website",
