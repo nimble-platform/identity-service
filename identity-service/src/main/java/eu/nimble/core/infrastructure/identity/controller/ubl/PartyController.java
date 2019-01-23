@@ -162,7 +162,6 @@ public class PartyController {
 
     @SuppressWarnings("PointlessBooleanExpression")
     @ApiOperation(value = "Get Party for Id in the UBL format.",
-            notes = "Roles for persons are not set. Please use /person/{personId} for fetching roles of users",
             response = PartyType.class, tags = {})
     @RequestMapping(value = "/party/ubl/{partyId}", produces = {"text/xml"}, method = RequestMethod.GET)
     ResponseEntity<String> getPartyUbl(

@@ -246,9 +246,11 @@ public class IdentityController {
         }
 
         // refresh tokens
-        OAuth2AccessToken tokenResponse = oAuthClient.refreshToken(httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString());
-        httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, tokenResponse.getRefreshToken());
-        companyRegistration.setAccessToken(tokenResponse.getValue());
+        if( httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY) != null) {
+            OAuth2AccessToken tokenResponse = oAuthClient.refreshToken(httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString());
+            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, tokenResponse.getRefreshToken());
+            companyRegistration.setAccessToken(tokenResponse.getValue());
+        }
 
         // broadcast changes
         kafkaSender.broadcastCompanyUpdate(newCompany.getID(), bearer);
