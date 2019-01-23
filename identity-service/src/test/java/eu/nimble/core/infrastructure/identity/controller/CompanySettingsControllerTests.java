@@ -5,7 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import eu.nimble.core.infrastructure.identity.IdentityServiceApplication;
 import eu.nimble.core.infrastructure.identity.DefaultTestConfiguration;
-import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
@@ -62,7 +62,7 @@ public class CompanySettingsControllerTests {
     private MockMvc mockMvc;
 
     @Autowired
-    private IdentityUtils identityUtils;
+    private IdentityService identityService;
 
     @Autowired
     private PartyRepository partyRepository;
@@ -77,7 +77,7 @@ public class CompanySettingsControllerTests {
     public void testCreateCompanySettings() throws Exception {
 
         // GIVEN: existing company on platform
-        PartyType company = identityUtils.getCompanyOfUser(null).get();
+        PartyType company = identityService.getCompanyOfUser(null).get();
         partyRepository.save(company);
 
         // WHEN: updating company settings
@@ -291,7 +291,7 @@ public class CompanySettingsControllerTests {
     public void testProfileCompleteness() throws Exception {
 
         // GIVEN: existing company on platform
-        PartyType company = identityUtils.getCompanyOfUser(null).get();
+        PartyType company = identityService.getCompanyOfUser(null).get();
         partyRepository.save(company);
 
         CompanySettings companySettings = new CompanySettings();
@@ -362,7 +362,7 @@ public class CompanySettingsControllerTests {
 
     public NegotiationSettings initNegotiationSettings() throws Exception {
         // GIVEN: existing company on platform
-        PartyType company = identityUtils.getCompanyOfUser(null).get();
+        PartyType company = identityService.getCompanyOfUser(null).get();
         partyRepository.save(company);
         company.setID(company.getHjid().toString());
         partyRepository.save(company);

@@ -2,7 +2,7 @@ package eu.nimble.core.infrastructure.identity.controller;
 
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
-import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
@@ -37,7 +37,7 @@ public class RoleController {
     private UaaUserRepository uaaUserRepository;
 
     @Autowired
-    private IdentityUtils identityUtils;
+    private IdentityService identityService;
 
     @ApiOperation(value = "List of user roles on the platform.", response = Iterable.class)
     @ApiResponses(value = {
@@ -75,13 +75,13 @@ public class RoleController {
 
         // Check if requesting user is legal representative
         OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityService.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
         // Check if users are in the same company
         UaaUser requestingUser = uaaUserRepository.findByExternalID(userDetails.getUserId());
         UaaUser targetUser = uaaUserRepository.findOneByUsername(username);
-        if (identityUtils.inSameCompany(requestingUser, targetUser) == false) {
+        if (identityService.inSameCompany(requestingUser, targetUser) == false) {
             logger.info("Requested user {} not found in company", username);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
@@ -114,13 +114,13 @@ public class RoleController {
 
         // Check if requesting user is legal representative
         OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityService.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
         // Check if users are in the same company
         UaaUser requestingUser = uaaUserRepository.findByExternalID(userDetails.getUserId());
         UaaUser targetUser = uaaUserRepository.findOneByUsername(username);
-        if (identityUtils.inSameCompany(requestingUser, targetUser) == false) {
+        if (identityService.inSameCompany(requestingUser, targetUser) == false) {
             logger.info("Requested user {} not found in company", username);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }

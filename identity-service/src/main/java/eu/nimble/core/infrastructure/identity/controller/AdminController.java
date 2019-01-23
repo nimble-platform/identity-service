@@ -1,7 +1,7 @@
 package eu.nimble.core.infrastructure.identity.controller;
 
 import eu.nimble.core.infrastructure.identity.service.AdminService;
-import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import io.swagger.annotations.Api;
@@ -35,7 +35,7 @@ public class AdminController {
     private AdminService adminService;
 
     @Autowired
-    private IdentityUtils identityUtils;
+    private IdentityService identityService;
 
     @ApiOperation(value = "Retrieve unverified companies", response = Page.class)
     @RequestMapping(value = "/unverified_companies", produces = {"application/json"}, method = RequestMethod.GET)
@@ -59,7 +59,7 @@ public class AdminController {
     ResponseEntity<?> verifyCompany(@RequestParam(value = "companyId") long companyId,
                                     @RequestHeader(value = "Authorization") String bearer) throws Exception {
 
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
+        if (identityService.hasRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
             return new ResponseEntity<>("Only legal platform managers are allowed to verify companies", HttpStatus.UNAUTHORIZED);
 
         logger.info("Verifying company with id {}", companyId);
@@ -73,7 +73,7 @@ public class AdminController {
     ResponseEntity<?> deleteCompany(@PathVariable(value = "companyId") long companyId,
                                     @RequestHeader(value = "Authorization") String bearer) throws Exception {
 
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
+        if (identityService.hasRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
             return new ResponseEntity<>("Only legal platform managers are allowed to delete companies", HttpStatus.UNAUTHORIZED);
 
         logger.info("Deleting company with id {}", companyId);

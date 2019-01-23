@@ -52,6 +52,9 @@ public class AdminService {
     @Autowired
     private UaaUserRepository uaaUserRepository;
 
+    @Autowired
+    private IdentityService identityService;
+
 //    @Cacheable("unverifiedCompanies")
     public List<PartyType> queryUnverifiedCompanies() {
         List<PartyType> unverifiedCompanies = new ArrayList<>();
@@ -72,7 +75,7 @@ public class AdminService {
                             continue;
 
                         logger.debug("Fetching roles of user {}", uaaUser.get().getUsername());
-                        List<String> roles = new ArrayList<>(keycloakAdmin.getUserRoles(uaaUser.get().getExternalID()));
+                        List<String> roles = new ArrayList<>(identityService.fetchRoles(uaaUser.get()));
                         companyMember.setRole(roles);
                         memberRoles.put(companyMember, roles);
                     }
@@ -83,7 +86,7 @@ public class AdminService {
                 }
             }
 
-            // check whether at least on member has proper role
+            // check if unverified check whether at least on member has proper role
             Set<String> mergedRoles = memberRoles.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
             if (mergedRoles.isEmpty() == false && mergedRoles.contains(LEGAL_REPRESENTATIVE_ROLE) == false) {
                 UblUtils.removeBinaries(company);

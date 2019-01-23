@@ -2,7 +2,7 @@ package eu.nimble.core.infrastructure.identity.controller.ubl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
@@ -44,7 +44,8 @@ import java.util.stream.StreamSupport;
  * Controller for retrieving party data.
  */
 @Controller
-@Api(value = "party", description = "API for handling parties on the platform.")
+@Api(value = "party", description = "API for handling parties on the platform. " +
+        "Roles for persons are not set. Please use /person/{personId} for fetching roles of users.")
 public class PartyController {
 
     private static final Logger logger = LoggerFactory.getLogger(PartyController.class);
@@ -59,7 +60,7 @@ public class PartyController {
     private QualifyingPartyRepository qualifyingPartyRepository;
 
     @Autowired
-    private IdentityUtils identityUtils;
+    private IdentityService identityService;
 
     @SuppressWarnings("PointlessBooleanExpression")
     @ApiOperation(value = "", notes = "Get Party for Id.", response = PartyType.class, tags = {})
@@ -80,7 +81,7 @@ public class PartyController {
         PartyType party = parties.get(0);
 
         // remove person depending on access rights
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityService.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             party.setPerson(new ArrayList<>());
 
         UblUtils.removeBinaries(party);
@@ -160,7 +161,9 @@ public class PartyController {
     }
 
     @SuppressWarnings("PointlessBooleanExpression")
-    @ApiOperation(value = "", notes = "Get Party for Id in the UBL format.", response = PartyType.class, tags = {})
+    @ApiOperation(value = "Get Party for Id in the UBL format.",
+            notes = "Roles for persons are not set. Please use /person/{personId} for fetching roles of users",
+            response = PartyType.class, tags = {})
     @RequestMapping(value = "/party/ubl/{partyId}", produces = {"text/xml"}, method = RequestMethod.GET)
     ResponseEntity<String> getPartyUbl(
             @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long partyId,
@@ -178,7 +181,7 @@ public class PartyController {
         PartyType party = parties.get(0);
 
         // remove person depending on access rights
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityService.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             party.setPerson(new ArrayList<>());
 
         StringWriter serializedCatalogueWriter = new StringWriter();
@@ -205,7 +208,9 @@ public class PartyController {
         return new ResponseEntity<>(xmlParty, responseHeaders, HttpStatus.OK);
     }
 
-    @ApiOperation(value = "", notes = "Get all party ids and name. Returns id-name tuples.", response = PartyTuple.class, responseContainer = "Set")
+    @ApiOperation(value = "Get all party ids and name. Returns id-name tuples.",
+            notes = "Roles for persons are not set. Please use /person/{personId} for fetching roles of users",
+            response = PartyTuple.class, responseContainer = "Set")
     @RequestMapping(value = "/party/all", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<Set<PartyTuple>> getAllPartyIds(
             @ApiParam(value = "Excluded ids") @RequestParam(value = "exclude", required = false) List<String> exclude) {

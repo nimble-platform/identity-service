@@ -4,7 +4,7 @@ import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.repository.*;
-import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
@@ -46,7 +46,7 @@ public class InvitationController {
     private EmailService emailService;
 
     @Autowired
-    private IdentityUtils identityUtils;
+    private IdentityService identityService;
 
     @Autowired
     private KeycloakAdmin keycloakAdmin;
@@ -59,7 +59,7 @@ public class InvitationController {
             HttpServletRequest request) throws IOException {
 
         OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityService.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>("Only legal representatives are allowed to invite users", HttpStatus.UNAUTHORIZED);
 
         String emailInvitee = invitation.getEmail();
@@ -137,9 +137,9 @@ public class InvitationController {
     @ApiOperation(value = "", notes = "Get list of company members.", response = UserInvitation.class, responseContainer = "List", tags = {})
     @RequestMapping(value = "/company_members", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<?> pendingInvitations(@RequestHeader(value = "Authorization") String bearer) throws IOException {
-        UaaUser user = identityUtils.getUserfromBearer(bearer);
+        UaaUser user = identityService.getUserfromBearer(bearer);
 
-        Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(user);
+        Optional<PartyType> companyOpt = identityService.getCompanyOfUser(user);
         if (companyOpt.isPresent() == false) {
             logger.info("Company members: Requested party for user {} not found.", user.getUsername());
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -181,7 +181,7 @@ public class InvitationController {
                                        @RequestHeader(value = "Authorization") String bearer) throws IOException {
 
         // check if authorized
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityService.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>("Only legal representatives are allowed to invite users", HttpStatus.UNAUTHORIZED);
 
         logger.info("Requesting removal of company membership of user {}.", username);
@@ -195,15 +195,15 @@ public class InvitationController {
 
         // remove person from company
         UaaUser userToRemove = uaaUserRepository.findOneByUsername(username);
-        UaaUser requester = uaaUserRepository.findOneByUsername(identityUtils.getUserDetails(bearer).getUsername());
+        UaaUser requester = uaaUserRepository.findOneByUsername(identityService.getUserDetails(bearer).getUsername());
         if (userToRemove != null && requester != null &&
                 userToRemove.getUsername().equals(requester.getUsername()) == false) {  // user cannot remove itself
-            if (identityUtils.inSameCompany(userToRemove, requester) == false)
+            if (identityService.inSameCompany(userToRemove, requester) == false)
                 return new ResponseEntity<>(HttpStatus.CONFLICT);
 
 
             // remove from list of persons
-            Optional<PartyType> companyOpt = identityUtils.getCompanyOfUser(requester);
+            Optional<PartyType> companyOpt = identityService.getCompanyOfUser(requester);
             if (companyOpt.isPresent()) {
 
                 // remove roles of user

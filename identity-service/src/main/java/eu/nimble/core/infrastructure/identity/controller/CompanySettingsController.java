@@ -6,7 +6,7 @@ import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
-import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.utils.ImageUtils;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
@@ -68,7 +68,7 @@ public class CompanySettingsController {
     private NegotiationSettingsRepository negotiationSettingsRepository;
 
     @Autowired
-    private IdentityUtils identityUtils;
+    private IdentityService identityService;
 
     @Autowired
     private CertificateService certificateService;
@@ -156,14 +156,14 @@ public class CompanySettingsController {
             @RequestParam(value = "isLogo", defaultValue = "false") String isLogo,
             @RequestParam(value = "file") MultipartFile imageFile) throws IOException {
 
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityService.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>("Only legal representatives are allowed add images", HttpStatus.UNAUTHORIZED);
 
         if (imageFile.getSize() > MAX_IMAGE_SIZE)
             throw new ControllerUtils.FileTooLargeException();
 
-        UaaUser user = identityUtils.getUserfromBearer(bearer);
-        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+        UaaUser user = identityService.getUserfromBearer(bearer);
+        PartyType company = identityService.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         logger.info("Storing image for company with ID " + company.getID());
 
@@ -220,8 +220,8 @@ public class CompanySettingsController {
 
         logger.info("Deleting image with Id " + imageId);
 
-        UaaUser user = identityUtils.getUserfromBearer(bearer);
-        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+        UaaUser user = identityService.getUserfromBearer(bearer);
+        PartyType company = identityService.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
         if (company.getDocumentReference().stream().anyMatch(dr -> imageId.equals(dr.getHjid())) == false)
             throw new ControllerUtils.DocumentNotFoundException("No associated document found.");
 
@@ -259,8 +259,8 @@ public class CompanySettingsController {
 //        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
 //            return new ResponseEntity<>("Only legal representatives are allowed add certificates", HttpStatus.UNAUTHORIZED);
 
-        UaaUser user = identityUtils.getUserfromBearer(bearer);
-        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+        UaaUser user = identityService.getUserfromBearer(bearer);
+        PartyType company = identityService.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         BinaryObjectType certificateBinary = new BinaryObjectType();
         certificateBinary.setValue(certFile.getBytes());
@@ -303,8 +303,8 @@ public class CompanySettingsController {
             @RequestHeader(value = "Authorization") String bearer,
             @ApiParam(value = "Id of certificate.", required = true) @PathVariable Long certificateId) throws IOException {
 
-        UaaUser user = identityUtils.getUserfromBearer(bearer);
-        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+        UaaUser user = identityService.getUserfromBearer(bearer);
+        PartyType company = identityService.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         if (certificateRepository.exists(certificateId) == false)
             throw new ControllerUtils.DocumentNotFoundException("No certificate for Id found.");
@@ -336,8 +336,8 @@ public class CompanySettingsController {
             @ApiParam(value = "Settings to update.", required = true) @RequestBody NegotiationSettings newSettings) throws IOException {
 
         // find company
-        UaaUser user = identityUtils.getUserfromBearer(bearer);
-        PartyType company = identityUtils.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+        UaaUser user = identityService.getUserfromBearer(bearer);
+        PartyType company = identityService.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         // update settings
         NegotiationSettings existingSettings = findOrCreateNegotiationSettings(company);
@@ -406,10 +406,10 @@ public class CompanySettingsController {
         CompanySettings companySettings = UblAdapter.adaptCompanySettings(party, qualifyingParty);
 
         // compute completeness factors
-        Double detailsCompleteness = IdentityUtils.computeDetailsCompleteness(companySettings.getDetails());
-        Double descriptionCompleteness = IdentityUtils.computeDescriptionCompleteness(companySettings.getDescription());
-        Double certificateCompleteness = IdentityUtils.computeCertificateCompleteness(party);
-        Double tradeCompleteness = IdentityUtils.computeTradeCompleteness(companySettings.getTradeDetails());
+        Double detailsCompleteness = IdentityService.computeDetailsCompleteness(companySettings.getDetails());
+        Double descriptionCompleteness = IdentityService.computeDescriptionCompleteness(companySettings.getDescription());
+        Double certificateCompleteness = IdentityService.computeCertificateCompleteness(party);
+        Double tradeCompleteness = IdentityService.computeTradeCompleteness(companySettings.getTradeDetails());
         Double overallCompleteness = (detailsCompleteness + descriptionCompleteness + certificateCompleteness + tradeCompleteness) / 4.0;
 
         List<QualityIndicatorType> qualityIndicators = new ArrayList<>();
