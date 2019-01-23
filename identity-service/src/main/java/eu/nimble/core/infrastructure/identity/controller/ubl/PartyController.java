@@ -46,8 +46,7 @@ import java.util.stream.StreamSupport;
  * Controller for retrieving party data.
  */
 @Controller
-@Api(value = "party", description = "API for handling parties on the platform. " +
-        "Roles for persons are not set. Please use /person/{personId} for fetching roles of users.")
+@Api(value = "party", description = "API for handling parties on the platform.")
 public class PartyController {
 
     private static final Logger logger = LoggerFactory.getLogger(PartyController.class);
