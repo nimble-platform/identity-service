@@ -40,6 +40,7 @@ public class BinaryDataSourceFactory {
         tds.setMaxActive(Integer.valueOf(environment.getProperty("spring.datasource.max-active")));
         tds.setMaxIdle(Integer.valueOf(environment.getProperty("spring.datasource.max-idle")));
         tds.setMinIdle(Integer.valueOf(environment.getProperty("spring.datasource.min-idle")));
+        tds.setValidationQuery(String.valueOf(environment.getProperty("spring.datasource.validation-query")));
 
         return tds;
     }
