@@ -3,6 +3,9 @@ server:
 spring:
   application:
     name: identity-service${APPLICATION_NAME_SUFFIX:}
+  thymeleaf:
+    cache: false
+    mode: HTML
   cloud:
     config:
       enabled: ${CONFIG_SERVER_ENABLED:true}
@@ -19,6 +22,8 @@ spring:
       hibernate:
         temp:
           use_jdbc_metadata_defaults: false
+        id:
+          new_generator_mappings: true
   datasource:
     name: identitydb
     driverClassName: org.postgresql.Driver
@@ -137,8 +142,6 @@ spring:
 
 nimble:
   corsEnabled: true
-
-logging.level.org.apache.tomcat.jdbc.pool: debug
 
 ---
 
