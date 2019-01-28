@@ -129,7 +129,7 @@ spring:
       url: jdbc:h2:mem:db2;AUTO_RECONNECT=TRUE;DB_CLOSE_DELAY=-1;INIT=create schema IF NOT EXISTS APPS
       username: sa
       password:
-      driver_class: org.h2.Driver
+      driverClassName: org.h2.Driver
   mail:
     debug: true  # prints email to log output
     host: localhost # in-v3.mailjet.com
@@ -162,7 +162,7 @@ spring:
       url: jdbc:h2:mem:binarycontentdb
       username: sa
       password:
-      driver_class: org.h2.Driver
+      driverClassName: org.h2.Driver
   kafka:
     bootstrap-servers: ${spring.embedded.kafka.brokers}
     consumer:
