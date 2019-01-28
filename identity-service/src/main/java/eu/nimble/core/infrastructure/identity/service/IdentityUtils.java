@@ -68,13 +68,13 @@ public class IdentityUtils {
         if ((requestingCompany.isPresent() && targetCompany.isPresent()) == false) // check if companies exist
             return false;
 
-        return requestingCompany.get().getID().equals(targetCompany.get().getID());
+        return requestingCompany.get().getHjid().equals(targetCompany.get().getHjid());
     }
 
     public static Double computeDetailsCompleteness(CompanyDetails companyDetails) {
 
         List<Double> completenessWeights = new ArrayList<>();
-        completenessWeights.add(StringUtils.isNotEmpty(companyDetails.getCompanyLegalName()) ? 1.0 : 0.0);
+        completenessWeights.add(companyDetails.getLegalName().isEmpty() == false ? 1.0 : 0.0);
         completenessWeights.add(StringUtils.isNotEmpty(companyDetails.getVatNumber()) ? 1.0 : 0.0);
         completenessWeights.add(StringUtils.isNotEmpty(companyDetails.getBusinessType()) ? 1.0 : 0.0);
         completenessWeights.add(companyDetails.getIndustrySectors() != null && companyDetails.getIndustrySectors().size() > 0 ? 1.0 : 0.0);

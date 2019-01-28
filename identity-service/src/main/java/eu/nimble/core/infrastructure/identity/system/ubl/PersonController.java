@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity.controller.ubl;
+package eu.nimble.core.infrastructure.identity.system.ubl;
 
 import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;

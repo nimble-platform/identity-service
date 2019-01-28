@@ -1,6 +1,9 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
+
+import java.util.Map;
 
 /**
  * Created by Johannes Innerbichler on 06/07/17.
@@ -9,20 +12,20 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public class PaymentMeans {
 
-    private String instructionNote;
+    private Map<NimbleConfigurationProperties.LanguageID, String> instructionNote;
 
     public PaymentMeans() {
     }
 
-    public PaymentMeans(String instructionNote) {
+    public PaymentMeans(Map<NimbleConfigurationProperties.LanguageID, String> instructionNote) {
         this.instructionNote = instructionNote;
     }
 
-    public String getInstructionNote() {
+    public Map<NimbleConfigurationProperties.LanguageID, String> getInstructionNote() {
         return instructionNote;
     }
 
-    public void setInstructionNote(String instructionNote) {
+    public void setInstructionNote(Map<NimbleConfigurationProperties.LanguageID, String> instructionNote) {
         this.instructionNote = instructionNote;
     }
 
