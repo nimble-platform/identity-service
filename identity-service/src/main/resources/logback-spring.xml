@@ -44,6 +44,7 @@
         <appender-ref ref="CONSOLE"/>
     </root>
 
+    <logger name="org.apache.tomcat.jdbc.pool" level="debug" />
     <logger name="org.springframework.cloud.config.client" level="warn"/>
     <logger name="com.netflix.discovery.shared.resolver.aws" level="warn"/>
     <logger name="com.netflix.discovery.DiscoveryClient" level="warn"/>
