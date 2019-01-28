@@ -1,6 +1,9 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
+import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
 import org.joda.time.LocalDate;
+
+import java.util.Map;
 
 public class FrontEndUser {
     private String username = null;
@@ -21,17 +24,17 @@ public class FrontEndUser {
 
     private String companyID = null;
 
-    private String companyName = null;
+    private Map<NimbleConfigurationProperties.LanguageID, String> companyName = null;
 
     private String accessToken = null;
 
     private Boolean showWelcomeInfo = false;
 
-    public String getCompanyName() {
+    public Map<NimbleConfigurationProperties.LanguageID, String> getCompanyName() {
         return companyName;
     }
 
-    public void setCompanyName(String companyName) {
+    public void setCompanyName(Map<NimbleConfigurationProperties.LanguageID, String> companyName) {
         this.companyName = companyName;
     }
 

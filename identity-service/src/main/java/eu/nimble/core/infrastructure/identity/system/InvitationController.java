@@ -1,5 +1,6 @@
-package eu.nimble.core.infrastructure.identity.controller;
+package eu.nimble.core.infrastructure.identity.system;
 
+import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
@@ -8,6 +9,8 @@ import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
+import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
+import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.ApiOperation;
@@ -107,9 +110,10 @@ public class InvitationController {
             // ToDo: let user accept invitation
 
             // send information
-            emailService.informInviteExistingCompany(emailInvitee, senderName, company.getName(), prettifedRoles);
+            String companyName = UblUtils.getName(company.getPartyName(), NimbleConfigurationProperties.LanguageID.ENGLISH);
+            emailService.informInviteExistingCompany(emailInvitee, senderName, companyName, prettifedRoles);
             logger.info("Invitation: User {} is already on the platform (without company). Invite from {} ({}) sent.",
-                    emailInvitee, sender.getUsername(), company.getName());
+                    emailInvitee, sender.getUsername(), companyName);
 
             // add existing user to company
             company.getPerson().add(potentialInvitee.get().getUBLPerson());
@@ -127,9 +131,10 @@ public class InvitationController {
         }
 
         // send invitation
-        emailService.sendInvite(emailInvitee, senderName, company.getName(), prettifedRoles);
+        String companyName = UblUtils.getName(company.getPartyName(), NimbleConfigurationProperties.LanguageID.ENGLISH);
+        emailService.sendInvite(emailInvitee, senderName, companyName, prettifedRoles);
 
-        logger.info("Invitation sent FROM {} ({}, {}) TO {}", senderName, company.getName(), companyId, emailInvitee);
+        logger.info("Invitation sent FROM {} ({}, {}) TO {}", senderName, companyName, companyId, emailInvitee);
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
@@ -146,13 +151,13 @@ public class InvitationController {
         }
         PartyType company = companyOpt.get();
 
-        List<UserInvitation> members = userInvitationRepository.findByCompanyId(company.getID());
+        List<UserInvitation> members = userInvitationRepository.findByCompanyId(UblAdapter.adaptPartyIdentifier(company));
 
         // add initial user (i.e. initial representative)
         List<String> invitationEmails = members.stream().map(UserInvitation::getEmail).collect(Collectors.toList());
         company.getPerson().stream()
                 .filter(p -> !invitationEmails.contains(p.getContact().getElectronicMail()))
-                .map(m -> new UserInvitation(m.getContact().getElectronicMail(), company.getID(), null, null, false))
+                .map(m -> new UserInvitation(m.getContact().getElectronicMail(), UblAdapter.adaptPartyIdentifier(company), null, null, false))
                 .forEach(members::add);;
 
         // update roles
@@ -214,7 +219,8 @@ public class InvitationController {
                 partyRepository.save(company);
                 responseMessage += "\nRemoved from company";
 
-                logger.info(requester.getUsername() + " removed " + userToRemove.getUsername() + " from company " + company.getName());
+                String companyName = UblAdapter.adaptPartyIdentifier(company);
+                logger.info(requester.getUsername() + " removed " + userToRemove.getUsername() + " from company " + companyName);
             }
         }
 

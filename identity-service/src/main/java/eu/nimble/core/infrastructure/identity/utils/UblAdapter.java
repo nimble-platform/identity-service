@@ -1,15 +1,15 @@
 package eu.nimble.core.infrastructure.identity.utils;
 
+import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.QuantityType;
+import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import eu.nimble.service.model.ubl.extension.QualityIndicatorParameter;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,7 +31,7 @@ public class UblAdapter {
         CompanyDetails companyDetails = adaptCompanyDetails(party, qualifyingParty);
         CompanyDescription companyDescription = adaptCompanyDescription(party, qualifyingParty);
 
-        settings.setCompanyID(party.getID());
+        settings.setCompanyID(UblAdapter.adaptPartyIdentifier(party));
         settings.setDetails(companyDetails);
         settings.setDescription(companyDescription);
 
@@ -89,7 +89,7 @@ public class UblAdapter {
         dtoAddress.setCityName(ublAddress.getCityName());
         dtoAddress.setPostalCode(ublAddress.getPostalZone());
         if (ublAddress.getCountry() != null)
-            dtoAddress.setCountry(ublAddress.getCountry().getName());
+            dtoAddress.setCountry(ublAddress.getCountry().getName().getValue());
         return dtoAddress;
     }
 
@@ -105,7 +105,7 @@ public class UblAdapter {
         ublAddress.setPostalZone(dtoAddress.getPostalCode());
 
         CountryType country = new CountryType();
-        country.setName(dtoAddress.getCountry());
+        country.setName(UblAdapter.adaptTextTypeSingleLang(dtoAddress.getCountry()));
         ublAddress.setCountry(country);
 
         return ublAddress;
@@ -115,7 +115,8 @@ public class UblAdapter {
 
         CompanyDetails companyDetails = new CompanyDetails();
 
-        companyDetails.setCompanyLegalName(party.getName());
+        companyDetails.setBrandName(UblAdapter.adaptTextType(party.getBrandName()));
+        companyDetails.setLegalName(UblAdapter.adaptPartyNames(party.getPartyName()));
         companyDetails.setVatNumber(party.getPartyTaxScheme()
                 .stream()
                 .filter(scheme -> scheme != null && scheme.getTaxScheme() != null && scheme.getTaxScheme().getTaxTypeCode() != null)
@@ -129,7 +130,7 @@ public class UblAdapter {
 
         if (qualifyingParty != null) {
             companyDetails.setVerificationInformation(qualifyingParty.getBusinessIdentityEvidenceID());
-            companyDetails.setBusinessKeywords(qualifyingParty.getBusinessClassificationScheme().getDescription());
+            companyDetails.setBusinessKeywords(adaptTextType(qualifyingParty.getBusinessClassificationScheme().getDescription()));
             if (qualifyingParty.getOperatingYearsQuantity() != null && qualifyingParty.getOperatingYearsQuantity().getValue() != null)
                 companyDetails.setYearOfCompanyRegistration(qualifyingParty.getOperatingYearsQuantity().getValue().intValue());
         }
@@ -144,7 +145,7 @@ public class UblAdapter {
         if (party.getContact() != null && party.getContact().getOtherCommunication() != null) {
             companyDescription.setSocialMediaList(party.getContact().getOtherCommunication()
                     .stream()
-                    .map(CommunicationType::getValue)
+                    .map( c -> c.getValue().getValue())
                     .collect(Collectors.toList()));
         }
 
@@ -192,7 +193,7 @@ public class UblAdapter {
             return new DeliveryTerms();
 
         DeliveryTerms dtoDeliveryTerms = new DeliveryTerms();
-        dtoDeliveryTerms.setSpecialTerms(ublDeliveryTerms.getSpecialTerms());
+        dtoDeliveryTerms.setSpecialTerms(UblAdapter.adaptTextType(ublDeliveryTerms.getSpecialTerms()));
 
         // adapt address
         if (ublDeliveryTerms.getDeliveryLocation() != null)
@@ -212,7 +213,7 @@ public class UblAdapter {
             return new DeliveryTermsType();
 
         DeliveryTermsType ublDeliveryTerms = new DeliveryTermsType();
-        ublDeliveryTerms.setSpecialTerms(dtoDeliveryTerms.getSpecialTerms());
+        ublDeliveryTerms.setSpecialTerms(adaptTextType(dtoDeliveryTerms.getSpecialTerms()));
 
         // adapt address
         AddressType deliveryAddress = adaptAddress(dtoDeliveryTerms.getDeliveryAddress());
@@ -239,7 +240,7 @@ public class UblAdapter {
             return new PaymentMeansType();
 
         PaymentMeansType ublPaymentMeans = new PaymentMeansType();
-        ublPaymentMeans.setInstructionNote(dtoPaymentMeans.getInstructionNote());
+        ublPaymentMeans.setInstructionNote(UblAdapter.adaptTextType(dtoPaymentMeans.getInstructionNote()));
         return ublPaymentMeans;
     }
 
@@ -249,8 +250,22 @@ public class UblAdapter {
             return new PaymentMeans();
 
         PaymentMeans dtoPaymentMeans = new PaymentMeans();
-        dtoPaymentMeans.setInstructionNote(ublPaymentMeans.getInstructionNote());
+        dtoPaymentMeans.setInstructionNote(UblAdapter.adaptTextType(ublPaymentMeans.getInstructionNote()));
         return dtoPaymentMeans;
+    }
+
+    public static PartyIdentificationType adaptPartyIdentifier(String identifier) {
+        PartyIdentificationType partyIdentificationType = new PartyIdentificationType();
+        partyIdentificationType.setID(identifier);
+        return partyIdentificationType;
+    }
+
+    public static String adaptPartyIdentifier(PartyIdentificationType partyIdentification) {
+        return partyIdentification.getID();
+    }
+
+    public static String adaptPartyIdentifier(PartyType partyType) {
+        return adaptPartyIdentifier(Objects.requireNonNull(partyType.getPartyIdentification().stream().findFirst().orElse(null)));
     }
 
     public static FrontEndUser adaptUser(UaaUser uaaUser, List<PartyType> companies) {
@@ -268,7 +283,7 @@ public class UblAdapter {
         if (companies != null && companies.isEmpty() == false) {
             PartyType company = companies.get(0);
             frontEndUser.setCompanyID(company.getHjid().toString());
-            frontEndUser.setCompanyName(company.getName());
+            frontEndUser.setCompanyName(adaptPartyNames(company.getPartyName()));
         }
 
         return frontEndUser;
@@ -295,8 +310,15 @@ public class UblAdapter {
         if (companyToChange == null)
             companyToChange = new PartyType();
 
+        // brand name
+        List<TextType> brandNames = UblAdapter.adaptTextType(settings.getDetails().getBrandName());
+        companyToChange.getBrandName().clear();
+        companyToChange.getBrandName().addAll(brandNames);
+
         // legal name
-        companyToChange.setName(settings.getDetails().getCompanyLegalName());
+        List<PartyNameType> legalNames = UblAdapter.adaptPartyNames(settings.getDetails().getLegalName());
+        companyToChange.getPartyName().clear();
+        companyToChange.getPartyName().addAll(legalNames);
 
         // VAT number
         if (settings.getDetails().getVatNumber() != null)
@@ -381,7 +403,7 @@ public class UblAdapter {
 
         // business keywords
         ClassificationSchemeType classificationScheme = new ClassificationSchemeType();
-        classificationScheme.setDescription(new ArrayList<>(settings.getDetails().getBusinessKeywords()));
+        classificationScheme.setDescription(adaptTextType(settings.getDetails().getBusinessKeywords()));
         qualifyingParty.setBusinessClassificationScheme(classificationScheme);
 
         // year of company registration
@@ -458,14 +480,14 @@ public class UblAdapter {
         ublEvent.setDurationPeriod(durationPeriod);
 
         // description
-        ublEvent.setDescription(event.getDescription());
+        ublEvent.setDescription(adaptTextTypeSingleLang(event.getDescription()));
 
         return ublEvent;
     }
 
     public static CompanyEvent adaptEvent(EventType ublEvent) {
         CompanyEvent companyEvent = new CompanyEvent();
-        companyEvent.setDescription(ublEvent.getDescription());
+        companyEvent.setDescription(ublEvent.getDescription().getValue());
         companyEvent.setName(ublEvent.getIdentificationID());
         if (ublEvent.getOccurenceLocation() != null)
             companyEvent.setPlace(adaptAddress(ublEvent.getOccurenceLocation().getAddress()));
@@ -492,7 +514,7 @@ public class UblAdapter {
 
         return socialMediaList.stream().map(sm -> {
             CommunicationType communicationType = new CommunicationType();
-            communicationType.setValue(sm);
+            communicationType.setValue(UblAdapter.adaptTextTypeSingleLang(sm));
             return communicationType;
         }).collect(Collectors.toList());
     }
@@ -504,7 +526,7 @@ public class UblAdapter {
         return codeType;
     }
 
-    public static CertificateType adaptCertificate(BinaryObjectType certificateBinary, String name, String type, String description) throws IOException {
+    public static CertificateType adaptCertificate(BinaryObjectType certificateBinary, String name, String type, String description) {
 
         CodeType codeType = adaptCodeType(name, null);
 
@@ -569,5 +591,49 @@ public class UblAdapter {
                     code.setValue(sector);
                     return code;
                 }).collect(Collectors.toList());
+    }
+
+    public static TextType adaptTextType(String value, NimbleConfigurationProperties.LanguageID languageID) {
+        TextType textType = new TextType();
+        if (languageID != null)
+            textType.setLanguageID(languageID.toString());
+        textType.setValue(value);
+        return textType;
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    public static TextType adaptTextTypeSingleLang(String value) {
+        return adaptTextType(value, null);
+    }
+
+    public static List<TextType> adaptTextType(Map<NimbleConfigurationProperties.LanguageID, String> texts) {
+        if (texts == null)
+            return Collections.emptyList();
+        return texts.entrySet().stream().map( t -> adaptTextType(t.getValue(), t.getKey())).collect(Collectors.toList());
+    }
+
+    public static Map<NimbleConfigurationProperties.LanguageID, String> adaptTextType(List<TextType> textTypes) {
+        return textTypes.stream().collect(Collectors.toMap(t-> NimbleConfigurationProperties.LanguageID.fromString(t.getLanguageID()), TextType::getValue));
+    }
+
+    public static List<String> adaptTextTypeList(List<TextType> textTypes) {
+        return textTypes.stream().map(TextType::getValue).collect(Collectors.toList());
+    }
+
+    public static List<PartyNameType> adaptPartyNames(Map<NimbleConfigurationProperties.LanguageID, String> names) {
+
+        if (names == null)
+            return Collections.emptyList();
+
+        List<TextType> textTypes = adaptTextType(names);
+        return textTypes.stream().map(textType -> {
+            PartyNameType partyName = new PartyNameType();
+            partyName.setName(textType);
+            return partyName;
+        }).collect(Collectors.toList());
+    }
+
+    public static Map<NimbleConfigurationProperties.LanguageID, String> adaptPartyNames(List<PartyNameType> partyNameTypes) {
+        return adaptTextType(partyNameTypes.stream().map(PartyNameType::getName).collect(Collectors.toList()));
     }
 }
