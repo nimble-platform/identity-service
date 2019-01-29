@@ -33,13 +33,13 @@ public class BinaryDataSourceFactory {
 
         // Assume we make use of Apache Tomcat connection pooling (default in Spring Boot)
         org.apache.tomcat.jdbc.pool.DataSource tds = (org.apache.tomcat.jdbc.pool.DataSource) ds;
-        tds.setInitialSize(Integer.valueOf(environment.getProperty("spring.datasource.tomcat.initial-size")));
-        tds.setTestWhileIdle(Boolean.valueOf(environment.getProperty("spring.datasource.tomcat.test-while-idle").toUpperCase()));
-        tds.setTimeBetweenEvictionRunsMillis(Integer.valueOf(environment.getProperty("spring.datasource.tomcat.time-between-eviction-runs-millis")));
-        tds.setMinEvictableIdleTimeMillis(Integer.valueOf(environment.getProperty("spring.datasource.tomcat.min-evictable-idle-time-millis")));
-        tds.setMaxActive(Integer.valueOf(environment.getProperty("spring.datasource.tomcat.max-active")));
-        tds.setMaxIdle(Integer.valueOf(environment.getProperty("spring.datasource.tomcat.max-idle")));
-        tds.setMinIdle(Integer.valueOf(environment.getProperty("spring.datasource.tomcat.min-idle")));
+        tds.setInitialSize(Integer.valueOf(environment.getProperty("spring.datasource.initial-size")));
+        tds.setTestWhileIdle(Boolean.valueOf(environment.getProperty("spring.datasource.test-while-idle").toUpperCase()));
+        tds.setTimeBetweenEvictionRunsMillis(Integer.valueOf(environment.getProperty("spring.datasource.time-between-eviction-runs-millis")));
+        tds.setMinEvictableIdleTimeMillis(Integer.valueOf(environment.getProperty("spring.datasource.min-evictable-idle-time-millis")));
+        tds.setMaxActive(Integer.valueOf(environment.getProperty("spring.datasource.max-active")));
+        tds.setMaxIdle(Integer.valueOf(environment.getProperty("spring.datasource.max-idle")));
+        tds.setMinIdle(Integer.valueOf(environment.getProperty("spring.datasource.min-idle")));
 
         return tds;
     }
