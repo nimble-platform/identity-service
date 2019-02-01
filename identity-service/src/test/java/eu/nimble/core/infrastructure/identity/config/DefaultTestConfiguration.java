@@ -16,6 +16,7 @@ import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.util.Random;
 
 import static eu.nimble.core.infrastructure.identity.controller.IdentityController.REFRESH_TOKEN_SESSION_KEY;
 import static org.mockito.Matchers.*;
@@ -39,7 +40,6 @@ public class DefaultTestConfiguration {
 
         // mock company query
         PartyType mockParty = new PartyType();
-        mockParty.setID("1");
         when(identityServiceMock.getCompanyOfUser(anyObject())).thenReturn(java.util.Optional.of(mockParty));
 
         // mock verification of roles

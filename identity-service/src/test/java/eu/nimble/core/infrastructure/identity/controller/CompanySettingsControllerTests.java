@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import eu.nimble.core.infrastructure.identity.IdentityServiceApplication;
 import eu.nimble.core.infrastructure.identity.config.DefaultTestConfiguration;
+import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
@@ -12,13 +13,13 @@ import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.QualityIndicatorType;
-import org.junit.ClassRule;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.*;
 
+import org.junit.runners.MethodSorters;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,11 +27,16 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.kafka.test.rule.KafkaEmbedded;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -38,8 +44,7 @@ import java.util.Date;
 import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -68,6 +73,9 @@ public class CompanySettingsControllerTests {
     private PartyRepository partyRepository;
 
     @Autowired
+    private NegotiationSettingsRepository negotiationSettingsRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     @ClassRule
@@ -78,6 +86,8 @@ public class CompanySettingsControllerTests {
 
         // GIVEN: existing company on platform
         PartyType company = identityService.getCompanyOfUser(null).get();
+        partyRepository.save(company);
+        company.setID(company.getHjid().toString());
         partyRepository.save(company);
 
         // WHEN: updating company settings
@@ -358,6 +368,62 @@ public class CompanySettingsControllerTests {
         assertTrue(detailCompleteness.getQuantity().getValue().doubleValue() > 0.0);
         assertFalse(certificationCompleteness.getQuantity().getValue().doubleValue() > 0.0);
         assertTrue(tradeCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+    }
+
+    @Test
+    @Ignore
+    public void testCertificateManagement() throws Exception {
+
+        // GIVEN: existing company on platform
+        PartyType company = identityService.getCompanyOfUser(null).get();
+        partyRepository.save(company);
+        company.setID(company.getHjid().toString());
+        partyRepository.save(company);
+
+        // upload certificate
+        InputStream certContentStream = new ByteArrayInputStream("cert content".getBytes());
+        MockMultipartFile certFile = new MockMultipartFile("file", "cert.txt", "multipart/form-data", certContentStream);
+        this.mockMvc.perform(MockMvcRequestBuilders.fileUpload(String.format("/company-settings/certificate"))
+                .file(certFile)
+                .param("name", "cert name")
+                .param("type", "cert type")
+                .param("description", "cert description")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN"))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // check if certificate is listed in company settings
+        String responseAsString = this.mockMvc.perform(get("/company-settings/" + company.getID()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.certificates.length()", is(1)))
+                .andExpect(jsonPath("$.certificates[0].name", is("cert name")))
+                .andExpect(jsonPath("$.certificates[0].type", is("cert type")))
+                .andExpect(jsonPath("$.certificates[0].description", is("cert description")))
+                .andReturn().getResponse().getContentAsString();
+        CompanySettings settings = objectMapper.readValue(responseAsString, CompanySettings.class);
+
+        // download certificate
+        String certId = settings.getCertificates().get(0).getId();
+        byte[] certBytes = this.mockMvc.perform(get("/company-settings/certificate/" + certId))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsByteArray();
+        assertEquals("cert content", new String(certBytes, StandardCharsets.UTF_8));
+
+        // delete certificate
+        this.mockMvc.perform(delete("/company-settings/certificate/" + certId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN"))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // check for empty certificate list
+        this.mockMvc.perform(get("/company-settings/" + company.getID()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.certificates.length()", is(0)));
     }
 
     public NegotiationSettings initNegotiationSettings() throws Exception {

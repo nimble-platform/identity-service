@@ -319,6 +319,7 @@ public class CompanySettingsController {
 
         // update list of certificates
         Optional<CertificateType> toDelete = company.getCertificate().stream()
+                .filter(c -> c.getHjid() != null)
                 .filter(c -> c.getHjid().equals(certificateId))
                 .findFirst();
         if( toDelete.isPresent()) {
