@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import eu.nimble.core.infrastructure.identity.IdentityServiceApplication;
-import eu.nimble.core.infrastructure.identity.DefaultTestConfiguration;
+import eu.nimble.core.infrastructure.identity.config.DefaultTestConfiguration;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;

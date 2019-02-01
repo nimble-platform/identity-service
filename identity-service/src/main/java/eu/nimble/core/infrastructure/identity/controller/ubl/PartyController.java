@@ -206,17 +206,17 @@ public class PartyController {
 
     @ApiOperation(value = "Get all party ids and name. Returns id-name tuples.",
             notes = "Roles for persons are not set. Please use /person/{personId} for fetching roles of users",
-            response = PartyTuple.class, responseContainer = "Set")
+            response = PartyTuple.class, responseContainer = "List")
     @RequestMapping(value = "/party/all", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<Set<PartyTuple>> getAllPartyIds(
+    ResponseEntity<List<PartyTuple>> getAllPartyIds(
             @ApiParam(value = "Excluded ids") @RequestParam(value = "exclude", required = false) List<String> exclude) {
 
-        Set<PartyTuple> partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
-                .map(p -> new PartyTuple(p.getID(), p.getName()))
-                .collect(Collectors.toSet());
+        List<PartyTuple> partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
+                .map(p -> new PartyTuple(p.getHjid().toString(), p.getName()))
+                .collect(Collectors.toList());
 
         if (exclude != null)
-            partyIds = partyIds.stream().filter(p -> !exclude.contains(p.getIdentifier())).collect(Collectors.toSet());
+            partyIds = partyIds.stream().filter(p -> !exclude.contains(p.getCompanyID())).collect(Collectors.toList());
 
         return ResponseEntity.ok(partyIds);
     }
@@ -249,16 +249,16 @@ public class PartyController {
     }
 
     private static class PartyTuple {
-        private String identifier;
+        private String companyID;
         private String name;
 
-        PartyTuple(String identifier, String name) {
-            this.identifier = identifier;
+        PartyTuple(String companyID, String name) {
+            this.companyID = companyID;
             this.name = name;
         }
 
-        String getIdentifier() {
-            return identifier;
+        public String getCompanyID() {
+            return companyID;
         }
 
         public String getName() {

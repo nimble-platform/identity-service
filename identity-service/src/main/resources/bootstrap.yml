@@ -17,7 +17,7 @@ spring:
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: none
+      ddl-auto: ${DDL_AUTO:update}
     properties:
       hibernate:
         type: debug
@@ -46,7 +46,7 @@ spring:
     min-idle: 3
     max-wait: 90000
     time-between-eviction-runs-millis: 60000
-    min-evictable-idle-time-millis: 60000
+    min-evictable-idle-time-millis: 3600000
     validation-query: "SELECT 1;" # Validation query must be set in order to test connections
     dbcp:
       default-auto-commit: false

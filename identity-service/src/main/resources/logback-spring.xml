@@ -44,7 +44,7 @@
         <appender-ref ref="CONSOLE"/>
     </root>
 
-    <logger name="org.apache.tomcat.jdbc" level="debug" />
+    <logger name="org.apache.tomcat.jdbc.pool" level="debug" />
     <logger name="springfox.documentation.spring.web.readers.operation.OperationModelsProvider" level="info" />
     <logger name="springfox.documentation.spring.web.readers.operation.OperationResponseClassReader" level="info" />
     <logger name="org.springframework.cloud.config.client" level="warn"/>
