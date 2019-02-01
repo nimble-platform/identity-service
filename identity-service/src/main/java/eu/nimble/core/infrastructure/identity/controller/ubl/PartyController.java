@@ -211,7 +211,7 @@ public class PartyController {
             @ApiParam(value = "Excluded ids") @RequestParam(value = "exclude", required = false) List<String> exclude) {
 
         Set<PartyTuple> partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
-                .map(p -> new PartyTuple(p.getID(), p.getName()))
+                .map(p -> new PartyTuple(p.getHjid().toString(), p.getName()))
                 .collect(Collectors.toSet());
 
         if (exclude != null)
