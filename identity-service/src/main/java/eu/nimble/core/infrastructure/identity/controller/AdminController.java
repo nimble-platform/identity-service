@@ -44,14 +44,23 @@ public class AdminController {
         // ToDo: verify proper access policy (e.g. admin role)
 
         logger.info("Fetching unverified companies");
-        List<PartyType> unverifiedCompanies = adminService.queryUnverifiedCompanies();
+        List<PartyType> unverifiedCompanies = adminService.queryCompanies(AdminService.CompanyState.UNVERIFIED);
 
         // paginate results
-        int start = (pageNumber - 1) * pageSize;
-        int end = (start + pageSize) > unverifiedCompanies.size() ? unverifiedCompanies.size() : (start + pageSize);
-        Page<PartyType> companyPage = new PageImpl<>(unverifiedCompanies.subList(start, end), new PageRequest(pageNumber - 1, pageSize), unverifiedCompanies.size());
+        return makePage(pageNumber, pageSize, unverifiedCompanies);
+    }
 
-        return ResponseEntity.ok(companyPage);
+    @ApiOperation(value = "Retrieve verified companies", response = Page.class)
+    @RequestMapping(value = "/verified_companies", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<Page<PartyType>> getVerifiedCompanies(@RequestParam(value = "page", required = false, defaultValue = "1") int pageNumber,
+                                                         @RequestParam(value = "size", required = false, defaultValue = DEFAULT_PAGE_SIZE) int pageSize) {
+        // ToDo: verify proper access policy (e.g. admin role)
+
+        logger.info("Fetching unverified companies");
+        List<PartyType> verifiedCompanies = adminService.queryCompanies(AdminService.CompanyState.VERIFIED);
+
+        // paginate results
+        return makePage(pageNumber, pageSize, verifiedCompanies);
     }
 
     @ApiOperation(value = "Verify company")
@@ -80,5 +89,13 @@ public class AdminController {
         adminService.deleteCompany(companyId);
 
         return ResponseEntity.ok().build();
+    }
+
+    private ResponseEntity<Page<PartyType>> makePage(@RequestParam(value = "page", required = false, defaultValue = "1") int pageNumber, @RequestParam(value = "size", required = false, defaultValue = DEFAULT_PAGE_SIZE) int pageSize, List<PartyType> unverifiedCompanies) {
+        int start = (pageNumber - 1) * pageSize;
+        int end = (start + pageSize) > unverifiedCompanies.size() ? unverifiedCompanies.size() : (start + pageSize);
+        Page<PartyType> companyPage = new PageImpl<>(unverifiedCompanies.subList(start, end), new PageRequest(pageNumber - 1, pageSize), unverifiedCompanies.size());
+
+        return ResponseEntity.ok(companyPage);
     }
 }

@@ -55,9 +55,9 @@ public class AdminService {
     @Autowired
     private IdentityService identityService;
 
-//    @Cacheable("unverifiedCompanies")
-    public List<PartyType> queryUnverifiedCompanies() {
-        List<PartyType> unverifiedCompanies = new ArrayList<>();
+    //    @Cacheable("unverifiedCompanies")
+    public List<PartyType> queryCompanies(CompanyState companyState) {
+        List<PartyType> resultingCompanies = new ArrayList<>();
         Iterable<PartyType> allParties = partyRepository.findAll(new Sort(Sort.Direction.ASC, "name"));
         for (PartyType company : allParties) {
 
@@ -88,13 +88,16 @@ public class AdminService {
 
             // check if unverified check whether at least on member has proper role
             Set<String> mergedRoles = memberRoles.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
-            if (mergedRoles.isEmpty() == false && mergedRoles.contains(LEGAL_REPRESENTATIVE_ROLE) == false) {
-                unverifiedCompanies.add(company);
+            if (mergedRoles.isEmpty() == false && mergedRoles.contains(LEGAL_REPRESENTATIVE_ROLE) == false && companyState.equals(CompanyState.UNVERIFIED)) {
+                resultingCompanies.add(company);
+                continue; // avoid multiple entries in list
+            } else if (mergedRoles.contains(LEGAL_REPRESENTATIVE_ROLE) && companyState.equals(CompanyState.VERIFIED)) {
+                resultingCompanies.add(company);
                 continue; // avoid multiple entries in list
             }
         }
 
-        return unverifiedCompanies;
+        return resultingCompanies;
     }
 
     public boolean verifyCompany(Long companyId) throws Exception {
@@ -136,5 +139,9 @@ public class AdminService {
         negotiationSettingsRepository.deleteByCompany(company);
 
         return partyRepository.deleteByHjid(companyId);
+    }
+
+    public enum CompanyState {
+        VERIFIED, UNVERIFIED
     }
 }

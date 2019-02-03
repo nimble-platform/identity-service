@@ -68,7 +68,7 @@ public class PartyController {
     @RequestMapping(value = "/party/{partyId}", method = RequestMethod.GET)
     ResponseEntity<PartyType> getParty(
             @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long partyId,
-            @ApiParam(value = "Switch for including roles of persons in response (slower)")  @RequestParam(required = false) boolean includeRoles,
+            @ApiParam(value = "Switch for including roles of persons in response (slower)") @RequestParam(required = false) boolean includeRoles,
             @RequestHeader(value = "Authorization") String bearer) throws IOException {
 
         // search relevant parties
@@ -90,15 +90,16 @@ public class PartyController {
     @ApiOperation(value = "getAllParties", notes = "Get all parties in a paginated manner", response = Page.class)
     @RequestMapping(value = "/parties/all", method = RequestMethod.GET)
     ResponseEntity<Page<PartyType>> getAllParties(@RequestParam(value = "page", required = false, defaultValue = "0") int pageNumber,
-                                                  @ApiParam(value = "Switch for including roles of persons in response (slower)")  @RequestParam(required = false) boolean includeRoles,
+                                                  @ApiParam(value = "Switch for including roles of persons in response (slower)") @RequestParam(required = false) boolean includeRoles,
+                                                  @ApiParam(value = "Filter switch for results", allowableValues = "only_verified") @RequestParam(required = false) String filter,
                                                   @RequestParam(value = "size", required = false, defaultValue = "10") int pageSize) {
 
         logger.debug("Requesting all parties page {}", pageNumber);
 
         Page<PartyType> partyPage = partyRepository.findAll(new PageRequest(pageNumber, pageSize, new Sort(Sort.Direction.ASC, "name")));
 
-        if(includeRoles)
-            // fetch and include roles
+        // fetch and include roles
+        if (includeRoles)
             partyPage.getContent().forEach(identityService::enrichWithRoles);
 
         return new ResponseEntity<>(partyPage, HttpStatus.OK);
@@ -108,7 +109,7 @@ public class PartyController {
     @ApiOperation(value = "getParties", notes = "Get multiple parties for Ids.", response = Iterable.class)
     @RequestMapping(value = "/parties/{partyIds}", method = RequestMethod.GET)
     ResponseEntity<?> getParty(
-            @ApiParam(value = "Switch for including roles of persons in response (slower)")  @RequestParam(required = false) boolean includeRoles,
+            @ApiParam(value = "Switch for including roles of persons in response (slower)") @RequestParam(required = false) boolean includeRoles,
             @ApiParam(value = "Ids of parties to retrieve.", required = true) @PathVariable List<Long> partyIds) {
 
         logger.debug("Requesting parties with Ids {}", partyIds);
@@ -128,7 +129,7 @@ public class PartyController {
             parties.add(party.get());
         }
 
-        if(includeRoles)
+        if (includeRoles)
             // fetch and include roles
             parties.forEach(identityService::enrichWithRoles);
 
@@ -139,7 +140,7 @@ public class PartyController {
     @ApiOperation(value = "", notes = "Get Party for person ID.", response = PartyType.class, tags = {})
     @RequestMapping(value = "/party_by_person/{personId}", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<List<PartyType>> getPartyByPersonID(
-            @ApiParam(value = "Switch for including roles of persons in response (slower)")  @RequestParam(required = false) boolean includeRoles,
+            @ApiParam(value = "Switch for including roles of persons in response (slower)") @RequestParam(required = false) boolean includeRoles,
             @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long personId) {
 
         // search for persons
@@ -154,7 +155,7 @@ public class PartyController {
         PersonType person = foundPersons.get(0);
         List<PartyType> parties = partyRepository.findByPerson(person);
 
-        if(includeRoles)
+        if (includeRoles)
             // fetch and include roles
             parties.forEach(identityService::enrichWithRoles);
 
@@ -167,7 +168,7 @@ public class PartyController {
     @RequestMapping(value = "/party/ubl/{partyId}", produces = {"text/xml"}, method = RequestMethod.GET)
     ResponseEntity<String> getPartyUbl(
             @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long partyId,
-            @ApiParam(value = "Switch for including roles of persons in response (slower)")  @RequestParam(required = false) boolean includeRoles,
+            @ApiParam(value = "Switch for including roles of persons in response (slower)") @RequestParam(required = false) boolean includeRoles,
             @RequestHeader(value = "Authorization") String bearer) throws IOException, JAXBException {
 
         // search relevant parties
