@@ -91,7 +91,6 @@ public class PartyController {
     @RequestMapping(value = "/parties/all", method = RequestMethod.GET)
     ResponseEntity<Page<PartyType>> getAllParties(@RequestParam(value = "page", required = false, defaultValue = "0") int pageNumber,
                                                   @ApiParam(value = "Switch for including roles of persons in response (slower)") @RequestParam(required = false) boolean includeRoles,
-                                                  @ApiParam(value = "Filter switch for results", allowableValues = "only_verified") @RequestParam(required = false) String filter,
                                                   @RequestParam(value = "size", required = false, defaultValue = "10") int pageSize) {
 
         logger.debug("Requesting all parties page {}", pageNumber);
