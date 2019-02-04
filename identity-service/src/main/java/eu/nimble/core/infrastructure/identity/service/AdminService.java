@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -142,16 +143,22 @@ public class AdminService {
         negotiationSettingsRepository.deleteByCompany(company);
 
         // delete trading preferences
-        if( company.getPurchaseTerms() != null) {
+        if (company.getPurchaseTerms() != null) {
             deliveryTermsRepository.delete(company.getPurchaseTerms().getDeliveryTerms());
             paymentMeansRepository.delete(company.getPurchaseTerms().getPaymentMeans());
         }
-        if( company.getSalesTerms() != null) {
+        if (company.getSalesTerms() != null) {
             deliveryTermsRepository.delete(company.getSalesTerms().getDeliveryTerms());
             paymentMeansRepository.delete(company.getSalesTerms().getPaymentMeans());
         }
-        deliveryTermsRepository.deleteByPartyID(companyId);
-        paymentMeansRepository.deleteByPartyID(companyId);
+
+        try {
+            // delete for legacy schema
+            deliveryTermsRepository.deleteByPartyID(companyId);
+            paymentMeansRepository.deleteByPartyID(companyId);
+        } catch (InvalidDataAccessResourceUsageException ex) {
+            // ignored
+        }
 
         return partyRepository.deleteByHjid(companyId);
     }

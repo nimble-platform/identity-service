@@ -312,7 +312,6 @@ public class CompanySettingsControllerTests {
     }
 
     @Test
-    @SuppressWarnings("ConstantConditions")
     public void testProfileCompleteness() throws Exception {
 
         // GIVEN: existing company on platform
