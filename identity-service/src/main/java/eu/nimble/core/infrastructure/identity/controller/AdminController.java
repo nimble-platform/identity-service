@@ -1,7 +1,7 @@
 package eu.nimble.core.infrastructure.identity.controller;
 
 import eu.nimble.core.infrastructure.identity.service.AdminService;
-import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import io.swagger.annotations.Api;
@@ -35,7 +35,7 @@ public class AdminController {
     private AdminService adminService;
 
     @Autowired
-    private IdentityUtils identityUtils;
+    private IdentityService identityService;
 
     @ApiOperation(value = "Retrieve unverified companies", response = Page.class)
     @RequestMapping(value = "/unverified_companies", produces = {"application/json"}, method = RequestMethod.GET)
@@ -44,14 +44,23 @@ public class AdminController {
         // ToDo: verify proper access policy (e.g. admin role)
 
         logger.info("Fetching unverified companies");
-        List<PartyType> unverifiedCompanies = adminService.queryUnverifiedCompanies();
+        List<PartyType> unverifiedCompanies = adminService.queryCompanies(AdminService.CompanyState.UNVERIFIED);
 
         // paginate results
-        int start = (pageNumber - 1) * pageSize;
-        int end = (start + pageSize) > unverifiedCompanies.size() ? unverifiedCompanies.size() : (start + pageSize);
-        Page<PartyType> companyPage = new PageImpl<>(unverifiedCompanies.subList(start, end), new PageRequest(pageNumber - 1, pageSize), unverifiedCompanies.size());
+        return makePage(pageNumber, pageSize, unverifiedCompanies);
+    }
 
-        return ResponseEntity.ok(companyPage);
+    @ApiOperation(value = "Retrieve verified companies", response = Page.class)
+    @RequestMapping(value = "/verified_companies", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<Page<PartyType>> getVerifiedCompanies(@RequestParam(value = "page", required = false, defaultValue = "1") int pageNumber,
+                                                         @RequestParam(value = "size", required = false, defaultValue = DEFAULT_PAGE_SIZE) int pageSize) {
+        // ToDo: verify proper access policy (e.g. admin role)
+
+        logger.info("Fetching unverified companies");
+        List<PartyType> verifiedCompanies = adminService.queryCompanies(AdminService.CompanyState.VERIFIED);
+
+        // paginate results
+        return makePage(pageNumber, pageSize, verifiedCompanies);
     }
 
     @ApiOperation(value = "Verify company")
@@ -59,7 +68,7 @@ public class AdminController {
     ResponseEntity<?> verifyCompany(@RequestParam(value = "companyId") long companyId,
                                     @RequestHeader(value = "Authorization") String bearer) throws Exception {
 
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
+        if (identityService.hasRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
             return new ResponseEntity<>("Only legal platform managers are allowed to verify companies", HttpStatus.UNAUTHORIZED);
 
         logger.info("Verifying company with id {}", companyId);
@@ -73,12 +82,20 @@ public class AdminController {
     ResponseEntity<?> deleteCompany(@PathVariable(value = "companyId") long companyId,
                                     @RequestHeader(value = "Authorization") String bearer) throws Exception {
 
-        if (identityUtils.hasRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
+        if (identityService.hasRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
             return new ResponseEntity<>("Only legal platform managers are allowed to delete companies", HttpStatus.UNAUTHORIZED);
 
         logger.info("Deleting company with id {}", companyId);
         adminService.deleteCompany(companyId);
 
         return ResponseEntity.ok().build();
+    }
+
+    private ResponseEntity<Page<PartyType>> makePage(@RequestParam(value = "page", required = false, defaultValue = "1") int pageNumber, @RequestParam(value = "size", required = false, defaultValue = DEFAULT_PAGE_SIZE) int pageSize, List<PartyType> unverifiedCompanies) {
+        int start = (pageNumber - 1) * pageSize;
+        int end = (start + pageSize) > unverifiedCompanies.size() ? unverifiedCompanies.size() : (start + pageSize);
+        Page<PartyType> companyPage = new PageImpl<>(unverifiedCompanies.subList(start, end), new PageRequest(pageNumber - 1, pageSize), unverifiedCompanies.size());
+
+        return ResponseEntity.ok(companyPage);
     }
 }

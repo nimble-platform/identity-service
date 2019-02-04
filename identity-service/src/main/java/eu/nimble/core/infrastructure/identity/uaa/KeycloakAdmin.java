@@ -46,11 +46,16 @@ public class KeycloakAdmin {
             "offline_access", "admin", "create-realm",
             "create-realm", "nimble_user", "initial_representative");
 
+    public static final List<String> NON_NIMBLE_ROLES = Arrays.asList("uma_authorization", "offline_access", "admin", "create-realm", "create-realm");
+
     @Autowired
-    private KeycloakConfig config;
+    private KeycloakConfig keycloakConfig;
 
     @Autowired
     private OAuthClient oAuthClient;
+
+    @Autowired
+    private OAuthClientConfig oAuthClientConfig;
 
     private Keycloak keycloak;
 
@@ -59,13 +64,13 @@ public class KeycloakAdmin {
     public void init() {
         ResteasyClient client = new ResteasyClientBuilder().connectionPoolSize(10).build();
         this.keycloak = KeycloakBuilder.builder()
-                .serverUrl(config.getServerUrl())
-                .realm(config.getRealm())
+                .serverUrl(keycloakConfig.getServerUrl())
+                .realm(keycloakConfig.getRealm())
                 .grantType(OAuth2Constants.PASSWORD)
-                .username(config.getAdmin().getUsername())
-                .password(config.getAdmin().getPassword())
-                .clientId(config.getAdmin().getCliendId())
-                .clientSecret(config.getAdmin().getCliendSecret())
+                .username(keycloakConfig.getAdmin().getUsername())
+                .password(keycloakConfig.getAdmin().getPassword())
+                .clientId(keycloakConfig.getAdmin().getCliendId())
+                .clientSecret(keycloakConfig.getAdmin().getCliendSecret())
                 .resteasyClient(client)
                 .build();
     }
@@ -75,7 +80,7 @@ public class KeycloakAdmin {
      **/
     public String registerUser(String firstName, String lastName, String password, String email) {
 
-        RealmResource realmResource = this.keycloak.realm(config.getRealm());
+        RealmResource realmResource = this.keycloak.realm(keycloakConfig.getRealm());
         UsersResource userResource = realmResource.users();
 
         // create proper credentials
@@ -88,7 +93,7 @@ public class KeycloakAdmin {
         user.setFirstName(firstName);
         user.setLastName(lastName);
         user.setEmail(email);
-//        user.setRequiredActions(Collections.emptyList());
+        user.setRequiredActions(Collections.emptyList());
         user.setEnabled(true);
         user.setEmailVerified(false);
 
@@ -102,8 +107,9 @@ public class KeycloakAdmin {
         // set password
         createdUser.resetPassword(passwordCredentials);
 
-        // send verification mail
-//        createdUser.sendVerifyEmail();
+//        // send verification mail
+//        createdUser.executeActionsEmail(oAuthClientConfig.getCliendId(), "http://localhost:102", Collections.singletonList("VERIFY_EMAIL"));
+//        createdUser.sendVerifyEmail(oAuthClientConfig.getCliendId());
 
         addRole(userId, NIMBLE_USER_ROLE);
 
@@ -111,7 +117,7 @@ public class KeycloakAdmin {
     }
 
     public Map<String, String> getAssignableRoles() {
-        RealmResource realmResource = this.keycloak.realm(config.getRealm());
+        RealmResource realmResource = this.keycloak.realm(keycloakConfig.getRealm());
 
         return realmResource.roles().list().stream()
                 .filter(r -> NON_ASSIGNABLE_ROLES.contains(r.getName()) == false)
@@ -135,7 +141,7 @@ public class KeycloakAdmin {
     public void addRole(String userId, String role) {
         UserResource userResource = fetchUserResource(userId);
 
-        RealmResource realmResource = this.keycloak.realm(config.getRealm());
+        RealmResource realmResource = this.keycloak.realm(keycloakConfig.getRealm());
         RoleRepresentation roleRepresentation = realmResource.roles().get(role).toRepresentation();
         userResource.roles().realmLevel().add(Collections.singletonList(roleRepresentation));
     }
@@ -143,14 +149,14 @@ public class KeycloakAdmin {
     public void removeRole(String userId, String role) {
         UserResource userResource = fetchUserResource(userId);
 
-        RealmResource realmResource = this.keycloak.realm(config.getRealm());
+        RealmResource realmResource = this.keycloak.realm(keycloakConfig.getRealm());
         RoleRepresentation roleRepresentation = realmResource.roles().get(role).toRepresentation();
         userResource.roles().realmLevel().remove(Collections.singletonList(roleRepresentation));
     }
 
     public List<UserRepresentation> getPlatformManagers() {
 
-        RealmResource realmResource = this.keycloak.realm(config.getRealm());
+        RealmResource realmResource = this.keycloak.realm(keycloakConfig.getRealm());
         List<GroupRepresentation> groups = realmResource.groups().groups();
 
         Optional<GroupRepresentation> platformManagerGroup = groups.stream().filter(g -> "Platform Manager".equals(g.getName())).findFirst();
@@ -162,7 +168,7 @@ public class KeycloakAdmin {
     }
 
     private UserResource fetchUserResource(String userId) {
-        RealmResource realmResource = this.keycloak.realm(config.getRealm());
+        RealmResource realmResource = this.keycloak.realm(keycloakConfig.getRealm());
         return realmResource.users().get(userId);
     }
 
@@ -176,7 +182,7 @@ public class KeycloakAdmin {
 
             // set new password
             CredentialRepresentation passwordCredential = createPasswordCredentials(newPassword);
-            this.keycloak.realm(config.getRealm()).users().get(user.getExternalID()).resetPassword(passwordCredential);
+            this.keycloak.realm(keycloakConfig.getRealm()).users().get(user.getExternalID()).resetPassword(passwordCredential);
         } catch (OAuth2AccessDeniedException ex) {
             logger.info("Authentication error while setting new password");
             return false;

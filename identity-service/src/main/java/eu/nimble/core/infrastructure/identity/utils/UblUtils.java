@@ -92,17 +92,4 @@ public class UblUtils {
     public static <V> List<V> toModifyableList(V... objects) {
         return new ArrayList<>(Arrays.asList(objects));
     }
-
-    public static PartyType removeBinaries(PartyType partyType) {
-        for (CertificateType cert : partyType.getCertificate()) {
-            cert.setDocumentReference(null);
-        }
-        if (partyType.getDocumentReference() != null) {
-            for (DocumentReferenceType documentReference : partyType.getDocumentReference()) {
-                if (documentReference.getAttachment() != null)
-                    documentReference.getAttachment().setEmbeddedDocumentBinaryObject(null);
-            }
-        }
-        return partyType;
-    }
 }

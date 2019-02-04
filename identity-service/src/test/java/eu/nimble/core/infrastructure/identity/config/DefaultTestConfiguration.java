@@ -1,7 +1,7 @@
 package eu.nimble.core.infrastructure.identity.config;
 
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
-import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
@@ -16,6 +16,7 @@ import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.util.Random;
 
 import static eu.nimble.core.infrastructure.identity.controller.IdentityController.REFRESH_TOKEN_SESSION_KEY;
 import static org.mockito.Matchers.*;
@@ -30,22 +31,21 @@ public class DefaultTestConfiguration {
 
     @Bean
     @Primary
-    public IdentityUtils identityResolver() throws IOException {
+    public IdentityService identityResolver() throws IOException {
 
-        IdentityUtils identityUtilsMock = Mockito.mock(IdentityUtils.class);
+        IdentityService identityServiceMock = Mockito.mock(IdentityService.class);
 
         // mock user query
-        when(identityUtilsMock.getUserfromBearer(anyString())).thenReturn(new UaaUser());
+        when(identityServiceMock.getUserfromBearer(anyString())).thenReturn(new UaaUser());
 
         // mock company query
         PartyType mockParty = new PartyType();
-        mockParty.setID("1");
-        when(identityUtilsMock.getCompanyOfUser(anyObject())).thenReturn(java.util.Optional.of(mockParty));
+        when(identityServiceMock.getCompanyOfUser(anyObject())).thenReturn(java.util.Optional.of(mockParty));
 
         // mock verification of roles
-        when(identityUtilsMock.hasRole(any(), any())).thenReturn(true);
+        when(identityServiceMock.hasRole(any(), any())).thenReturn(true);
 
-        return identityUtilsMock;
+        return identityServiceMock;
     }
 
     @Bean

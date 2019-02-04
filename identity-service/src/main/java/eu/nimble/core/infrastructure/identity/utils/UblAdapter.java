@@ -278,7 +278,6 @@ public class UblAdapter {
         PersonType person = new PersonType();
         person.setFirstName(frontEndUser.getFirstname());
         person.setFamilyName(frontEndUser.getLastname());
-//        adminPerson.setBirthDate(frontEndUser.getDateOfBirth()); // TODO: convert date
         person.setBirthplaceName(frontEndUser.getPlaceOBirth());
         ContactType contact = new ContactType();
         contact.setElectronicMail(frontEndUser.getEmail());
@@ -300,8 +299,10 @@ public class UblAdapter {
         companyToChange.setName(settings.getDetails().getCompanyLegalName());
 
         // VAT number
-        if (settings.getDetails().getVatNumber() != null)
+        if (settings.getDetails().getVatNumber() != null) {
+            companyToChange.getPartyTaxScheme().clear();
             companyToChange.getPartyTaxScheme().add(adaptTaxSchema(settings.getDetails().getVatNumber()));
+        }
 
         // postal address
         companyToChange.setPostalAddress(adaptAddress(settings.getDetails().getAddress()));

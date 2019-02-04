@@ -1,6 +1,6 @@
 package eu.nimble.core.infrastructure.identity.controller.ubl;
 
-import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -35,9 +36,9 @@ public class PersonController {
     private PersonRepository personRepository;
 
     @Autowired
-    private IdentityUtils identityUtils;
+    private IdentityService identityService;
 
-    @ApiOperation(value = "", notes = "Get Person for Id.", response = PersonType.class, tags = {})
+    @ApiOperation(value = "Get Person for Id.", notes = "Roles are fetch from Keycloak", response = PersonType.class, tags = {})
     @RequestMapping(value = "/person/{personId}", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<PersonType> getPerson(
             @ApiParam(value = "Id of person to retrieve.", required = true) @PathVariable Long personId) {
@@ -55,6 +56,10 @@ public class PersonController {
 
         PersonType person = foundPersons.get(0);
 
+        // fetch and set roles
+        List<String> roles = new ArrayList<>(identityService.fetchRoles(person));
+        person.setRole(roles);
+
         logger.debug("Returning requested person with Id {}", person.getHjid());
         return new ResponseEntity<>(person, HttpStatus.OK);
     }
@@ -62,7 +67,7 @@ public class PersonController {
     @ApiOperation(value = "", notes = "Resolve Person for access token.", response = PersonType.class)
     @RequestMapping(value = "/person/", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<PersonType> getPerson(@RequestHeader(value = "Authorization") String bearer) throws IOException {
-        UaaUser user = identityUtils.getUserfromBearer(bearer);
+        UaaUser user = identityService.getUserfromBearer(bearer);
         return new ResponseEntity<>(user.getUBLPerson(), HttpStatus.OK);
     }
 }

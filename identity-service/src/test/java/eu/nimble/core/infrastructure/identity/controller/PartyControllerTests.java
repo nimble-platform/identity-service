@@ -86,9 +86,19 @@ public class PartyControllerTests {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.length()", is(2)))
                 .andExpect(jsonPath("$[0].name", Matchers.isOneOf("company1", "company2")))
-                .andExpect(jsonPath("$[0].identifier", Matchers.isOneOf("1", "2")))
+                .andExpect(jsonPath("$[0].companyID", Matchers.isOneOf(registration1.getCompanyID().toString(), registration2.getCompanyID().toString())))
                 .andExpect(jsonPath("$[1].name", Matchers.isOneOf("company1", "company2")))
-                .andExpect(jsonPath("$[1].identifier", Matchers.isOneOf(registration1.getCompanyID().toString(), registration2.getCompanyID().toString())));
+                .andExpect(jsonPath("$[1].companyID", Matchers.isOneOf(registration1.getCompanyID().toString(), registration2.getCompanyID().toString())));
+
+        // fetch list with exclusion
+        this.mockMvc.perform(get("/party/all?exclude=" + registration2.getCompanyID()).contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN"))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.length()", is(1)))
+                .andExpect(jsonPath("$[0].name", is("company1")))
+                .andExpect(jsonPath("$[0].companyID", is(registration1.getCompanyID().toString())));
     }
 
     private CompanyRegistration registerCompany(String legalName) throws Exception {
