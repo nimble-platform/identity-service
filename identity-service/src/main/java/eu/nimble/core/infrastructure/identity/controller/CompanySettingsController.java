@@ -1,5 +1,9 @@
 package eu.nimble.core.infrastructure.identity.controller;
 
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.JsonNode;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
@@ -322,7 +326,7 @@ public class CompanySettingsController {
                 .filter(c -> c.getHjid() != null)
                 .filter(c -> c.getHjid().equals(certificateId))
                 .findFirst();
-        if( toDelete.isPresent()) {
+        if (toDelete.isPresent()) {
             company.getCertificate().remove(toDelete.get());
             partyRepository.save(company);
         }
@@ -425,6 +429,13 @@ public class CompanySettingsController {
 
         logger.debug("Returning completeness of party with Id {0}", party.getHjid());
         return new ResponseEntity<>(completenessParty, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/vat/{vat}", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<?> getVatInfo(@PathVariable String vat) throws UnirestException {
+        logger.debug("Querying VAT info for " + vat);
+        HttpResponse<JsonNode> response = Unirest.get("https://taxapi.io/api/v1/vat?vat_number=" + vat).asJson();
+        return new ResponseEntity<>(response.getBody().toString(), HttpStatus.OK);
     }
 
     private void enrichImageMetadata(PartyType party) {

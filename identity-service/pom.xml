@@ -245,6 +245,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.mashape.unirest</groupId>
+            <artifactId>unirest-java</artifactId>
+            <version>1.4.9</version>
+        </dependency>
+
+        <dependency>
             <groupId>eu.nimble.core.common</groupId>
             <artifactId>utility</artifactId>
             <version>0.0.1-SNAPSHOT</version>
