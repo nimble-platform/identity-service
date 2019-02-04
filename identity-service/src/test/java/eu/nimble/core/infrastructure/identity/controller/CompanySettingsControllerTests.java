@@ -184,9 +184,9 @@ public class CompanySettingsControllerTests {
                 .andExpect(jsonPath("$.recentlyUsedProductCategories", hasItem("category 3")))
                 .andExpect(jsonPath("$.recentlyUsedProductCategories", hasItem("category 4")));
 
-            // change single settings
-            companySettings.getDetails().setVatNumber("new vat number");
-            this.mockMvc.perform(put("/company-settings/" + company.getID())
+        // change single settings
+        companySettings.getDetails().setVatNumber("new vat number");
+        this.mockMvc.perform(put("/company-settings/" + company.getID())
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
                 .content(gson.toJson(companySettings)))
@@ -198,6 +198,16 @@ public class CompanySettingsControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.details.vatNumber", is("new vat number")));
+
+        // check qualified party
+        this.mockMvc.perform(get("/qualifying/" + company.getID())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.businessIdentityEvidenceID", is("verification number")))
+                .andExpect(jsonPath("$.businessClassificationScheme.description.length()", is(2)))
+                .andExpect(jsonPath("$.party.id", is(company.getID())));
     }
 
     @Test
