@@ -228,24 +228,19 @@ public class PartyController {
             @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long partyId,
             @RequestHeader(value = "Authorization") String bearer) {
 
+        logger.debug("Requesting QualifyingParty with Id {}", partyId);
+
         // search relevant parties
-        Optional<PartyType> partyOptional = partyRepository.findByHjid(partyId).stream().findFirst();
+        PartyType party = partyRepository.findByHjid(partyId).stream()
+                .findFirst()
+                .orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
-        // check if party was found
-        if (partyOptional.isPresent()) {
-            logger.info("Requested party with Id {} not found", partyId);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-
-        Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(partyOptional.get()).stream().findFirst();
-
-        if (qualifyingPartyOptional.isPresent()) {
-            logger.info("Requested party with Id {} not found", partyId);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        QualifyingPartyType qualifyingParty = qualifyingPartyRepository.findByParty(party).stream()
+                .findFirst()
+                .orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         logger.debug("Returning requested QualifyingParty with Id {}", partyId);
-        return new ResponseEntity<>(qualifyingPartyOptional.get(), HttpStatus.OK);
+        return new ResponseEntity<>(qualifyingParty, HttpStatus.OK);
     }
 
     private static class PartyTuple {
