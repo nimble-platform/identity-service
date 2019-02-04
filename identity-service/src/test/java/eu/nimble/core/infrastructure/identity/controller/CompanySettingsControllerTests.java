@@ -82,7 +82,7 @@ public class CompanySettingsControllerTests {
     public static KafkaEmbedded embeddedKafka = new KafkaEmbedded(1, true, "topic");
 
     @Test
-    public void testCreateCompanySettings() throws Exception {
+    public void testCreatingAndChangingCompanySettings() throws Exception {
 
         // GIVEN: existing company on platform
         PartyType company = identityService.getCompanyOfUser(null).get();
@@ -183,6 +183,21 @@ public class CompanySettingsControllerTests {
                 .andExpect(jsonPath("$.recentlyUsedProductCategories.length()", is(2)))
                 .andExpect(jsonPath("$.recentlyUsedProductCategories", hasItem("category 3")))
                 .andExpect(jsonPath("$.recentlyUsedProductCategories", hasItem("category 4")));
+
+            // change single settings
+            companySettings.getDetails().setVatNumber("new vat number");
+            this.mockMvc.perform(put("/company-settings/" + company.getID())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
+                .content(gson.toJson(companySettings)))
+                .andExpect(status().isAccepted());
+
+        // THEN: getting settings should be updated
+        this.mockMvc.perform(get("/company-settings/" + company.getID()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.details.vatNumber", is("new vat number")));
     }
 
     @Test
