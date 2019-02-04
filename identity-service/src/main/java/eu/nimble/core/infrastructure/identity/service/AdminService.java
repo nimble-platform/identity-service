@@ -3,10 +3,7 @@ package eu.nimble.core.infrastructure.identity.service;
 import eu.nimble.core.infrastructure.identity.controller.ControllerUtils;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
-import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
-import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
-import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
-import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
+import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
@@ -42,6 +39,12 @@ public class AdminService {
 
     @Autowired
     private NegotiationSettingsRepository negotiationSettingsRepository;
+
+    @Autowired
+    private PaymentMeansRepository paymentMeansRepository;
+
+    @Autowired
+    private DeliveryTermsRepository deliveryTermsRepository;
 
     @Autowired
     private KeycloakAdmin keycloakAdmin;
@@ -137,6 +140,18 @@ public class AdminService {
 
         // delete negotiation settings
         negotiationSettingsRepository.deleteByCompany(company);
+
+        // delete trading preferences
+        if( company.getPurchaseTerms() != null) {
+            deliveryTermsRepository.delete(company.getPurchaseTerms().getDeliveryTerms());
+            paymentMeansRepository.delete(company.getPurchaseTerms().getPaymentMeans());
+        }
+        if( company.getSalesTerms() != null) {
+            deliveryTermsRepository.delete(company.getSalesTerms().getDeliveryTerms());
+            paymentMeansRepository.delete(company.getSalesTerms().getPaymentMeans());
+        }
+        deliveryTermsRepository.deleteByPartyID(companyId);
+        paymentMeansRepository.deleteByPartyID(companyId);
 
         return partyRepository.deleteByHjid(companyId);
     }
