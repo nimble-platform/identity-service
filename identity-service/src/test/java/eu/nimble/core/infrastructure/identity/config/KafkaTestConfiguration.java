@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity;
+package eu.nimble.core.infrastructure.identity.config;
 
 import eu.nimble.core.infrastructure.identity.messaging.KafkaReceiver;
 import org.mockito.Mockito;

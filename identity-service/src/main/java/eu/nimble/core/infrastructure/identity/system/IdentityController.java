@@ -8,7 +8,7 @@ import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
-import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
@@ -80,7 +80,7 @@ public class IdentityController {
     private EmailService emailService;
 
     @Autowired
-    private IdentityUtils identityUtils;
+    private IdentityService identityService;
 
     @Autowired
     private KafkaSender kafkaSender;
@@ -249,9 +249,11 @@ public class IdentityController {
         }
 
         // refresh tokens
-        OAuth2AccessToken tokenResponse = oAuthClient.refreshToken(httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString());
-        httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, tokenResponse.getRefreshToken());
-        companyRegistration.setAccessToken(tokenResponse.getValue());
+        if( httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY) != null) {
+            OAuth2AccessToken tokenResponse = oAuthClient.refreshToken(httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString());
+            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, tokenResponse.getRefreshToken());
+            companyRegistration.setAccessToken(tokenResponse.getValue());
+        }
 
         // broadcast changes
         kafkaSender.broadcastCompanyUpdate(UblAdapter.adaptPartyIdentifier(newCompany), bearer);
@@ -314,7 +316,7 @@ public class IdentityController {
             @RequestHeader(value = "Authorization") String bearerToken,
             @ApiParam(value = "Old and new credentials", required = true) @RequestBody ResetPassword resetPasswordCredentials) throws IOException {
 
-        UaaUser user = identityUtils.getUserfromBearer(bearerToken);
+        UaaUser user = identityService.getUserfromBearer(bearerToken);
 
         // request password change
         boolean success = keycloakAdmin.resetPassword(user, resetPasswordCredentials.getOldPassword(), resetPasswordCredentials.getNewPassword());
@@ -360,7 +362,7 @@ public class IdentityController {
             @ApiParam(value = "Show welcome info flag", required = true) @PathVariable Boolean flag,
             @RequestHeader(value = "Authorization") String bearer) throws IOException {
 
-        UaaUser user = identityUtils.getUserfromBearer(bearer);
+        UaaUser user = identityService.getUserfromBearer(bearer);
         user.setShowWelcomeInfo(flag);
         uaaUserRepository.save(user);
 

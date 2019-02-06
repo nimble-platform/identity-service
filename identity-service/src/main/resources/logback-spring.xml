@@ -44,7 +44,12 @@
         <appender-ref ref="CONSOLE"/>
     </root>
 
+    <logger name="org.apache.tomcat.jdbc.pool" level="debug" />
+    <logger name="springfox.documentation.spring.web.readers.operation.OperationModelsProvider" level="info" />
+    <logger name="springfox.documentation.spring.web.readers.operation.OperationResponseClassReader" level="info" />
     <logger name="org.springframework.cloud.config.client" level="warn"/>
     <logger name="com.netflix.discovery.shared.resolver.aws" level="warn"/>
     <logger name="com.netflix.discovery.DiscoveryClient" level="warn"/>
+    <logger name="org.springframework.context.annotation.ConfigurationClassPostProcessor" level="error"/>
+    <logger name="com.netflix.config.sources.URLConfigurationSource" level="error"/>
 </configuration>
