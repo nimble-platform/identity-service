@@ -106,7 +106,7 @@ public class KeycloakAdmin {
         createdUser.resetPassword(passwordCredentials);
 
         // send verification mail
-        createdUser.executeActionsEmail(oAuthClientConfig.getCliendId(), "http://localhost:102", Collections.singletonList("VERIFY_EMAIL"));
+//        createdUser.executeActionsEmail(oAuthClientConfig.getCliendId(), "http://localhost:102", Collections.singletonList("VERIFY_EMAIL"));
 //        createdUser.sendVerifyEmail(oAuthClientConfig.getCliendId());
 
         addRole(userId, NIMBLE_USER_ROLE);
