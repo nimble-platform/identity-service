@@ -85,9 +85,9 @@ public class PartyControllerTests {
                 .andDo(print())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.length()", is(2)))
-                .andExpect(jsonPath("$[0].name", Matchers.isOneOf("company1", "company2")))
+                .andExpect(jsonPath("$[0].names.en", Matchers.isOneOf("company1", "company2")))
                 .andExpect(jsonPath("$[0].companyID", Matchers.isOneOf(registration1.getCompanyID().toString(), registration2.getCompanyID().toString())))
-                .andExpect(jsonPath("$[1].name", Matchers.isOneOf("company1", "company2")))
+                .andExpect(jsonPath("$[1].names.en", Matchers.isOneOf("company1", "company2")))
                 .andExpect(jsonPath("$[1].companyID", Matchers.isOneOf(registration1.getCompanyID().toString(), registration2.getCompanyID().toString())));
 
         // fetch list with exclusion
@@ -97,7 +97,7 @@ public class PartyControllerTests {
                 .andDo(print())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.length()", is(1)))
-                .andExpect(jsonPath("$[0].name", is("company1")))
+                .andExpect(jsonPath("$[0].names.en", is("company1")))
                 .andExpect(jsonPath("$[0].companyID", is(registration1.getCompanyID().toString())));
     }
 
