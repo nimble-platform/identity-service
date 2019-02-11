@@ -611,11 +611,14 @@ public class UblAdapter {
     public static List<TextType> adaptTextType(Map<NimbleConfigurationProperties.LanguageID, String> texts) {
         if (texts == null)
             return Collections.emptyList();
-        return texts.entrySet().stream().map( t -> adaptTextType(t.getValue(), t.getKey())).collect(Collectors.toList());
+        return texts.entrySet().stream()
+                .map( t -> adaptTextType(t.getValue(), t.getKey()))
+                .collect(Collectors.toList());
     }
 
     public static Map<NimbleConfigurationProperties.LanguageID, String> adaptTextType(List<TextType> textTypes) {
-        return textTypes.stream().collect(Collectors.toMap(t-> NimbleConfigurationProperties.LanguageID.fromString(t.getLanguageID()), TextType::getValue));
+        return textTypes.stream()
+                .collect(Collectors.toMap(t-> NimbleConfigurationProperties.LanguageID.fromString(t.getLanguageID()), TextType::getValue, (k1, k2) -> k1));
     }
 
     public static List<String> adaptTextTypeList(List<TextType> textTypes) {
