@@ -4,10 +4,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
 import eu.nimble.core.infrastructure.identity.system.ControllerUtils;
-import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
+import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
@@ -58,21 +58,26 @@ public class PartyController {
     private QualifyingPartyRepository qualifyingPartyRepository;
 
     @Autowired
-    private IdentityUtils identityUtils;
+    private IdentityService identityService;
 
     @SuppressWarnings("PointlessBooleanExpression")
     @ApiOperation(value = "", notes = "Get Party for Id.", response = PartyType.class, tags = {})
     @RequestMapping(value = "/party/{partyId}", method = RequestMethod.GET)
     ResponseEntity<PartyType> getParty(
             @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long partyId,
+            @ApiParam(value = "Switch for including roles of persons in response (slower)") @RequestParam(required = false) boolean includeRoles,
             @RequestHeader(value = "Authorization") String bearer) throws IOException {
 
         // search relevant parties
         PartyType party = partyRepository.findByHjid(partyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         // remove person depending on access rights
-        if (identityUtils.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             party.setPerson(new ArrayList<>());
+
+        if (includeRoles)
+            // enrich persons with roles
+            identityService.enrichWithRoles(party);
 
         logger.debug("Returning requested party with Id {}", party.getHjid());
         return new ResponseEntity<>(party, HttpStatus.OK);
@@ -82,11 +87,16 @@ public class PartyController {
     @ApiOperation(value = "getAllParties", notes = "Get all parties in a paginated manner", response = Page.class)
     @RequestMapping(value = "/parties/all", method = RequestMethod.GET)
     ResponseEntity<Page<PartyType>> getAllParties(@RequestParam(value = "page", required = false, defaultValue = "0") int pageNumber,
+                                                  @ApiParam(value = "Switch for including roles of persons in response (slower)") @RequestParam(required = false) boolean includeRoles,
                                                   @RequestParam(value = "size", required = false, defaultValue = "10") int pageSize) {
 
         logger.debug("Requesting all parties page {}", pageNumber);
 
         Page<PartyType> partyPage = partyRepository.findAll(new PageRequest(pageNumber, pageSize, new Sort(Sort.Direction.ASC, "partyName")));
+
+        // fetch and include roles
+        if (includeRoles)
+            partyPage.getContent().forEach(identityService::enrichWithRoles);
 
         return new ResponseEntity<>(partyPage, HttpStatus.OK);
     }
@@ -95,6 +105,7 @@ public class PartyController {
     @ApiOperation(value = "getParties", notes = "Get multiple parties for Ids.", response = Iterable.class)
     @RequestMapping(value = "/parties/{partyIds}", method = RequestMethod.GET)
     ResponseEntity<?> getParty(
+            @ApiParam(value = "Switch for including roles of persons in response (slower)") @RequestParam(required = false) boolean includeRoles,
             @ApiParam(value = "Ids of parties to retrieve.", required = true) @PathVariable List<Long> partyIds) {
 
         logger.debug("Requesting parties with Ids {}", partyIds);
@@ -114,6 +125,10 @@ public class PartyController {
             parties.add(party.get());
         }
 
+        if (includeRoles)
+            // fetch and include roles
+            parties.forEach(identityService::enrichWithRoles);
+
         logger.debug("Returning requested parties with Ids {}", partyIds);
         return new ResponseEntity<>(parties, HttpStatus.OK);
     }
@@ -121,6 +136,7 @@ public class PartyController {
     @ApiOperation(value = "", notes = "Get Party for person ID.", response = PartyType.class, tags = {})
     @RequestMapping(value = "/party_by_person/{personId}", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<List<PartyType>> getPartyByPersonID(
+            @ApiParam(value = "Switch for including roles of persons in response (slower)") @RequestParam(required = false) boolean includeRoles,
             @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long personId) {
 
         // search for persons
@@ -135,21 +151,31 @@ public class PartyController {
         PersonType person = foundPersons.get(0);
         List<PartyType> parties = partyRepository.findByPerson(person);
 
+        if (includeRoles)
+            // fetch and include roles
+            parties.forEach(identityService::enrichWithRoles);
+
         return new ResponseEntity<>(parties, HttpStatus.OK);
     }
 
     @SuppressWarnings("PointlessBooleanExpression")
-    @ApiOperation(value = "", notes = "Get Party for Id in the UBL format.", response = PartyType.class, tags = {})
+    @ApiOperation(value = "Get Party for Id in the UBL format.",
+            response = PartyType.class, tags = {})
     @RequestMapping(value = "/party/ubl/{partyId}", produces = {"text/xml"}, method = RequestMethod.GET)
     ResponseEntity<String> getPartyUbl(
             @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long partyId,
+            @ApiParam(value = "Switch for including roles of persons in response (slower)") @RequestParam(required = false) boolean includeRoles,
             @RequestHeader(value = "Authorization") String bearer) throws IOException, JAXBException {
 
+        // search relevant parties
         PartyType party = partyRepository.findByHjid(partyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         // remove person depending on access rights
-        if (identityUtils.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             party.setPerson(new ArrayList<>());
+
+        if (includeRoles)
+            identityService.enrichWithRoles(party);
 
         StringWriter serializedCatalogueWriter = new StringWriter();
         String packageName = party.getClass().getPackage().getName();
@@ -175,17 +201,19 @@ public class PartyController {
         return new ResponseEntity<>(xmlParty, responseHeaders, HttpStatus.OK);
     }
 
-    @ApiOperation(value = "", notes = "Get all party ids and name. Returns id-name tuples.", response = PartyTuple.class, responseContainer = "Set")
+    @ApiOperation(value = "Get all party ids and name. Returns id-name tuples.",
+            notes = "Roles for persons are not set. Please use /person/{personId} for fetching roles of users",
+            response = PartyTuple.class, responseContainer = "List")
     @RequestMapping(value = "/party/all", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<Set<PartyTuple>> getAllPartyIds(
+    ResponseEntity<List<PartyTuple>> getAllPartyIds(
             @ApiParam(value = "Excluded ids") @RequestParam(value = "exclude", required = false) List<String> exclude) {
 
-        Set<PartyTuple> partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
+        List<PartyTuple> partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
                 .map(p -> new PartyTuple(UblAdapter.adaptPartyIdentifier(p), UblAdapter.adaptPartyNames(p.getPartyName())))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toList());
 
         if (exclude != null)
-            partyIds = partyIds.stream().filter(p -> !exclude.contains(p.getIdentifier())).collect(Collectors.toSet());
+            partyIds = partyIds.stream().filter(p -> !exclude.contains(p.getCompanyID())).collect(Collectors.toList());
 
         return ResponseEntity.ok(partyIds);
     }
@@ -197,17 +225,16 @@ public class PartyController {
             @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long partyId,
             @RequestHeader(value = "Authorization") String bearer) {
 
-        PartyType party = partyRepository.findByHjid(partyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+        PartyType party = partyRepository.findByHjid(partyId).stream()
+                .findFirst()
+                .orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
-        Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(party).stream().findFirst();
-
-        if (qualifyingPartyOptional.isPresent()) {
-            logger.info("Requested party with Id {} not found", partyId);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        QualifyingPartyType qualifyingParty = qualifyingPartyRepository.findByParty(party).stream()
+                .findFirst()
+                .orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         logger.debug("Returning requested QualifyingParty with Id {}", partyId);
-        return new ResponseEntity<>(qualifyingPartyOptional.get(), HttpStatus.OK);
+        return new ResponseEntity<>(qualifyingParty, HttpStatus.OK);
     }
 
     private static class PartyTuple {
@@ -219,7 +246,7 @@ public class PartyController {
             this.name = name;
         }
 
-        public String getIdentifier() {
+        public String getCompanyID() {
             return identifier;
         }
 

@@ -3,16 +3,15 @@ package eu.nimble.core.infrastructure.identity.service;
 import eu.nimble.core.infrastructure.identity.system.ControllerUtils;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
-import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
-import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
-import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
-import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
+import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -41,6 +40,12 @@ public class AdminService {
     private NegotiationSettingsRepository negotiationSettingsRepository;
 
     @Autowired
+    private PaymentMeansRepository paymentMeansRepository;
+
+    @Autowired
+    private DeliveryTermsRepository deliveryTermsRepository;
+
+    @Autowired
     private KeycloakAdmin keycloakAdmin;
 
     @Autowired
@@ -49,9 +54,12 @@ public class AdminService {
     @Autowired
     private UaaUserRepository uaaUserRepository;
 
-//    @Cacheable("unverifiedCompanies")
-    public List<PartyType> queryUnverifiedCompanies() {
-        List<PartyType> unverifiedCompanies = new ArrayList<>();
+    @Autowired
+    private IdentityService identityService;
+
+    //    @Cacheable("unverifiedCompanies")
+    public List<PartyType> queryCompanies(CompanyState companyState) {
+        List<PartyType> resultingCompanies = new ArrayList<>();
         Iterable<PartyType> allParties = partyRepository.findAll(new Sort(Sort.Direction.ASC, "name"));
         for (PartyType company : allParties) {
 
@@ -69,7 +77,7 @@ public class AdminService {
                             continue;
 
                         logger.debug("Fetching roles of user {}", uaaUser.get().getUsername());
-                        List<String> roles = new ArrayList<>(keycloakAdmin.getUserRoles(uaaUser.get().getExternalID()));
+                        List<String> roles = new ArrayList<>(identityService.fetchRoles(uaaUser.get()));
                         companyMember.setRole(roles);
                         memberRoles.put(companyMember, roles);
                     }
@@ -80,15 +88,18 @@ public class AdminService {
                 }
             }
 
-            // check whether at least on member has proper role
+            // check if unverified check whether at least on member has proper role
             Set<String> mergedRoles = memberRoles.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
-            if (mergedRoles.isEmpty() == false && mergedRoles.contains(LEGAL_REPRESENTATIVE_ROLE) == false) {
-                unverifiedCompanies.add(company);
+            if (mergedRoles.isEmpty() == false && mergedRoles.contains(LEGAL_REPRESENTATIVE_ROLE) == false && companyState.equals(CompanyState.UNVERIFIED)) {
+                resultingCompanies.add(company);
+                continue; // avoid multiple entries in list
+            } else if (mergedRoles.contains(LEGAL_REPRESENTATIVE_ROLE) && companyState.equals(CompanyState.VERIFIED)) {
+                resultingCompanies.add(company);
                 continue; // avoid multiple entries in list
             }
         }
 
-        return unverifiedCompanies;
+        return resultingCompanies;
     }
 
     public boolean verifyCompany(Long companyId) {
@@ -129,6 +140,28 @@ public class AdminService {
         // delete negotiation settings
         negotiationSettingsRepository.deleteByCompany(company);
 
+        // delete trading preferences
+        if (company.getPurchaseTerms() != null) {
+            deliveryTermsRepository.delete(company.getPurchaseTerms().getDeliveryTerms());
+            paymentMeansRepository.delete(company.getPurchaseTerms().getPaymentMeans());
+        }
+        if (company.getSalesTerms() != null) {
+            deliveryTermsRepository.delete(company.getSalesTerms().getDeliveryTerms());
+            paymentMeansRepository.delete(company.getSalesTerms().getPaymentMeans());
+        }
+
+        try {
+            // delete for legacy schema
+            deliveryTermsRepository.deleteByPartyID(companyId);
+            paymentMeansRepository.deleteByPartyID(companyId);
+        } catch (InvalidDataAccessResourceUsageException ex) {
+            // ignored
+        }
+
         return partyRepository.deleteByHjid(companyId);
+    }
+
+    public enum CompanyState {
+        VERIFIED, UNVERIFIED
     }
 }

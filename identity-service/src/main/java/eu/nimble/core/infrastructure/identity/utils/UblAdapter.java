@@ -321,8 +321,10 @@ public class UblAdapter {
         companyToChange.getPartyName().addAll(legalNames);
 
         // VAT number
-        if (settings.getDetails().getVatNumber() != null)
+        if (settings.getDetails().getVatNumber() != null) {
+            companyToChange.getPartyTaxScheme().clear();
             companyToChange.getPartyTaxScheme().add(adaptTaxSchema(settings.getDetails().getVatNumber()));
+        }
 
         // postal address
         companyToChange.setPostalAddress(adaptAddress(settings.getDetails().getAddress()));

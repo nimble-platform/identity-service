@@ -3,6 +3,9 @@ server:
 spring:
   application:
     name: identity-service${APPLICATION_NAME_SUFFIX:}
+  thymeleaf:
+    cache: false
+    mode: HTML
   cloud:
     config:
       enabled: ${CONFIG_SERVER_ENABLED:true}
@@ -14,34 +17,37 @@ spring:
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${DDL_AUTO:update}
     properties:
       hibernate:
+        type: debug
         temp:
           use_jdbc_metadata_defaults: false
+        id:
+          new_generator_mappings: true
   datasource:
     name: identitydb
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:identityDB}
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:identityDB}?ApplicationName=identity-service${APPLICATION_NAME_SUFFIX:}
     username: ${POSTGRES_USER:root}
     password: ${POSTGRES_PASSWORD:changeme}
     binarycontentdb:
       url: jdbc:postgresql://${BINARY_CONTENT_DB_HOST:localhost}:${BINARY_CONTENT_DB_PORT:5432}/${BINARY_CONTENT_DB_NAME:binarycontentdb}?currentSchema=public
       username: ${BINARY_CONTENT_DB_USERNAME:postgres}
       password: ${BINARY_CONTENT_DB_PASSWORD:nimble}
-      driver_class: org.postgresql.Driver
-    tomcat:
-      test-on-borrow: true
-      remove-abandoned: true
-      log-abandoned: true
-      initial-size: 3
-      max-active: 3
-      max-idle: 3
-      min-idle: 3
-      test-while-idle: true
-      time-between-eviction-runs-millis: 600000
-      min-evictable-idle-time-millis: 3600000
-      validation-query: "SELECT 1;" # Validation query must be set in order to test connections
+      driverClassName: org.postgresql.Driver
+    test-on-borrow: true
+    test-while-idle: true
+    remove-abandoned: true
+    log-abandoned: true
+    initial-size: 3
+    max-active: 3
+    max-idle: 3
+    min-idle: 3
+    max-wait: 90000
+    time-between-eviction-runs-millis: 60000
+    min-evictable-idle-time-millis: 3600000
+    validation-query: "SELECT 1;" # Validation query must be set in order to test connections
     dbcp:
       default-auto-commit: false
   mail:
@@ -131,7 +137,7 @@ spring:
       url: jdbc:h2:mem:db2;AUTO_RECONNECT=TRUE;DB_CLOSE_DELAY=-1;INIT=create schema IF NOT EXISTS APPS
       username: sa
       password:
-      driver_class: org.h2.Driver
+      driverClassName: org.h2.Driver
   mail:
     debug: true  # prints email to log output
     host: localhost # in-v3.mailjet.com
@@ -162,7 +168,7 @@ spring:
       url: jdbc:h2:mem:binarycontentdb
       username: sa
       password:
-      driver_class: org.h2.Driver
+      driverClassName: org.h2.Driver
   kafka:
     bootstrap-servers: ${spring.embedded.kafka.brokers}
     consumer:

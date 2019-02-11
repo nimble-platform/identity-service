@@ -1,12 +1,16 @@
 package eu.nimble.core.infrastructure.identity.system;
 
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.JsonNode;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
-import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.utils.ImageUtils;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
@@ -69,7 +73,7 @@ public class CompanySettingsController {
     private NegotiationSettingsRepository negotiationSettingsRepository;
 
     @Autowired
-    private IdentityUtils identityUtils;
+    private IdentityService identityService;
 
     @Autowired
     private CertificateService certificateService;
@@ -143,7 +147,7 @@ public class CompanySettingsController {
             @RequestParam(value = "isLogo", defaultValue = "false") String isLogo,
             @RequestParam(value = "file") MultipartFile imageFile) throws IOException {
 
-        if (identityUtils.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
+        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
             return new ResponseEntity<>("Only legal representatives or platform managers are allowed add images", HttpStatus.FORBIDDEN);
 
         if (imageFile.getSize() > MAX_IMAGE_SIZE)
@@ -205,7 +209,7 @@ public class CompanySettingsController {
             @ApiParam(value = "Id of company owning the image", required = true) @PathVariable Long companyID,
             @ApiParam(value = "Id of image to delete", required = true) @PathVariable Long imageId) throws IOException {
 
-        if (identityUtils.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
+        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
             return new ResponseEntity<>("Only legal representatives or platform managers are allowed to delete images", HttpStatus.FORBIDDEN);
 
         logger.info("Deleting image with Id " + imageId);
@@ -248,7 +252,7 @@ public class CompanySettingsController {
             @RequestParam("description") String description,
             @RequestParam("type") String type) throws IOException {
 
-        if (identityUtils.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
+        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
             return new ResponseEntity<>("Only legal representatives or platform managers are allowed to delete images", HttpStatus.FORBIDDEN);
 
         PartyType company = getCompanySecure(companyID, bearer);
@@ -295,7 +299,7 @@ public class CompanySettingsController {
             @ApiParam(value = "Id of company owning the certificate", required = true) @PathVariable Long companyID,
             @ApiParam(value = "Id of certificate.", required = true) @PathVariable Long certificateId) throws IOException {
 
-        if (identityUtils.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
+        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
             return new ResponseEntity<>("Only legal representatives or platform managers are allowed to delete images", HttpStatus.FORBIDDEN);
 
         PartyType company = getCompanySecure(companyID, bearer);
@@ -313,9 +317,10 @@ public class CompanySettingsController {
 
         // update list of certificates
         Optional<CertificateType> toDelete = company.getCertificate().stream()
+                .filter(c -> c.getHjid() != null)
                 .filter(c -> c.getHjid().equals(certificateId))
                 .findFirst();
-        if( toDelete.isPresent()) {
+        if (toDelete.isPresent()) {
             company.getCertificate().remove(toDelete.get());
             partyRepository.save(company);
         }
@@ -330,7 +335,7 @@ public class CompanySettingsController {
             @ApiParam(value = "Id of company owning the certificate", required = true) @PathVariable Long companyID,
             @ApiParam(value = "Settings to update.", required = true) @RequestBody NegotiationSettings newSettings) throws IOException {
 
-        if (identityUtils.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
+        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
             return new ResponseEntity<>("Only legal representatives or platform managers are allowed to update settings", HttpStatus.FORBIDDEN);
 
         PartyType company = getCompanySecure(companyID, bearer);
@@ -385,10 +390,10 @@ public class CompanySettingsController {
         CompanySettings companySettings = UblAdapter.adaptCompanySettings(company, qualifyingParty);
 
         // compute completeness factors
-        Double detailsCompleteness = IdentityUtils.computeDetailsCompleteness(companySettings.getDetails());
-        Double descriptionCompleteness = IdentityUtils.computeDescriptionCompleteness(companySettings.getDescription());
-        Double certificateCompleteness = IdentityUtils.computeCertificateCompleteness(company);
-        Double tradeCompleteness = IdentityUtils.computeTradeCompleteness(companySettings.getTradeDetails());
+        Double detailsCompleteness = IdentityService.computeDetailsCompleteness(companySettings.getDetails());
+        Double descriptionCompleteness = IdentityService.computeDescriptionCompleteness(companySettings.getDescription());
+        Double certificateCompleteness = IdentityService.computeCertificateCompleteness(company);
+        Double tradeCompleteness = IdentityService.computeTradeCompleteness(companySettings.getTradeDetails());
         Double overallCompleteness = (detailsCompleteness + descriptionCompleteness + certificateCompleteness + tradeCompleteness) / 4.0;
 
         List<QualityIndicatorType> qualityIndicators = new ArrayList<>();
@@ -419,12 +424,19 @@ public class CompanySettingsController {
         PartyType company = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         // check if legal representative is from same company
-        UaaUser user = identityUtils.getUserfromBearer(bearer);
-        PartyType companyFromBearer = identityUtils.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
-        if( identityUtils.hasAnyRole(bearer, PLATFORM_MANAGER) == false && companyFromBearer.getHjid().equals(companyID) == false)
+        UaaUser user = identityService.getUserfromBearer(bearer);
+        PartyType companyFromBearer = identityService.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+        if( identityService.hasAnyRole(bearer, PLATFORM_MANAGER) == false && companyFromBearer.getHjid().equals(companyID) == false)
             throw new ControllerUtils.UnauthorisedAccess();
 
         return company;
+    }
+
+    @RequestMapping(value = "/vat/{vat}", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<?> getVatInfo(@PathVariable String vat) throws UnirestException {
+        logger.debug("Querying VAT info for " + vat);
+        HttpResponse<JsonNode> response = Unirest.get("https://taxapi.io/api/v1/vat?vat_number=" + vat).asJson();
+        return new ResponseEntity<>(response.getBody().toString(), HttpStatus.OK);
     }
 
     private void enrichImageMetadata(PartyType party) {

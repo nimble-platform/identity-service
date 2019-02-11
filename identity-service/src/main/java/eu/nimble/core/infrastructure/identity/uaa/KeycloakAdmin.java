@@ -46,6 +46,8 @@ public class KeycloakAdmin {
             "offline_access", "admin", "create-realm",
             "create-realm", "nimble_user", "initial_representative");
 
+    public static final List<String> NON_NIMBLE_ROLES = Arrays.asList("uma_authorization", "offline_access", "admin", "create-realm", "create-realm");
+
     @Autowired
     private KeycloakConfig keycloakConfig;
 
@@ -105,8 +107,8 @@ public class KeycloakAdmin {
         // set password
         createdUser.resetPassword(passwordCredentials);
 
-        // send verification mail
-        createdUser.executeActionsEmail(oAuthClientConfig.getCliendId(), "http://localhost:102", Collections.singletonList("VERIFY_EMAIL"));
+//        // send verification mail
+//        createdUser.executeActionsEmail(oAuthClientConfig.getCliendId(), "http://localhost:102", Collections.singletonList("VERIFY_EMAIL"));
 //        createdUser.sendVerifyEmail(oAuthClientConfig.getCliendId());
 
         addRole(userId, NIMBLE_USER_ROLE);

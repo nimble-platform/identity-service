@@ -16,12 +16,11 @@ public class CertificateService {
     private CertificateRepository certificateRepository;
 
     @Transactional
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     public CertificateType queryCertificate(Long certificateId) {
         CertificateType certificateType = certificateRepository.findOne(certificateId);
 
-        // pre fetch binary
-        if (certificateType != null)
+        // pre fetch binary (legacy due to dedicated binary database)
+        if (certificateType != null && certificateType.getDocumentReference() != null && certificateType.getDocumentReference().isEmpty() == false)
             certificateType.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getValue();
 
         return certificateType;

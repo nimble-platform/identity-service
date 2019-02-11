@@ -4,10 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import eu.nimble.core.infrastructure.identity.IdentityServiceApplication;
-import eu.nimble.core.infrastructure.identity.DefaultTestConfiguration;
 import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
 import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
-import eu.nimble.core.infrastructure.identity.service.IdentityUtils;
+import eu.nimble.core.infrastructure.identity.config.DefaultTestConfiguration;
+import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
@@ -15,9 +15,7 @@ import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.QualityIndicatorType;
-import org.junit.ClassRule;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.*;
@@ -29,11 +27,16 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.kafka.test.rule.KafkaEmbedded;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,8 +45,7 @@ import java.util.Date;
 import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -66,13 +68,10 @@ public class CompanySettingsControllerTests {
     private MockMvc mockMvc;
 
     @Autowired
-    private IdentityUtils identityUtils;
+    private IdentityService identityService;
 
     @Autowired
     private PartyRepository partyRepository;
-
-    @Autowired
-    private NegotiationSettingsRepository negotiationSettingsRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -81,10 +80,12 @@ public class CompanySettingsControllerTests {
     public static KafkaEmbedded embeddedKafka = new KafkaEmbedded(1, true, "topic");
 
     @Test
-    public void testCreateCompanySettings() throws Exception {
+    public void testCreatingAndChangingCompanySettings() throws Exception {
 
         // GIVEN: existing company on platform
-        PartyType company = identityUtils.getCompanyOfUser(null).get();
+        PartyType company = identityService.getCompanyOfUser(null).get();
+        partyRepository.save(company);
+        UblUtils.setID(company, company.getHjid().toString());
         partyRepository.save(company);
 
         // WHEN: updating company settings
@@ -182,6 +183,32 @@ public class CompanySettingsControllerTests {
                 .andExpect(jsonPath("$.recentlyUsedProductCategories.length()", is(2)))
                 .andExpect(jsonPath("$.recentlyUsedProductCategories", hasItem("category 3")))
                 .andExpect(jsonPath("$.recentlyUsedProductCategories", hasItem("category 4")));
+
+        // change single settings
+        companySettings.getDetails().setVatNumber("new vat number");
+        this.mockMvc.perform(put("/company-settings/" + UblAdapter.adaptPartyIdentifier(company))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
+                .content(gson.toJson(companySettings)))
+                .andExpect(status().isAccepted());
+
+        // THEN: getting settings should be updated
+        this.mockMvc.perform(get("/company-settings/" + UblAdapter.adaptPartyIdentifier(company)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.details.vatNumber", is("new vat number")));
+
+        // check qualified party
+        this.mockMvc.perform(get("/qualifying/" + UblAdapter.adaptPartyIdentifier(company))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.businessIdentityEvidenceID", is("verification number")))
+                .andExpect(jsonPath("$.businessClassificationScheme.description.length()", is(1)))
+                .andExpect(jsonPath("$.businessClassificationScheme.description[0].value", is("k1")))
+                .andExpect(jsonPath("$.party.partyIdentification[0].id", is(UblAdapter.adaptPartyIdentifier(company))));
     }
 
     @Test
@@ -298,11 +325,10 @@ public class CompanySettingsControllerTests {
     }
 
     @Test
-    @SuppressWarnings("ConstantConditions")
     public void testProfileCompleteness() throws Exception {
 
         // GIVEN: existing company on platform
-        PartyType company = identityUtils.getCompanyOfUser(null).get();
+        PartyType company = identityService.getCompanyOfUser(null).get();
         partyRepository.save(company);
         UblUtils.setID(company, company.getHjid().toString());
         partyRepository.save(company);
@@ -374,9 +400,63 @@ public class CompanySettingsControllerTests {
         assertTrue(tradeCompleteness.getQuantity().getValue().doubleValue() > 0.0);
     }
 
+    @Test
+    @Ignore
+    public void testCertificateManagement() throws Exception {
+
+        // GIVEN: existing company on platform
+        PartyType company = identityService.getCompanyOfUser(null).get();
+        partyRepository.save(company);
+
+        // upload certificate
+        InputStream certContentStream = new ByteArrayInputStream("cert content".getBytes());
+        MockMultipartFile certFile = new MockMultipartFile("file", "cert.txt", "multipart/form-data", certContentStream);
+        this.mockMvc.perform(MockMvcRequestBuilders.fileUpload(String.format("/company-settings/certificate"))
+                .file(certFile)
+                .param("name", "cert name")
+                .param("type", "cert type")
+                .param("description", "cert description")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN"))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // check if certificate is listed in company settings
+        String responseAsString = this.mockMvc.perform(get("/company-settings/" + UblAdapter.adaptPartyIdentifier(company)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.certificates.length()", is(1)))
+                .andExpect(jsonPath("$.certificates[0].name", is("cert name")))
+                .andExpect(jsonPath("$.certificates[0].type", is("cert type")))
+                .andExpect(jsonPath("$.certificates[0].description", is("cert description")))
+                .andReturn().getResponse().getContentAsString();
+        CompanySettings settings = objectMapper.readValue(responseAsString, CompanySettings.class);
+
+        // download certificate
+        String certId = settings.getCertificates().get(0).getId();
+        byte[] certBytes = this.mockMvc.perform(get("/company-settings/certificate/" + certId))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsByteArray();
+        assertEquals("cert content", new String(certBytes, StandardCharsets.UTF_8));
+
+        // delete certificate
+        this.mockMvc.perform(delete("/company-settings/certificate/" + certId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN"))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // check for empty certificate list
+        this.mockMvc.perform(get("/company-settings/" + UblAdapter.adaptPartyIdentifier(company)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.certificates.length()", is(0)));
+    }
+
     public NegotiationSettings initNegotiationSettings() throws Exception {
         // GIVEN: existing company on platform
-        PartyType company = identityUtils.getCompanyOfUser(null).get();
+        PartyType company = identityService.getCompanyOfUser(null).get();
         partyRepository.save(company);
         UblUtils.setID(company, company.getHjid().toString());
         partyRepository.save(company);
