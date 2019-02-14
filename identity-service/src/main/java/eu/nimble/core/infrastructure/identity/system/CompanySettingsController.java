@@ -147,7 +147,7 @@ public class CompanySettingsController {
             @RequestParam(value = "isLogo", defaultValue = "false") String isLogo,
             @RequestParam(value = "file") MultipartFile imageFile) throws IOException {
 
-        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
+        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>("Only legal representatives or platform managers are allowed add images", HttpStatus.FORBIDDEN);
 
         if (imageFile.getSize() > MAX_IMAGE_SIZE)
@@ -252,7 +252,7 @@ public class CompanySettingsController {
             @RequestParam("description") String description,
             @RequestParam("type") String type) throws IOException {
 
-        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
+        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>("Only legal representatives or platform managers are allowed to delete images", HttpStatus.FORBIDDEN);
 
         PartyType company = getCompanySecure(companyID, bearer);
