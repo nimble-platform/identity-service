@@ -9,6 +9,7 @@ import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.QuantityType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import eu.nimble.service.model.ubl.extension.QualityIndicatorParameter;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -617,8 +618,13 @@ public class UblAdapter {
     }
 
     public static Map<NimbleConfigurationProperties.LanguageID, String> adaptTextType(List<TextType> textTypes) {
-        return textTypes.stream()
-                .collect(Collectors.toMap(t-> NimbleConfigurationProperties.LanguageID.fromString(t.getLanguageID()), TextType::getValue, (k1, k2) -> k1));
+        if(textTypes != null) {
+            textTypes = textTypes.stream().filter(t -> StringUtils.isNotEmpty(t.getLanguageID()) && StringUtils.isNotEmpty(t.getValue())).collect(Collectors.toList());
+            return textTypes.stream()
+                    .collect(Collectors.toMap(t -> NimbleConfigurationProperties.LanguageID.fromString(t.getLanguageID()), TextType::getValue, (k1, k2) -> k1));
+        } else {
+            return Collections.emptyMap();
+        }
     }
 
     public static List<String> adaptTextTypeList(List<TextType> textTypes) {
