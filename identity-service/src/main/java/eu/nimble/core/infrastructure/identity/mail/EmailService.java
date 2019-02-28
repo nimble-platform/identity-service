@@ -116,6 +116,10 @@ public class EmailService {
     }
 
     private void send(String[] to, String subject, String template, Context context) {
+        this.send(to, subject, template, context, new String[0]);
+    }
+
+    private void send(String[] to, String subject, String template, Context context, String[] bcc) {
 
         SimpleMailMessage mailMessage = new SimpleMailMessage();
         String message = this.textMailTemplateEngine.process(template, context);
@@ -127,6 +131,7 @@ public class EmailService {
 
         mailMessage.setFrom(this.defaultFrom);
         mailMessage.setTo(to);
+        mailMessage.setBcc(bcc);
         mailMessage.setSubject(subject);
         mailMessage.setText(message);
         this.emailSender.send(mailMessage);
