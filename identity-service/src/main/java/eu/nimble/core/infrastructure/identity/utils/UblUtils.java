@@ -1,28 +1,26 @@
 package eu.nimble.core.infrastructure.identity.utils;
 
 import com.google.common.collect.Sets;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.CertificateType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.DocumentReferenceType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.QualityIndicatorType;
+import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
+import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import eu.nimble.service.model.ubl.extension.QualityIndicatorParameter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by Johannes Innerbichler on 27/06/17.
  */
+@Component
 public class UblUtils {
-    public static String identifierType(String id) {
-        return id;
-    }
 
-    public static String identifierType(Long id) {
-        return identifierType(id.toString());
-    }
+    @Autowired NimbleConfigurationProperties nimbleConfiguration;
 
-    public static <V> V emptyUBLObject(V object) {
+        public static <V> V emptyUBLObject(V object) {
         try {
             Set<String> packages = Sets.newHashSet("eu.nimble.service.model.ubl");
             initialize(object, object, packages);
@@ -30,6 +28,29 @@ public class UblUtils {
             e.printStackTrace();
         }
         return object;
+    }
+
+    public static String getText(Collection<TextType> textType, NimbleConfigurationProperties.LanguageID languageID) {
+        return textType.stream().filter(tt -> tt.getLanguageID().equals(languageID.toString())).map(TextType::getValue).findFirst().orElse(null);
+    }
+
+    public String getText(Collection<TextType> textType) {
+        return getText(textType, nimbleConfiguration.getDefaultLanguageID());
+    }
+
+    public static String getName(Collection<PartyNameType> partyNameTypes, NimbleConfigurationProperties.LanguageID languageID) {
+        List<TextType> textTypes = partyNameTypes.stream().map(PartyNameType::getName).collect(Collectors.toList());
+        return getText(textTypes, languageID);
+    }
+
+    public String getName(PartyType partyType) {
+        return getName(partyType.getPartyName(), nimbleConfiguration.getDefaultLanguageID());
+    }
+
+    public static PartyType setID(PartyType party, String identifier ) {
+        party.getPartyIdentification().clear();
+        party.getPartyIdentification().add(UblAdapter.adaptPartyIdentifier(identifier));
+        return party;
     }
 
     private static void initialize(Object object, Object rootObject, Set<String> packages) throws IllegalArgumentException, IllegalAccessException {

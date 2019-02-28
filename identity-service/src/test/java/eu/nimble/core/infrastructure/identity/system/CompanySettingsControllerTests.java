@@ -1,25 +1,25 @@
-package eu.nimble.core.infrastructure.identity.controller;
+package eu.nimble.core.infrastructure.identity.system;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import eu.nimble.core.infrastructure.identity.IdentityServiceApplication;
 import eu.nimble.core.infrastructure.identity.config.DefaultTestConfiguration;
-import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
-import eu.nimble.core.infrastructure.identity.service.IdentityService;
+import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
+import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
+import eu.nimble.core.infrastructure.identity.service.IdentityService;
+import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.QualityIndicatorType;
-import org.junit.*;
+import org.junit.ClassRule;
+import org.junit.FixMethodOrder;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import static org.junit.Assert.*;
-
-import org.junit.runners.MethodSorters;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,11 +39,13 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 
 import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -87,16 +89,15 @@ public class CompanySettingsControllerTests {
         // GIVEN: existing company on platform
         PartyType company = identityService.getCompanyOfUser(null).get();
         partyRepository.save(company);
-        company.setID(company.getHjid().toString());
-        partyRepository.save(company);
 
         // WHEN: updating company settings
         CompanyDetails companyDetails = new CompanyDetails();
-        companyDetails.setCompanyLegalName("company name");
+        companyDetails.setBrandName(Collections.singletonMap(NimbleConfigurationProperties.LanguageID.ENGLISH, "brand name"));
+        companyDetails.setLegalName(Collections.singletonMap(NimbleConfigurationProperties.LanguageID.ENGLISH, "legal name"));
         companyDetails.setVatNumber("vat number");
         companyDetails.setVerificationInformation("verification number");
         companyDetails.setAddress(new Address("street name", "building number", "city name", "postal code", "country"));
-        companyDetails.setBusinessKeywords(Arrays.asList("k1", "k2"));
+        companyDetails.setBusinessKeywords(Collections.singletonMap(NimbleConfigurationProperties.LanguageID.ENGLISH, "k1"));
         companyDetails.setBusinessType("business type");
         companyDetails.setYearOfCompanyRegistration(2001);
         companyDetails.getIndustrySectors().add("industry sector 1");
@@ -113,8 +114,9 @@ public class CompanySettingsControllerTests {
 
         CompanyTradeDetails companyTradeDetails = new CompanyTradeDetails();
         companyTradeDetails.setPpapCompatibilityLevel(5);
-        companyTradeDetails.getPaymentMeans().add(new PaymentMeans("instruction note"));
-        companyTradeDetails.getDeliveryTerms().add(new DeliveryTerms("special terms", new Address(), 5));
+        companyTradeDetails.getPaymentMeans().add(new PaymentMeans(Collections.singletonMap(NimbleConfigurationProperties.LanguageID.ENGLISH, "instruction note")));
+//        companyTradeDetails.getPaymentMeans().add(new PaymentMeans("instruction note"));
+        companyTradeDetails.getDeliveryTerms().add(new DeliveryTerms(Collections.singletonMap(NimbleConfigurationProperties.LanguageID.ENGLISH, "special terms"), new Address(), 5));
 
         CompanySettings companySettings = new CompanySettings();
         companySettings.setDetails(companyDetails);
@@ -126,7 +128,7 @@ public class CompanySettingsControllerTests {
         companySettings.getRecentlyUsedProductCategories().add("category 4");
 
         Gson gson = new GsonBuilder().setDateFormat(DATE_FORMAT).create();
-        this.mockMvc.perform(put("/company-settings/" + company.getID())
+        this.mockMvc.perform(put("/company-settings/" + UblAdapter.adaptPartyIdentifier(company))
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
                 .content(gson.toJson(companySettings)))
@@ -134,12 +136,13 @@ public class CompanySettingsControllerTests {
 
         // THEN: getting settings should be updated
         SimpleDateFormat format = new SimpleDateFormat(DATE_FORMAT);
-        this.mockMvc.perform(get("/company-settings/" + company.getID()))
+        this.mockMvc.perform(get("/company-settings/" + UblAdapter.adaptPartyIdentifier(company)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 // check details
-                .andExpect(jsonPath("$.details.companyLegalName", is("company name")))
+                .andExpect(jsonPath("$.details.brandName.en", is("brand name")))
+                .andExpect(jsonPath("$.details.legalName.en", is("legal name")))
                 .andExpect(jsonPath("$.details.vatNumber", is("vat number")))
                 .andExpect(jsonPath("$.details.verificationInformation", is("verification number")))
                 .andExpect(jsonPath("$.details.address.streetName", is("street name")))
@@ -147,10 +150,9 @@ public class CompanySettingsControllerTests {
                 .andExpect(jsonPath("$.details.address.cityName", is("city name")))
                 .andExpect(jsonPath("$.details.address.postalCode", is("postal code")))
                 .andExpect(jsonPath("$.details.address.country", is("country")))
-                .andExpect(jsonPath("$.details.businessKeywords.length()", is(2)))
                 .andExpect(jsonPath("$.details.businessType", is("business type")))
-                .andExpect(jsonPath("$.details.businessKeywords[0]", is("k1")))
-                .andExpect(jsonPath("$.details.businessKeywords[1]", is("k2")))
+                .andExpect(jsonPath("$.details.businessKeywords.length()", is(1)))
+                .andExpect(jsonPath("$.details.businessKeywords.en", is("k1")))
                 .andExpect(jsonPath("$.details.yearOfCompanyRegistration", is(2001)))
                 .andExpect(jsonPath("$.details.industrySectors.length()", is(2)))
                 .andExpect(jsonPath("$.details.industrySectors[0]", is("industry sector 1")))
@@ -171,9 +173,9 @@ public class CompanySettingsControllerTests {
                 // check trade details
                 .andExpect(jsonPath("$.tradeDetails.ppapCompatibilityLevel", is(5)))
                 .andExpect(jsonPath("$.tradeDetails.paymentMeans.length()", is(1)))
-                .andExpect(jsonPath("$.tradeDetails.paymentMeans.[0].instructionNote", is("instruction note")))
+                .andExpect(jsonPath("$.tradeDetails.paymentMeans.[0].instructionNote.en", is("instruction note")))
                 .andExpect(jsonPath("$.tradeDetails.deliveryTerms.length()", is(1)))
-                .andExpect(jsonPath("$.tradeDetails.deliveryTerms[0].specialTerms", is("special terms")))
+                .andExpect(jsonPath("$.tradeDetails.deliveryTerms[0].specialTerms.en", is("special terms")))
                 .andExpect(jsonPath("$.tradeDetails.deliveryTerms[0].estimatedDeliveryTime", is(5)))
                 // product categories
                 .andExpect(jsonPath("$.preferredProductCategories.length()", is(2)))
@@ -186,28 +188,30 @@ public class CompanySettingsControllerTests {
 
         // change single settings
         companySettings.getDetails().setVatNumber("new vat number");
-        this.mockMvc.perform(put("/company-settings/" + company.getID())
+        this.mockMvc.perform(put("/company-settings/" + company.getHjid().toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
                 .content(gson.toJson(companySettings)))
                 .andExpect(status().isAccepted());
 
         // THEN: getting settings should be updated
-        this.mockMvc.perform(get("/company-settings/" + company.getID()))
+        this.mockMvc.perform(get("/company-settings/" + company.getHjid().toString()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.details.vatNumber", is("new vat number")));
 
         // check qualified party
-        this.mockMvc.perform(get("/qualifying/" + company.getID())
+        this.mockMvc.perform(get("/qualifying/" + company.getHjid().toString())
                 .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.businessIdentityEvidenceID", is("verification number")))
-                .andExpect(jsonPath("$.businessClassificationScheme.description.length()", is(2)))
-                .andExpect(jsonPath("$.party.id", is(company.getID())));
+                .andExpect(jsonPath("$.businessClassificationScheme.description.length()", is(1)))
+                .andExpect(jsonPath("$.businessClassificationScheme.description[0].value", is("k1")))
+                .andExpect(jsonPath("$.businessClassificationScheme.description[0].languageID", is("en")))
+                .andExpect(jsonPath("$.party.partyIdentification[0].id", is(company.getHjid().toString())));
     }
 
     @Test
@@ -217,7 +221,7 @@ public class CompanySettingsControllerTests {
         NegotiationSettings negotiationSettings = this.initNegotiationSettings();
 
         // THEN: settings should be updated
-        this.mockMvc.perform(get("/company-settings/negotiation/" + negotiationSettings.getCompany().getID()))
+        this.mockMvc.perform(get(String.format("/company-settings/%s/negotiation/", UblAdapter.adaptPartyIdentifier(negotiationSettings.getCompany()))))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -252,12 +256,13 @@ public class CompanySettingsControllerTests {
 
         // GIVEN: existing company on platform
         NegotiationSettings negotiationSettings = this.initNegotiationSettings();
+        String companyID = UblAdapter.adaptPartyIdentifier(negotiationSettings.getCompany());
 
         // WHEN: setting empty negotiation settings
         NegotiationSettings emptySettings = new NegotiationSettings();
 
         Gson gson = new Gson();
-        this.mockMvc.perform(put("/company-settings/negotiation")
+        this.mockMvc.perform(put(String.format("/company-settings/%s/negotiation", companyID)   )
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(gson.toJson(emptySettings))
                 .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
@@ -265,7 +270,7 @@ public class CompanySettingsControllerTests {
                 .andExpect(status().isOk());
 
         // THEN: settings should be empty
-        this.mockMvc.perform(get("/company-settings/negotiation/" + negotiationSettings.getCompany().getID()))
+        this.mockMvc.perform(get(String.format("/company-settings/%s/negotiation/", companyID)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -283,12 +288,13 @@ public class CompanySettingsControllerTests {
 
         // GIVEN: existing company on platform
         NegotiationSettings negotiationSettings = this.initNegotiationSettings();
+        String companyID = UblAdapter.adaptPartyIdentifier(negotiationSettings.getCompany());
 
         // WHEN: setting update negotiation settings
         negotiationSettings.getWarrantyPeriodUnits().add("new unit");
 
         Gson gson = new Gson();
-        this.mockMvc.perform(put("/company-settings/negotiation")
+        this.mockMvc.perform(put(String.format("/company-settings/%s/negotiation", companyID))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(gson.toJson(negotiationSettings))
                 .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
@@ -296,7 +302,7 @@ public class CompanySettingsControllerTests {
                 .andExpect(status().isOk());
 
         // THEN: settings should updated
-        this.mockMvc.perform(get("/company-settings/negotiation/" + negotiationSettings.getCompany().getID()))
+        this.mockMvc.perform(get(String.format("/company-settings/%s/negotiation/", companyID)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -327,18 +333,21 @@ public class CompanySettingsControllerTests {
         // GIVEN: existing company on platform
         PartyType company = identityService.getCompanyOfUser(null).get();
         partyRepository.save(company);
+        UblUtils.setID(company, company.getHjid().toString());
+        partyRepository.save(company);
 
         CompanySettings companySettings = new CompanySettings();
 
         Gson gson = new Gson();
-        this.mockMvc.perform(put("/company-settings/" + company.getID())
+        String companyId = UblAdapter.adaptPartyIdentifier(company);
+        this.mockMvc.perform(put("/company-settings/" + companyId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
                 .content(gson.toJson(companySettings)))
                 .andExpect(status().isAccepted())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
 
-        String responseAsString = this.mockMvc.perform(get("/company-settings/" + company.getID() + "/completeness"))
+        String responseAsString = this.mockMvc.perform(get("/company-settings/" + companyId + "/completeness"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -359,7 +368,7 @@ public class CompanySettingsControllerTests {
 
         // WHEN: updating company settings
         CompanyDetails companyDetails = new CompanyDetails();
-        companyDetails.setCompanyLegalName("company name");
+        companyDetails.setLegalName(Collections.singletonMap(NimbleConfigurationProperties.LanguageID.ENGLISH, "company name"));
         companySettings.setDetails(companyDetails);
         CompanyDescription companyDescription = new CompanyDescription();
         companyDescription.setCompanyStatement("company statement");
@@ -368,13 +377,13 @@ public class CompanySettingsControllerTests {
         companyTradeDetails.setPpapCompatibilityLevel(5);
         companySettings.setTradeDetails(companyTradeDetails);
 
-        this.mockMvc.perform(put("/company-settings/" + company.getID())
+        this.mockMvc.perform(put("/company-settings/" + companyId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
                 .content(gson.toJson(companySettings)))
                 .andExpect(status().isAccepted())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
-        responseAsString = this.mockMvc.perform(get("/company-settings/" + company.getID() + "/completeness"))
+        responseAsString = this.mockMvc.perform(get("/company-settings/" + companyId + "/completeness"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -401,8 +410,6 @@ public class CompanySettingsControllerTests {
         // GIVEN: existing company on platform
         PartyType company = identityService.getCompanyOfUser(null).get();
         partyRepository.save(company);
-        company.setID(company.getHjid().toString());
-        partyRepository.save(company);
 
         // upload certificate
         InputStream certContentStream = new ByteArrayInputStream("cert content".getBytes());
@@ -417,7 +424,7 @@ public class CompanySettingsControllerTests {
                 .andExpect(status().isOk());
 
         // check if certificate is listed in company settings
-        String responseAsString = this.mockMvc.perform(get("/company-settings/" + company.getID()))
+        String responseAsString = this.mockMvc.perform(get("/company-settings/" + company.getHjid().toString()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -443,7 +450,7 @@ public class CompanySettingsControllerTests {
                 .andExpect(status().isOk());
 
         // check for empty certificate list
-        this.mockMvc.perform(get("/company-settings/" + company.getID()))
+        this.mockMvc.perform(get("/company-settings/" + company.getHjid().toString()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -454,7 +461,7 @@ public class CompanySettingsControllerTests {
         // GIVEN: existing company on platform
         PartyType company = identityService.getCompanyOfUser(null).get();
         partyRepository.save(company);
-        company.setID(company.getHjid().toString());
+        UblUtils.setID(company, company.getHjid().toString());
         partyRepository.save(company);
 
         // WHEN: changing negotiation settings of company
@@ -471,7 +478,7 @@ public class CompanySettingsControllerTests {
         negotiationSettings.getPaymentTerms().add("pt_1");
 
         Gson gson = new Gson();
-        this.mockMvc.perform(put("/company-settings/negotiation")
+        this.mockMvc.perform(put(String.format("/company-settings/%s/negotiation", UblAdapter.adaptPartyIdentifier(company)))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(gson.toJson(negotiationSettings))
                 .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")

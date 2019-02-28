@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity.controller;
+package eu.nimble.core.infrastructure.identity.system;
 
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
@@ -75,7 +75,7 @@ public class RoleController {
 
         // Check if requesting user is legal representative
         OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
-        if (identityService.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
         // Check if users are in the same company
@@ -114,7 +114,7 @@ public class RoleController {
 
         // Check if requesting user is legal representative
         OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
-        if (identityService.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
         // Check if users are in the same company

@@ -1,13 +1,15 @@
-package eu.nimble.core.infrastructure.identity.controller.ubl;
+package eu.nimble.core.infrastructure.identity.system.ubl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import eu.nimble.core.infrastructure.identity.controller.ControllerUtils;
+import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
+import eu.nimble.core.infrastructure.identity.system.ControllerUtils;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
+import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.QualifyingPartyType;
@@ -34,10 +36,7 @@ import javax.xml.bind.Marshaller;
 import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -75,7 +74,7 @@ public class PartyController {
         PartyType party = partyRepository.findByHjid(partyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         // remove person depending on access rights
-        if (identityService.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             party.setPerson(new ArrayList<>());
 
         if (includeRoles)
@@ -89,13 +88,13 @@ public class PartyController {
 
     @ApiOperation(value = "getAllParties", notes = "Get all parties in a paginated manner", response = Page.class)
     @RequestMapping(value = "/parties/all", method = RequestMethod.GET)
-    ResponseEntity<Page<PartyType>> getAllParties(@RequestParam(value = "page", required = false, defaultValue = "0") int pageNumber,
+    ResponseEntity<Page<PartyType>> getAllParties(@RequestParam(value = "Zero-indexed page", required = false, defaultValue = "0") int pageNumber,
                                                   @ApiParam(value = "Switch for including roles of persons in response (slower)") @RequestParam(required = false) boolean includeRoles,
                                                   @RequestParam(value = "size", required = false, defaultValue = "10") int pageSize) {
 
         logger.debug("Requesting all parties page {}", pageNumber);
 
-        Page<PartyType> partyPage = partyRepository.findAll(new PageRequest(pageNumber, pageSize, new Sort(Sort.Direction.ASC, "name")));
+        Page<PartyType> partyPage = partyRepository.findAll(new PageRequest(pageNumber, pageSize, new Sort(Sort.Direction.ASC, "partyName")));
 
         // fetch and include roles
         if (includeRoles)
@@ -170,11 +169,10 @@ public class PartyController {
             @ApiParam(value = "Switch for including roles of persons in response (slower)") @RequestParam(required = false) boolean includeRoles,
             @RequestHeader(value = "Authorization") String bearer) throws IOException, JAXBException {
 
-        // search relevant parties
         PartyType party = partyRepository.findByHjid(partyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         // remove person depending on access rights
-        if (identityService.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
             party.setPerson(new ArrayList<>());
 
         if (includeRoles)
@@ -212,7 +210,7 @@ public class PartyController {
             @ApiParam(value = "Excluded ids") @RequestParam(value = "exclude", required = false) List<String> exclude) {
 
         List<PartyTuple> partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
-                .map(p -> new PartyTuple(p.getHjid().toString(), p.getName()))
+                .map(p -> new PartyTuple(UblAdapter.adaptPartyIdentifier(p), UblAdapter.adaptPartyNames(p.getPartyName())))
                 .collect(Collectors.toList());
 
         if (exclude != null)
@@ -245,19 +243,19 @@ public class PartyController {
 
     private static class PartyTuple {
         private String companyID;
-        private String name;
+        private Map<NimbleConfigurationProperties.LanguageID, String> names;
 
-        PartyTuple(String companyID, String name) {
+        PartyTuple(String companyID, Map<NimbleConfigurationProperties.LanguageID, String> names) {
             this.companyID = companyID;
-            this.name = name;
+            this.names = names;
         }
 
         public String getCompanyID() {
             return companyID;
         }
 
-        public String getName() {
-            return name;
+        public Map<NimbleConfigurationProperties.LanguageID, String> getNames() {
+            return names;
         }
     }
 }

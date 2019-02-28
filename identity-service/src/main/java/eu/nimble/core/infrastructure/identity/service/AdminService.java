@@ -1,14 +1,12 @@
 package eu.nimble.core.infrastructure.identity.service;
 
-import eu.nimble.core.infrastructure.identity.controller.ControllerUtils;
+import eu.nimble.core.infrastructure.identity.system.ControllerUtils;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
-import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
-import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +60,7 @@ public class AdminService {
     //    @Cacheable("unverifiedCompanies")
     public List<PartyType> queryCompanies(CompanyState companyState) {
         List<PartyType> resultingCompanies = new ArrayList<>();
-        Iterable<PartyType> allParties = partyRepository.findAll(new Sort(Sort.Direction.ASC, "name"));
+        Iterable<PartyType> allParties = partyRepository.findAll(new Sort(Sort.Direction.ASC, "hjid"));
         for (PartyType company : allParties) {
 
             // collect roles of company members
@@ -104,7 +102,7 @@ public class AdminService {
         return resultingCompanies;
     }
 
-    public boolean verifyCompany(Long companyId) throws Exception {
+    public boolean verifyCompany(Long companyId) {
         PartyType company = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         List<PersonType> companyMembers = company.getPerson();

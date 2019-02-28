@@ -5,6 +5,8 @@ import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 
 import java.util.Collections;
 
+import static eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties.LanguageID.ENGLISH;
+
 /**
  * Created by Johannes Innerbichler on 2019-02-01.
  */
@@ -14,8 +16,9 @@ public class TestUtils {
 
     public static CompanyRegistration createCompanyRegistration(String legalName, PersonType user) {
 
-        CompanyDetails companyDetails = new CompanyDetails(legalName, "vat number", "verification info",
-                new Address(), "business type", Collections.singletonList("business type"), 1970,
+        CompanyDetails companyDetails = new CompanyDetails(Collections.singletonMap(ENGLISH, "brand name"),
+                Collections.singletonMap(ENGLISH, legalName), "vat number", "verification info",
+                new Address(), "business type", Collections.singletonMap(ENGLISH, "business type"), 1970,
                 Collections.singletonList("industry sector"));
         CompanyDescription companyDescription = new CompanyDescription("statement", "website",
                 Collections.singletonList("photos"), "imageId", Collections.singletonList("social media"),

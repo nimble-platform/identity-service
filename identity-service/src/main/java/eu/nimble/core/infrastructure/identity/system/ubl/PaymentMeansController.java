@@ -1,8 +1,6 @@
-package eu.nimble.core.infrastructure.identity.controller.ubl;
+package eu.nimble.core.infrastructure.identity.system.ubl;
 
-import com.google.common.collect.Lists;
 import eu.nimble.core.infrastructure.identity.repository.PaymentMeansRepository;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.DeliveryTermsType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PaymentMeansType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -12,8 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Collection;
 
 /**
  * Created by Johannes Innerbichler on 28/06/17.

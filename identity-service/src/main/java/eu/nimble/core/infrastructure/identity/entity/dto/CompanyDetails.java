@@ -1,18 +1,20 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
+import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties.LanguageID;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by Johannes Innerbichler on 25.09.18.
  */
 public class CompanyDetails {
 
+    @ApiModelProperty(value = "Trade name name of the company")
+    private Map<LanguageID, String> brandName = null;
+
     @ApiModelProperty(value = "Legal name of the company")
-    private String companyLegalName = null;
+    private Map<LanguageID, String> legalName = null;
 
     @ApiModelProperty(value = "VAT identification number of the company")
     private String vatNumber = null;
@@ -27,7 +29,7 @@ public class CompanyDetails {
     private String businessType = null;
 
     @ApiModelProperty(value = "Keywords explaining business objective")
-    private List<String> businessKeywords = new ArrayList<>();
+    private Map<LanguageID, String> businessKeywords = new HashMap<>();
 
     @ApiModelProperty(value = "Year since company is active")
     private Integer yearOfCompanyRegistration;
@@ -38,8 +40,11 @@ public class CompanyDetails {
     public CompanyDetails() {
     }
 
-    public CompanyDetails(String companyLegalName, String vatNumber, String verificationInformation, Address address, String businessType, List<String> businessKeywords, Integer yearOfCompanyRegistration, List<String> industrySectors) {
-        this.companyLegalName = companyLegalName;
+    public CompanyDetails(Map<LanguageID, String> brandName, Map<LanguageID, String> legalName, String vatNumber,
+                          String verificationInformation, Address address, String businessType, Map<LanguageID, String> businessKeywords,
+                          Integer yearOfCompanyRegistration, List<String> industrySectors) {
+        this.brandName = brandName;
+        this.legalName = legalName;
         this.vatNumber = vatNumber;
         this.verificationInformation = verificationInformation;
         this.address = address;
@@ -49,12 +54,20 @@ public class CompanyDetails {
         this.industrySectors = industrySectors;
     }
 
-    public String getCompanyLegalName() {
-        return companyLegalName;
+    public Map<LanguageID, String> getBrandName() {
+        return brandName;
     }
 
-    public void setCompanyLegalName(String companyLegalName) {
-        this.companyLegalName = companyLegalName;
+    public void setBrandName(Map<LanguageID, String> brandName) {
+        this.brandName = brandName;
+    }
+
+    public Map<LanguageID, String> getLegalName() {
+        return legalName;
+    }
+
+    public void setLegalName(Map<LanguageID, String> legalName) {
+        this.legalName = legalName;
     }
 
     public String getVatNumber() {
@@ -89,11 +102,11 @@ public class CompanyDetails {
         this.businessType = businessType;
     }
 
-    public List<String> getBusinessKeywords() {
+    public Map<LanguageID, String> getBusinessKeywords() {
         return businessKeywords;
     }
 
-    public void setBusinessKeywords(List<String> businessKeywords) {
+    public void setBusinessKeywords(Map<LanguageID, String> businessKeywords) {
         this.businessKeywords = businessKeywords;
     }
 

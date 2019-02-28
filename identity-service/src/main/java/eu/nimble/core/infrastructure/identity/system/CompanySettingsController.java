@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity.controller;
+package eu.nimble.core.infrastructure.identity.system;
 
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
@@ -11,9 +11,9 @@ import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
-import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.utils.ImageUtils;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
+import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
@@ -42,13 +42,14 @@ import java.util.stream.Collectors;
 
 import static eu.nimble.core.infrastructure.identity.utils.UblAdapter.*;
 import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
+import static eu.nimble.core.infrastructure.identity.uaa.OAuthClient.Role.*;
 
 /**
  * Created by Johannes Innerbichler on 04/07/17.
  */
 @RestController
 @RequestMapping("/company-settings")
-@SuppressWarnings("SpringJavaAutowiredFieldsWarningInspection")
+@SuppressWarnings({"SpringJavaAutowiredFieldsWarningInspection", "FieldCanBeLocal"})
 @Api(value = "company-settings", description = "API for handling settings of companies.")
 public class CompanySettingsController {
 
@@ -89,23 +90,16 @@ public class CompanySettingsController {
             @ApiParam(value = "Id of company to retrieve settings from.", required = true) @PathVariable Long companyID) {
 
         // search relevant parties
-        Optional<PartyType> partyOptional = partyRepository.findByHjid(companyID).stream().findFirst();
+        PartyType company = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
-        // check if party was found
-        if (partyOptional.isPresent() == false) {
-            logger.info("Requested party with Id {} not found", companyID);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-        PartyType party = partyOptional.get();
+        Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(company).stream().findFirst();
 
-        Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(partyOptional.get()).stream().findFirst();
-
-        logger.debug("Returning requested settings for party with Id {}", party.getHjid());
+        logger.debug("Returning requested settings for party with Id {}", company.getHjid());
 
         // pre fetch image metadata without binaries
-        enrichImageMetadata(party);
+        enrichImageMetadata(company);
 
-        CompanySettings settings = UblAdapter.adaptCompanySettings(party, qualifyingPartyOptional.orElse(null));
+        CompanySettings settings = UblAdapter.adaptCompanySettings(company, qualifyingPartyOptional.orElse(null));
         return new ResponseEntity<>(settings, HttpStatus.OK);
     }
 
@@ -116,16 +110,8 @@ public class CompanySettingsController {
             @ApiParam(value = "Id of company to change settings from.", required = true) @PathVariable Long companyID,
             @ApiParam(value = "Settings to update.", required = true) @RequestBody CompanySettings newSettings) {
 
-        // search relevant parties
-        Optional<PartyType> partyOptional = partyRepository.findByHjid(companyID).stream().findFirst();
+        PartyType existingCompany = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
-        // check if party was found
-        if (partyOptional.isPresent() == false) {
-            logger.info("Requested party with Id {} not found", companyID);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-
-        PartyType existingCompany = partyOptional.get();
         logger.debug("Changing settings for party with Id {}", existingCompany.getHjid());
 
         existingCompany = UblAdapter.adaptCompanySettings(newSettings, null, existingCompany);
@@ -147,29 +133,29 @@ public class CompanySettingsController {
         partyRepository.save(existingCompany);
 
         // broadcast changes
-        kafkaSender.broadcastCompanyUpdate(existingCompany.getID(), bearer);
+        kafkaSender.broadcastCompanyUpdate(UblAdapter.adaptPartyIdentifier(existingCompany), bearer);
 
         newSettings = adaptCompanySettings(existingCompany, qualifyingParty);
         return new ResponseEntity<>(newSettings, HttpStatus.ACCEPTED);
     }
 
     @ApiOperation(value = "Upload company image")
-    @RequestMapping(value = "/image", produces = {"application/json"}, method = RequestMethod.POST)
+    @RequestMapping(value = "/{companyID}/image", produces = {"application/json"}, method = RequestMethod.POST)
     public ResponseEntity<?> uploadImage(
             @RequestHeader(value = "Authorization") String bearer,
+            @ApiParam(value = "Id of company", required = true) @PathVariable Long companyID,
             @RequestParam(value = "isLogo", defaultValue = "false") String isLogo,
             @RequestParam(value = "file") MultipartFile imageFile) throws IOException {
 
-        if (identityService.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false && identityService.hasRole(bearer, OAuthClient.Role.INITIAL_REPRESENTATIVE) == false)
-            return new ResponseEntity<>("Only legal representatives are allowed add images", HttpStatus.UNAUTHORIZED);
+        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
+            return new ResponseEntity<>("Only legal representatives or platform managers are allowed add images", HttpStatus.FORBIDDEN);
 
         if (imageFile.getSize() > MAX_IMAGE_SIZE)
             throw new ControllerUtils.FileTooLargeException();
 
-        UaaUser user = identityService.getUserfromBearer(bearer);
-        PartyType company = identityService.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+        PartyType company = getCompanySecure(companyID, bearer);
 
-        logger.info("Storing image for company with ID " + company.getID());
+        logger.info("Storing image for company with ID " + UblAdapter.adaptPartyIdentifier(company));
 
         Boolean logoFlag = "true".equals(isLogo);
 
@@ -217,15 +203,19 @@ public class CompanySettingsController {
     }
 
     @ApiOperation(value = "Delete company image")
-    @RequestMapping(value = "/image/{imageId}", produces = {"application/json"}, method = RequestMethod.DELETE)
+    @RequestMapping(value = "/{companyID}/image/{imageId}", produces = {"application/json"}, method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteImage(
             @RequestHeader(value = "Authorization") String bearer,
-            @ApiParam(value = "Id of company to retrieve settings from.", required = true) @PathVariable Long imageId) throws IOException {
+            @ApiParam(value = "Id of company owning the image", required = true) @PathVariable Long companyID,
+            @ApiParam(value = "Id of image to delete", required = true) @PathVariable Long imageId) throws IOException {
+
+        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
+            return new ResponseEntity<>("Only legal representatives or platform managers are allowed to delete images", HttpStatus.FORBIDDEN);
 
         logger.info("Deleting image with Id " + imageId);
 
-        UaaUser user = identityService.getUserfromBearer(bearer);
-        PartyType company = identityService.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+        PartyType company = getCompanySecure(companyID, bearer);
+
         if (company.getDocumentReference().stream().anyMatch(dr -> imageId.equals(dr.getHjid())) == false)
             throw new ControllerUtils.DocumentNotFoundException("No associated document found.");
 
@@ -252,19 +242,20 @@ public class CompanySettingsController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/certificate")
+    @ApiOperation(value = "Certificate upload")
+    @PostMapping("/{companyID}/certificate")
     public ResponseEntity<?> uploadCertificate(
             @RequestHeader(value = "Authorization") String bearer,
+            @ApiParam(value = "Id of company owning the certificate", required = true) @PathVariable Long companyID,
             @RequestParam("file") MultipartFile certFile,
             @RequestParam("name") String name,
             @RequestParam("description") String description,
             @RequestParam("type") String type) throws IOException {
 
-//        if (identityUtils.hasRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
-//            return new ResponseEntity<>("Only legal representatives are allowed add certificates", HttpStatus.UNAUTHORIZED);
+        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
+            return new ResponseEntity<>("Only legal representatives or platform managers are allowed to delete images", HttpStatus.FORBIDDEN);
 
-        UaaUser user = identityService.getUserfromBearer(bearer);
-        PartyType company = identityService.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+        PartyType company = getCompanySecure(companyID, bearer);
 
         BinaryObjectType certificateBinary = new BinaryObjectType();
         certificateBinary.setValue(certFile.getBytes());
@@ -280,7 +271,7 @@ public class CompanySettingsController {
         company.getCertificate().add(certificate);
         partyRepository.save(company);
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(certificate);
     }
 
     @ApiOperation(value = "Certificate download")
@@ -302,13 +293,16 @@ public class CompanySettingsController {
     }
 
     @ApiOperation(value = "Certificate deletion")
-    @RequestMapping(value = "/certificate/{certificateId}", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/{companyID}/certificate/{certificateId}", method = RequestMethod.DELETE)
     ResponseEntity<?> deleteCertificate(
             @RequestHeader(value = "Authorization") String bearer,
+            @ApiParam(value = "Id of company owning the certificate", required = true) @PathVariable Long companyID,
             @ApiParam(value = "Id of certificate.", required = true) @PathVariable Long certificateId) throws IOException {
 
-        UaaUser user = identityService.getUserfromBearer(bearer);
-        PartyType company = identityService.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
+            return new ResponseEntity<>("Only legal representatives or platform managers are allowed to delete images", HttpStatus.FORBIDDEN);
+
+        PartyType company = getCompanySecure(companyID, bearer);
 
         if (certificateRepository.exists(certificateId) == false)
             throw new ControllerUtils.DocumentNotFoundException("No certificate for Id found.");
@@ -335,50 +329,85 @@ public class CompanySettingsController {
     }
 
     @ApiOperation(value = "Update negotiation settings")
-    @RequestMapping(value = "/negotiation", method = RequestMethod.PUT)
+    @RequestMapping(value = "/{companyID}/negotiation", method = RequestMethod.PUT)
     ResponseEntity<?> updateNegotiationSettings(
             @RequestHeader(value = "Authorization") String bearer,
+            @ApiParam(value = "Id of company owning the certificate", required = true) @PathVariable Long companyID,
             @ApiParam(value = "Settings to update.", required = true) @RequestBody NegotiationSettings newSettings) throws IOException {
 
-        // find company
-        UaaUser user = identityService.getUserfromBearer(bearer);
-        PartyType company = identityService.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
+            return new ResponseEntity<>("Only legal representatives or platform managers are allowed to update settings", HttpStatus.FORBIDDEN);
+
+        PartyType company = getCompanySecure(companyID, bearer);
 
         // update settings
         NegotiationSettings existingSettings = findOrCreateNegotiationSettings(company);
         existingSettings.update(newSettings);
         existingSettings = negotiationSettingsRepository.save(existingSettings);
 
-        logger.info("Updated negotiation settings {} for company {}", existingSettings.getId(), company.getID());
+        logger.info("Updated negotiation settings {} for company {}", existingSettings.getId(), UblAdapter.adaptPartyIdentifier(company));
 
         // broadcast changes
-        kafkaSender.broadcastCompanyUpdate(company.getID(), bearer);
+        kafkaSender.broadcastCompanyUpdate(UblAdapter.adaptPartyIdentifier(company), bearer);
 
         return ResponseEntity.ok().build();
     }
 
     @ApiOperation(value = "Get negotiation settings", response = NegotiationSettings.class)
-    @RequestMapping(value = "/negotiation/{companyID}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/{companyID}/negotiation/", method = RequestMethod.GET, produces = "application/json")
     ResponseEntity<?> getNegotiationSettings(
             @ApiParam(value = "Id of company to retrieve settings from.", required = true) @PathVariable Long companyID) {
 
         PartyType company = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
         NegotiationSettings negotiationSettings = findOrCreateNegotiationSettings(company);
 
-        logger.info("Fetched negotiation settings {} for company {}", negotiationSettings.getId(), company.getID());
+        logger.info("Fetched negotiation settings {} for company {}", negotiationSettings.getId(), UblAdapter.adaptPartyIdentifier(company));
 
         return ResponseEntity.ok().body(negotiationSettings);
     }
 
     @ApiOperation(value = "", notes = "Fake changes of company")
-    @RequestMapping(value = "/fake-changes/{partyId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/{companyID}/fake-changes/", method = RequestMethod.GET)
     ResponseEntity<?> kafkaTest(
             @RequestHeader(value = "Authorization") String bearer,
-            @ApiParam(value = "Id of party to fake changes.", required = true) @PathVariable String partyId) {
+            @ApiParam(value = "Id of party to fake changes.", required = true) @PathVariable String companyID) {
 
-        this.kafkaSender.broadcastCompanyUpdate(partyId, bearer);
+        this.kafkaSender.broadcastCompanyUpdate(companyID, bearer);
 
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "", notes = "Get profile completeness of company.", response = PartyType.class)
+    @RequestMapping(value = "/{companyID}/completeness", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<?> getProfileCompleteness(
+            @ApiParam(value = "Id of party to retrieve profile completeness.", required = true) @PathVariable Long companyID
+    ) {
+        // search relevant parties
+        PartyType company = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+
+        QualifyingPartyType qualifyingParty = qualifyingPartyRepository.findByParty(company).stream().findFirst().orElse(null);
+
+        CompanySettings companySettings = UblAdapter.adaptCompanySettings(company, qualifyingParty);
+
+        // compute completeness factors
+        Double detailsCompleteness = IdentityService.computeDetailsCompleteness(companySettings.getDetails());
+        Double descriptionCompleteness = IdentityService.computeDescriptionCompleteness(companySettings.getDescription());
+        Double certificateCompleteness = IdentityService.computeCertificateCompleteness(company);
+        Double tradeCompleteness = IdentityService.computeTradeCompleteness(companySettings.getTradeDetails());
+        Double overallCompleteness = (detailsCompleteness + descriptionCompleteness + certificateCompleteness + tradeCompleteness) / 4.0;
+
+        List<QualityIndicatorType> qualityIndicators = new ArrayList<>();
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(PROFILE_COMPLETENESS, overallCompleteness));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_GENERAL_DETAILS, detailsCompleteness));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_DESCRIPTION, descriptionCompleteness));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_CERTIFICATE_DETAILS, certificateCompleteness));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_TRADE_DETAILS, overallCompleteness));
+        PartyType completenessParty = new PartyType();
+        completenessParty.setQualityIndicator(qualityIndicators);
+        UblUtils.setID(completenessParty, UblAdapter.adaptPartyIdentifier(company));
+
+        logger.debug("Returning completeness of party with Id {0}", company.getHjid());
+        return new ResponseEntity<>(completenessParty, HttpStatus.OK);
     }
 
     private NegotiationSettings findOrCreateNegotiationSettings(PartyType company) {
@@ -391,44 +420,16 @@ public class CompanySettingsController {
         return negotiationSettings;
     }
 
-    @ApiOperation(value = "", notes = "Get profile completeness of company.", response = PartyType.class)
-    @RequestMapping(value = "/{partyId}/completeness", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<?> getProfileCompleteness(
-            @ApiParam(value = "Id of party to retrieve profile completeness.", required = true) @PathVariable Long partyId
-    ) {
-        // search relevant parties
-        List<PartyType> parties = partyRepository.findByHjid(partyId);
+    private PartyType getCompanySecure(Long companyID, String bearer) throws IOException {
+        PartyType company = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
-        // check if party was found
-        if (parties.isEmpty()) {
-            logger.info("Requested party with Id {} not found", partyId);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        // check if legal representative is from same company
+        UaaUser user = identityService.getUserfromBearer(bearer);
+        PartyType companyFromBearer = identityService.getCompanyOfUser(user).orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+        if( identityService.hasAnyRole(bearer, PLATFORM_MANAGER) == false && companyFromBearer.getHjid().equals(companyID) == false)
+            throw new ControllerUtils.UnauthorisedAccess();
 
-        PartyType party = parties.get(0);
-        QualifyingPartyType qualifyingParty = qualifyingPartyRepository.findByParty(party).stream().findFirst().orElse(null);
-
-        CompanySettings companySettings = UblAdapter.adaptCompanySettings(party, qualifyingParty);
-
-        // compute completeness factors
-        Double detailsCompleteness = IdentityService.computeDetailsCompleteness(companySettings.getDetails());
-        Double descriptionCompleteness = IdentityService.computeDescriptionCompleteness(companySettings.getDescription());
-        Double certificateCompleteness = IdentityService.computeCertificateCompleteness(party);
-        Double tradeCompleteness = IdentityService.computeTradeCompleteness(companySettings.getTradeDetails());
-        Double overallCompleteness = (detailsCompleteness + descriptionCompleteness + certificateCompleteness + tradeCompleteness) / 4.0;
-
-        List<QualityIndicatorType> qualityIndicators = new ArrayList<>();
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator(PROFILE_COMPLETENESS, overallCompleteness));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_GENERAL_DETAILS, detailsCompleteness));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_DESCRIPTION, descriptionCompleteness));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_CERTIFICATE_DETAILS, certificateCompleteness));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_TRADE_DETAILS, overallCompleteness));
-        PartyType completenessParty = new PartyType();
-        completenessParty.setQualityIndicator(qualityIndicators);
-        completenessParty.setID(party.getID());
-
-        logger.debug("Returning completeness of party with Id {0}", party.getHjid());
-        return new ResponseEntity<>(completenessParty, HttpStatus.OK);
+        return company;
     }
 
     @RequestMapping(value = "/vat/{vat}", produces = {"application/json"}, method = RequestMethod.GET)

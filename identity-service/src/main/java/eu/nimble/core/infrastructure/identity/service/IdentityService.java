@@ -45,9 +45,16 @@ public class IdentityService {
         return OpenIdConnectUserDetails.fromBearer(bearer);
     }
 
-    public boolean hasRole(String bearer, OAuthClient.Role role) throws IOException {
+    /**
+     * Checks if the bearer contains at least one of the given roles.
+     * @param bearer Token containing roles
+     * @param roles Roles to check
+     * @return True if at least one matching role was found.
+     * @throws IOException if roles could not be extracted from token
+     */
+    public boolean hasAnyRole(String bearer, OAuthClient.Role... roles) throws IOException {
         OpenIdConnectUserDetails details = getUserDetails(bearer);
-        return details.hasRole(role.toString());
+        return Arrays.stream(roles).anyMatch(r -> details.hasRole(r.toString()));
     }
 
     public Optional<PartyType> getCompanyOfUser(UaaUser uaaUser) {
@@ -67,7 +74,7 @@ public class IdentityService {
         if ((requestingCompany.isPresent() && targetCompany.isPresent()) == false) // check if companies exist
             return false;
 
-        return requestingCompany.get().getID().equals(targetCompany.get().getID());
+        return requestingCompany.get().getHjid().equals(targetCompany.get().getHjid());
     }
 
     public Set<String> fetchRoles(PersonType personType) {
@@ -102,7 +109,7 @@ public class IdentityService {
     public static Double computeDetailsCompleteness(CompanyDetails companyDetails) {
 
         List<Double> completenessWeights = new ArrayList<>();
-        completenessWeights.add(StringUtils.isNotEmpty(companyDetails.getCompanyLegalName()) ? 1.0 : 0.0);
+        completenessWeights.add(companyDetails.getLegalName().isEmpty() == false ? 1.0 : 0.0);
         completenessWeights.add(StringUtils.isNotEmpty(companyDetails.getVatNumber()) ? 1.0 : 0.0);
         completenessWeights.add(StringUtils.isNotEmpty(companyDetails.getBusinessType()) ? 1.0 : 0.0);
         completenessWeights.add(companyDetails.getIndustrySectors() != null && companyDetails.getIndustrySectors().size() > 0 ? 1.0 : 0.0);

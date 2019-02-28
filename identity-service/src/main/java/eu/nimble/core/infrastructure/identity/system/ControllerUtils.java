@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity.controller;
+package eu.nimble.core.infrastructure.identity.system;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -27,5 +27,9 @@ public class ControllerUtils {
         DocumentNotFoundException(String message) {
             super(message);
         }
+    }
+
+    @ResponseStatus(code = HttpStatus.FORBIDDEN, reason = "unauthorised access")
+    public static class UnauthorisedAccess extends RuntimeException {
     }
 }

@@ -18,7 +18,7 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.Random;
 
-import static eu.nimble.core.infrastructure.identity.controller.IdentityController.REFRESH_TOKEN_SESSION_KEY;
+import static eu.nimble.core.infrastructure.identity.system.IdentityController.REFRESH_TOKEN_SESSION_KEY;
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.when;
 
@@ -43,7 +43,7 @@ public class DefaultTestConfiguration {
         when(identityServiceMock.getCompanyOfUser(anyObject())).thenReturn(java.util.Optional.of(mockParty));
 
         // mock verification of roles
-        when(identityServiceMock.hasRole(any(), any())).thenReturn(true);
+        when(identityServiceMock.hasAnyRole(any(), anyVararg())).thenReturn(true);
 
         return identityServiceMock;
     }

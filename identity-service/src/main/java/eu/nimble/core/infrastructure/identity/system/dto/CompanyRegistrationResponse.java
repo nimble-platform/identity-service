@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity.controller.dto;
+package eu.nimble.core.infrastructure.identity.system.dto;
 
 import io.swagger.annotations.ApiModelProperty;
 

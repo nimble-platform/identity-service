@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.mail;
 
+import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.AddressType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
@@ -27,6 +28,9 @@ public class EmailService {
 
     @Autowired
     private JavaMailSender emailSender;
+
+    @Autowired
+    private UblUtils ublUtils;
 
     @Autowired
     private TemplateEngine textMailTemplateEngine;
@@ -80,13 +84,13 @@ public class EmailService {
         context.setVariable("userEmail", userEmail);
 
         // collect info of user
-        context.setVariable("companyName", company.getName());
+        context.setVariable("companyName", ublUtils.getName(company));
         context.setVariable("companyID", company.getHjid());
 
         // collect info of company
         if (company.getPostalAddress() != null) {
             AddressType address = company.getPostalAddress();
-            String countryName = address.getCountry() != null ? address.getCountry().getName() : null;
+            String countryName = address.getCountry() != null ? address.getCountry().getName().getValue() : null;
             context.setVariable("companyCountry", countryName);
             context.setVariable("companyStreet", address.getStreetName());
             context.setVariable("companyBuildingNumber", address.getBuildingNumber());
@@ -104,7 +108,7 @@ public class EmailService {
         Context context = new Context();
         context.setVariable("firstName", legalRepresentative.getFirstName());
         context.setVariable("familyName", legalRepresentative.getFamilyName());
-        context.setVariable("companyName", company.getName());
+        context.setVariable("companyName", ublUtils.getName(company));
 
         String subject = "Your company has been verified on NIMBLE";
 

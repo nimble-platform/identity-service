@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity.controller;
+package eu.nimble.core.infrastructure.identity.system;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
@@ -25,8 +25,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Collections;
+
 import static eu.nimble.core.infrastructure.identity.TestUtils.JSON_DATE_FORMAT;
 import static eu.nimble.core.infrastructure.identity.TestUtils.createCompanyRegistration;
+import static eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties.LanguageID.ENGLISH;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -95,8 +98,8 @@ public class AdminControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.content.length()", is(1)))
-                .andExpect(jsonPath("$.content[0].name", is(companyRegistration.getSettings().getDetails().getCompanyLegalName())))
-                .andExpect(jsonPath("$.content[0].id", is(companyRegistration.getCompanyID().toString())));
+                .andExpect(jsonPath("$.content[0].partyName[0].name.value", is(companyRegistration.getSettings().getDetails().getLegalName().get(ENGLISH))))
+                .andExpect(jsonPath("$.content[0].partyIdentification[0].id", is(companyRegistration.getCompanyID().toString())));
 
         // check repositories
         assertEquals(1, this.partyRepository.count());
