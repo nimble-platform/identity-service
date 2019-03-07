@@ -44,6 +44,9 @@ public class EmailService {
     @Value("${nimble.frontend.url}")
     private String frontendUrl;
 
+    @Value("${nimble.supportEmail}")
+    private String supportEmail;
+
     public void sendInvite(String toEmail, String senderName, String companyName, Collection<String> roles) throws UnsupportedEncodingException {
         String invitationUrl = frontendUrl + "/#/user-mgmt/registration/?email=" + URLEncoder.encode(toEmail, "UTF-8");
 
@@ -55,7 +58,7 @@ public class EmailService {
 
         String subject = "Invitation to the NIMBLE platform";
 
-        this.send(new String[]{toEmail}, subject, "invitation", context);
+        this.send(new String[]{toEmail}, subject, "invitation", context, new String[]{supportEmail});
     }
 
     public void informInviteExistingCompany(String toEmail, String senderName, String companyName, Collection<String> roles) {
@@ -67,7 +70,7 @@ public class EmailService {
 
         String subject = "Invitation to " + companyName;
 
-        this.send(new String[]{toEmail}, subject, "invitation_existing_company", context);
+        this.send(new String[]{toEmail}, subject, "invitation_existing_company", context, new String[]{});
     }
 
     public void notifyPlatformManagersNewCompany(List<String> emails, PersonType representative, PartyType company) {
@@ -100,7 +103,7 @@ public class EmailService {
 
         String subject = "NIMBLE: New company registered";
 
-        this.send(emails.toArray(new String[]{}), subject, "new_company", context);
+        this.send(emails.toArray(new String[]{}), subject, "new_company", context, new String[]{});
     }
 
     public void notifyVerifiedCompany(String email, PersonType legalRepresentative, PartyType company) {
@@ -109,13 +112,14 @@ public class EmailService {
         context.setVariable("firstName", legalRepresentative.getFirstName());
         context.setVariable("familyName", legalRepresentative.getFamilyName());
         context.setVariable("companyName", ublUtils.getName(company));
+        context.setVariable("supportEmail", supportEmail);
 
         String subject = "Your company has been verified on NIMBLE";
 
-        this.send(new String[]{email}, subject, "company_verified", context);
+        this.send(new String[]{email}, subject, "company_verified", context, new String[]{});
     }
 
-    private void send(String[] to, String subject, String template, Context context) {
+    private void send(String[] to, String subject, String template, Context context, String[] cc) {
 
         SimpleMailMessage mailMessage = new SimpleMailMessage();
         String message = this.textMailTemplateEngine.process(template, context);
@@ -129,6 +133,11 @@ public class EmailService {
         mailMessage.setTo(to);
         mailMessage.setSubject(subject);
         mailMessage.setText(message);
+
+        if (cc.length != 0) {
+            mailMessage.setCc(cc);
+        }
+
         this.emailSender.send(mailMessage);
     }
 }
