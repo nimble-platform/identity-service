@@ -87,11 +87,7 @@ public class InvitationController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        // saving invitation
         List<String> userRoleIDs = invitation.getRoleIDs() == null ? new ArrayList() : invitation.getRoleIDs();
-        UserInvitation userInvitation = new UserInvitation(emailInvitee, companyId, userRoleIDs, sender);
-        userInvitationRepository.save(userInvitation);
-
         List<String> prettifedRoles = KeycloakAdmin.prettfiyRoleIDs(userRoleIDs);
 
         // check if user is already registered
@@ -106,6 +102,10 @@ public class InvitationController {
                 logger.info("Invitation: User {} is already member of another company.", emailInvitee);
                 return new ResponseEntity<>(HttpStatus.CONFLICT);
             }
+
+            // saving invitation
+            UserInvitation userInvitation = new UserInvitation(emailInvitee, companyId, userRoleIDs, sender);
+            userInvitationRepository.save(userInvitation);
 
             // ToDo: let user accept invitation
 
