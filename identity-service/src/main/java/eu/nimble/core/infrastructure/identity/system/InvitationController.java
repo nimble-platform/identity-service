@@ -158,7 +158,7 @@ public class InvitationController {
 
             if (userCompanyOpt.isPresent() == true) {
                 PartyType company = userCompanyOpt.get();
-                if(companyID != company.getHjid())
+                if(!companyID.equals(company.getHjid()))
                     return new ResponseEntity<>("Only platform managers are allowed to retrieve all company members", HttpStatus.FORBIDDEN);
             }
         }
