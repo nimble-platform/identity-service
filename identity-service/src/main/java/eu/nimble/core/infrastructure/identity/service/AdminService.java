@@ -128,13 +128,13 @@ public class AdminService {
     public List<PartyType> sortCompanies(List<PartyType> partyList, String sortBy, String orderBy) {
         Comparator<PartyType> p;
 
-        if (sortBy.equals("partyName")) {
+        if (sortBy.equals(GlobalConstants.PARTY_NAME_STRING)) {
             if(GlobalConstants.DESCENDING_STRING.equals(orderBy)){
                 p = (p1, p2) ->
-                        p2.getPartyName().get(0).getName().getValue().compareTo(p1.getPartyName().get(0).getName().getValue());
+                        p2.getPartyName().get(0).getName().getValue().toLowerCase().compareTo(p1.getPartyName().get(0).getName().getValue().toLowerCase());
             }else {
                 p = (p1, p2) ->
-                        p1.getPartyName().get(0).getName().getValue().compareTo(p2.getPartyName().get(0).getName().getValue());
+                        p1.getPartyName().get(0).getName().getValue().toLowerCase().compareTo(p2.getPartyName().get(0).getName().getValue().toLowerCase());
             }
             partyList.sort(p);
         }
