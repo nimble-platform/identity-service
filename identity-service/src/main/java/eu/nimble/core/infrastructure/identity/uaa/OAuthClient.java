@@ -65,7 +65,8 @@ public class OAuthClient {
         NIMBLE_USER("nimble_user"),
         INITIAL_REPRESENTATIVE("initial_representative"),
         LEGAL_REPRESENTATIVE("legal_representative"),
-        PLATFORM_MANAGER("platform_manager");
+        PLATFORM_MANAGER("platform_manager"),
+        COMPANY_ADMIN("company_admin");
 
         private final String role;
 

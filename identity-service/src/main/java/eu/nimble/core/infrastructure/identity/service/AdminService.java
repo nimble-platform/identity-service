@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.service;
 
+import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
 import eu.nimble.core.infrastructure.identity.system.ControllerUtils;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
@@ -122,6 +123,22 @@ public class AdminService {
         }
 
         return false;
+    }
+
+    public List<PartyType> sortCompanies(List<PartyType> partyList, String sortBy, String orderBy) {
+        Comparator<PartyType> p;
+
+        if (sortBy.equals(GlobalConstants.PARTY_NAME_STRING)) {
+            if(GlobalConstants.DESCENDING_STRING.equals(orderBy)){
+                p = (p1, p2) ->
+                        p2.getPartyName().get(0).getName().getValue().toLowerCase().compareTo(p1.getPartyName().get(0).getName().getValue().toLowerCase());
+            }else {
+                p = (p1, p2) ->
+                        p1.getPartyName().get(0).getName().getValue().toLowerCase().compareTo(p2.getPartyName().get(0).getName().getValue().toLowerCase());
+            }
+            partyList.sort(p);
+        }
+        return partyList;
     }
 
     public long deleteCompany(Long companyId) throws ControllerUtils.CompanyNotFoundException {

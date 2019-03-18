@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.system;
 
+import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
 import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
@@ -40,11 +41,18 @@ public class AdminController {
     @ApiOperation(value = "Retrieve unverified companies", response = Page.class)
     @RequestMapping(value = "/unverified_companies", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<Page<PartyType>> getUnverifiedCompanies(@RequestParam(value = "page", required = false, defaultValue = "1") int pageNumber,
-                                                           @RequestParam(value = "size", required = false, defaultValue = DEFAULT_PAGE_SIZE) int pageSize) {
+                                                           @RequestParam(value = "size", required = false, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
+                                                           @RequestParam(value = "sortBy", required = false, defaultValue = GlobalConstants.PARTY_NAME_STRING) String sortBy,
+                                                           @RequestParam(value = "orderBy", required = false, defaultValue = GlobalConstants.ASCENDING_STRING) String orderBy){
+
         // ToDo: verify proper access policy (e.g. admin role)
 
         logger.info("Fetching unverified companies");
         List<PartyType> unverifiedCompanies = adminService.queryCompanies(AdminService.CompanyState.UNVERIFIED);
+
+        if(!orderBy.isEmpty())
+            adminService.sortCompanies(unverifiedCompanies, sortBy, orderBy);
+
 
         // paginate results
         return makePage(pageNumber, pageSize, unverifiedCompanies);
@@ -53,12 +61,16 @@ public class AdminController {
     @ApiOperation(value = "Retrieve verified companies", response = Page.class)
     @RequestMapping(value = "/verified_companies", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<Page<PartyType>> getVerifiedCompanies(@RequestParam(value = "page", required = false, defaultValue = "1") int pageNumber,
-                                                         @RequestParam(value = "size", required = false, defaultValue = DEFAULT_PAGE_SIZE) int pageSize) {
+                                                         @RequestParam(value = "size", required = false, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
+                                                         @RequestParam(value = "sortBy", required = false, defaultValue = GlobalConstants.PARTY_NAME_STRING) String sortBy,
+                                                         @RequestParam(value = "orderBy", required = false, defaultValue = GlobalConstants.ASCENDING_STRING) String orderBy){
         // ToDo: verify proper access policy (e.g. admin role)
 
         logger.info("Fetching unverified companies");
         List<PartyType> verifiedCompanies = adminService.queryCompanies(AdminService.CompanyState.VERIFIED);
 
+        if(!orderBy.isEmpty())
+            adminService.sortCompanies(verifiedCompanies, sortBy, orderBy);
         // paginate results
         return makePage(pageNumber, pageSize, verifiedCompanies);
     }

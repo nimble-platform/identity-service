@@ -103,12 +103,15 @@ public class CompanySettingsController {
         return new ResponseEntity<>(settings, HttpStatus.OK);
     }
 
-    @ApiOperation(value = "Change company settings")
+    @ApiOperation(value = "Change company settings", response = CompanySettings.class)
     @RequestMapping(value = "/{companyID}", consumes = {"application/json"}, method = RequestMethod.PUT)
-    ResponseEntity<CompanySettings> setSettings(
+    ResponseEntity<?> setSettings(
             @RequestHeader(value = "Authorization") String bearer,
             @ApiParam(value = "Id of company to change settings from.", required = true) @PathVariable Long companyID,
-            @ApiParam(value = "Settings to update.", required = true) @RequestBody CompanySettings newSettings) {
+            @ApiParam(value = "Settings to update.", required = true) @RequestBody CompanySettings newSettings)throws IOException{
+
+        if (identityService.hasAnyRole(bearer,COMPANY_ADMIN,LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
+            return new ResponseEntity<>("Only legal representatives, company admin or platform managers are allowed add images", HttpStatus.FORBIDDEN);
 
         PartyType existingCompany = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
@@ -147,8 +150,8 @@ public class CompanySettingsController {
             @RequestParam(value = "isLogo", defaultValue = "false") String isLogo,
             @RequestParam(value = "file") MultipartFile imageFile) throws IOException {
 
-        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
-            return new ResponseEntity<>("Only legal representatives or platform managers are allowed add images", HttpStatus.FORBIDDEN);
+        if (identityService.hasAnyRole(bearer,COMPANY_ADMIN,LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
+            return new ResponseEntity<>("Only legal representatives, company admin or platform managers are allowed add images", HttpStatus.FORBIDDEN);
 
         if (imageFile.getSize() > MAX_IMAGE_SIZE)
             throw new ControllerUtils.FileTooLargeException();

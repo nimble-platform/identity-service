@@ -6,7 +6,7 @@ This platform is in an early access / testing stage.
 
 Downtimes and bugs have to be expected.
 
-We welcome comments and feedback - use the help button on the platform!
+We welcome comments and feedback, any suggestion or comment can be submitted to the email: [(${supportEmail})]
 
 Best regards,
   your NIMBLE Platform Manager
