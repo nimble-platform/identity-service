@@ -381,4 +381,45 @@ public class IdentityController {
 
         emailService.notifyPlatformManagersNewCompany(emails, representative, company);
     }
+
+    @ApiOperation(value = "Update user's favourite list of id's", response = String.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Favourite id's successfully applied", response = String[].class),
+            @ApiResponse(code = 401, message = "Not authorized"),
+            @ApiResponse(code = 404, message = "User not found"),
+            @ApiResponse(code = 400, message = "Error while applying roles")})
+    @RequestMapping(value = "/favourite/{personId}", consumes = {"application/json"},produces = {"application/json"}, method = RequestMethod.PUT)
+    ResponseEntity<?> setFavouriteIdList(
+            @ApiParam(value = "Id of company to change settings from.", required = true) @PathVariable Long personId,
+            @RequestParam("status") Integer status,
+            @ApiParam(value = "Set of roles to apply.", required = true) @RequestBody List<String> itemIds)throws IOException{
+
+        logger.debug("Requesting person favourite catalogue line id's for {}", personId);
+        // search for persons
+        List<PersonType> foundPersons = personRepository.findByHjid(personId);
+
+        // check if person was found
+        if (foundPersons.isEmpty()) {
+            logger.info("Requested person with Id {} not found", personId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        PersonType person = foundPersons.get(0);
+        List<String> fhjids = person.getFavouriteProductID();
+
+        if(status == 1){
+            String exists =  fhjids.stream().filter(x -> x.equals(itemIds.get(0))).findAny().orElse(null);
+            if(exists == null){
+                fhjids.add(itemIds.get(0));
+            }else {
+                fhjids.remove(itemIds.get(0));
+            }
+        }else {
+          fhjids.removeAll(itemIds);
+        }
+        person.setFavouriteProductID(fhjids);
+        personRepository.save(person);
+        return ResponseEntity.ok().build();
+
+    }
 }
