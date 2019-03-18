@@ -8,6 +8,8 @@ import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.utility.persistence.initalizer.CustomDbInitializer;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -16,6 +18,7 @@ import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.Random;
 
 import static eu.nimble.core.infrastructure.identity.system.IdentityController.REFRESH_TOKEN_SESSION_KEY;
@@ -39,8 +42,10 @@ public class DefaultTestConfiguration {
         when(identityServiceMock.getUserfromBearer(anyString())).thenReturn(new UaaUser());
 
         // mock company query
-        PartyType mockParty = new PartyType();
-        when(identityServiceMock.getCompanyOfUser(anyObject())).thenReturn(java.util.Optional.of(mockParty));
+        when(identityServiceMock.getCompanyOfUser(anyObject())).then((Answer<Optional<PartyType>>) invocationOnMock -> {
+            PartyType mockParty = new PartyType();
+            return Optional.of(mockParty);
+        });
 
         // mock verification of roles
         when(identityServiceMock.hasAnyRole(any(), anyVararg())).thenReturn(true);
