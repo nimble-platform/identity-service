@@ -17,9 +17,14 @@ public class DataModelUtils {
     public static eu.nimble.service.model.solr.party.PartyType toIndexParty(eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType party) {
         PartyType indexParty = new PartyType();
         party.getBrandName().forEach(name -> indexParty.addBrandName(name.getLanguageID(), name.getValue()));
-        indexParty.setLegalName(party.getPartyName().get(0).getName().getValue());
-        String originLang = party.getPostalAddress().getCountry().getName().getLanguageID() != null ? party.getPostalAddress().getCountry().getName().getLanguageID() : "";
-        indexParty.addOrigin(originLang, party.getPostalAddress().getCountry().getName().getValue());
+        if(party.getPartyName() != null && party.getPartyName().size() > 0){
+            indexParty.setLegalName(party.getPartyName().get(0).getName().getValue());
+        }
+        if(party.getPostalAddress() != null && party.getPostalAddress().getCountry() != null){
+            String originLang = party.getPostalAddress().getCountry().getName().getLanguageID() != null ? party.getPostalAddress().getCountry().getName().getLanguageID() : "";
+            indexParty.addOrigin(originLang, party.getPostalAddress().getCountry().getName().getValue());
+        }
+
         indexParty.setId(party.getHjid().toString());
         indexParty.setUri(party.getHjid().toString());
 
