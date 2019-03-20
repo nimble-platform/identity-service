@@ -1,17 +1,18 @@
 package eu.nimble.core.infrastructure.identity.system;
 
+import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.system.dto.CompanyRegistrationResponse;
 import eu.nimble.core.infrastructure.identity.system.dto.UserRegistration;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
-import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
+import eu.nimble.core.infrastructure.identity.utils.DataModelUtils;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
@@ -83,10 +84,10 @@ public class IdentityController {
     private IdentityService identityService;
 
     @Autowired
-    private KafkaSender kafkaSender;
+    private UblUtils ublUtils;
 
     @Autowired
-    private UblUtils ublUtils;
+    private IndexingClient indexingClient;
 
     @ApiOperation(value = "Register a new user to the nimble.", response = FrontEndUser.class, tags = {})
     @ApiResponses(value = {
@@ -255,8 +256,9 @@ public class IdentityController {
             companyRegistration.setAccessToken(tokenResponse.getValue());
         }
 
-        // broadcast changes
-        kafkaSender.broadcastCompanyUpdate(UblAdapter.adaptPartyIdentifier(newCompany), bearer);
+        //indexing the new company in the indexing service
+        eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(newCompany);
+        indexingClient.setParty(newParty);
 
         logger.info("Registered company with id {} for user with id {}", companyRegistration.getCompanyID(), companyRegistration.getUserID());
 
