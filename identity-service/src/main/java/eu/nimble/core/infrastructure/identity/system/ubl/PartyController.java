@@ -210,6 +210,7 @@ public class PartyController {
             @ApiParam(value = "Excluded ids") @RequestParam(value = "exclude", required = false) List<String> exclude) {
 
         List<PartyTuple> partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
+                .filter(p -> p.getPerson().isEmpty() == false) // exclude parties with no members (might be deleted)
                 .map(p -> new PartyTuple(UblAdapter.adaptPartyIdentifier(p), UblAdapter.adaptPartyNames(p.getPartyName())))
                 .collect(Collectors.toList());
 
