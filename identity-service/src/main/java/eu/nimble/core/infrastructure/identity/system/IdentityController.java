@@ -277,23 +277,27 @@ public class IdentityController {
 
         // try to obtain access token
         OAuth2AccessToken accessToken;
+        String keycloakUserID;
         try {
             logger.info("User " + credentials.getUsername() + " wants to login...");
             accessToken = oAuthClient.getToken(credentials.getUsername(), credentials.getPassword());
+            keycloakUserID = new OpenIdConnectUserDetails(accessToken.getValue()).getUserId();
         } catch (OAuth2AccessDeniedException ex) {
             logger.error("User " + credentials.getUsername() + " not found in Keycloak?", ex);
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } catch (IOException ex) {
+            logger.error("Error in decoding " + credentials.getUsername() + "'s access token", ex);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
         // check identity database
-        List<UaaUser> potentialUsers = uaaUserRepository.findByUsername(credentials.getUsername());
-        if (potentialUsers.isEmpty()) {
+        UaaUser potentialUser = uaaUserRepository.findByExternalID(keycloakUserID);
+        if (potentialUser == null) {
             logger.info("User " + credentials.getUsername() + " not found in local database, but on Keycloak.");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
         // create front end user DTO
-        UaaUser potentialUser = potentialUsers.get(0);
         List<PartyType> companies = partyRepository.findByPerson(potentialUser.getUBLPerson());
         FrontEndUser frontEndUser = UblAdapter.adaptUser(potentialUser, companies);
 
