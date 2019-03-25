@@ -78,8 +78,14 @@ public class IdentityService {
     }
 
     public Set<String> fetchRoles(PersonType personType) {
-        UaaUser uaaUser = uaaUserRepository.findByUblPerson(personType).stream().findFirst().orElseThrow(NotFoundException::new);
-        return fetchRoles(uaaUser);
+        try {
+            UaaUser uaaUser = uaaUserRepository.findByUblPerson(personType).stream().findFirst().orElseThrow(NotFoundException::new);
+            return fetchRoles(uaaUser);
+        }
+        catch (Exception exception) {
+            logger.error("Error while fetching roles for person", exception);
+        }
+        return Collections.emptySet();
     }
 
     public Set<String> fetchRoles(UaaUser user) {
