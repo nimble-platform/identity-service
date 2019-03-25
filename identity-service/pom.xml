@@ -273,6 +273,12 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.7</version>
         </dependency>
+        <!-- Solr data model-->
+        <dependency>
+            <groupId>eu.nimble.core.common</groupId>
+            <artifactId>solr-data-model</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>

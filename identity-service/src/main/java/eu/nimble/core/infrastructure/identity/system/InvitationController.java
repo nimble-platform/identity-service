@@ -65,7 +65,7 @@ public class InvitationController {
             HttpServletRequest request) throws IOException {
 
         OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
-        if (identityService.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE, OAuthClient.Role.PLATFORM_MANAGER) == false)
             return new ResponseEntity<>("Only legal representatives are allowed to invite users", HttpStatus.UNAUTHORIZED);
 
         String emailInvitee = invitation.getEmail();
@@ -93,6 +93,8 @@ public class InvitationController {
         List<String> userRoleIDs = invitation.getRoleIDs() == null ? new ArrayList() : invitation.getRoleIDs();
         List<String> prettifedRoles = KeycloakAdmin.prettfiyRoleIDs(userRoleIDs);
 
+        UserInvitation userInvitation = new UserInvitation(emailInvitee, companyId, userRoleIDs, sender);
+
         // check if user is already registered
         Optional<UaaUser> potentialInvitee = uaaUserRepository.findByUsername(emailInvitee).stream().findFirst();
         if (potentialInvitee.isPresent()) {
@@ -106,9 +108,6 @@ public class InvitationController {
                 return new ResponseEntity<>(HttpStatus.CONFLICT);
             }
 
-            // saving invitation
-            UserInvitation userInvitation = new UserInvitation(emailInvitee, companyId, userRoleIDs, sender);
-            userInvitationRepository.save(userInvitation);
 
             // ToDo: let user accept invitation
 
@@ -132,6 +131,9 @@ public class InvitationController {
             response.put("message", "Existing user added to company");
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         }
+
+        // saving invitation
+        userInvitationRepository.save(userInvitation);
 
         // send invitation
         String companyName = UblUtils.getName(company.getPartyName(), NimbleConfigurationProperties.LanguageID.ENGLISH);
