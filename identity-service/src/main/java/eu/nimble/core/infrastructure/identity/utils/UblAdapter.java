@@ -104,6 +104,8 @@ public class UblAdapter {
         ublAddress.setBuildingNumber(dtoAddress.getBuildingNumber());
         ublAddress.setCityName(dtoAddress.getCityName());
         ublAddress.setPostalZone(dtoAddress.getPostalCode());
+        ublAddress.setDistrict(dtoAddress.getDistrict());
+        ublAddress.setRegion(dtoAddress.getRegion());
 
         CountryType country = new CountryType();
         country.setName(UblAdapter.adaptTextTypeSingleLang(dtoAddress.getCountry()));

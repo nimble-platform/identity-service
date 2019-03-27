@@ -17,6 +17,10 @@ public class Address {
     private String postalCode;
     @ApiModelProperty(value = "Name of the country")
     private String country;
+    @ApiModelProperty(value = "Name of the district")
+    private String district;
+    @ApiModelProperty(value = "Name of the region")
+    private String region;
 
     public Address() {
     }
@@ -27,6 +31,16 @@ public class Address {
         this.cityName = cityName;
         this.postalCode = postalCode;
         this.country = country;
+    }
+
+    public Address(String streetName, String buildingNumber, String cityName, String postalCode, String country, String district, String region) {
+        this.streetName = streetName;
+        this.buildingNumber = buildingNumber;
+        this.cityName = cityName;
+        this.postalCode = postalCode;
+        this.country = country;
+        this.district = district;
+        this.region = region;
     }
 
     public String getStreetName() {
@@ -69,4 +83,19 @@ public class Address {
         this.country = country;
     }
 
+    public String getDistrict() {
+        return district;
+    }
+
+    public void setDistrict(String district) {
+        this.district = district;
+    }
+
+    public String getRegion() {
+        return region;
+    }
+
+    public void setRegion(String region) {
+        this.region = region;
+    }
 }
