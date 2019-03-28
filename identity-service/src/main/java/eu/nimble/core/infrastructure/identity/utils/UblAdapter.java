@@ -89,6 +89,8 @@ public class UblAdapter {
         dtoAddress.setBuildingNumber(ublAddress.getBuildingNumber());
         dtoAddress.setCityName(ublAddress.getCityName());
         dtoAddress.setPostalCode(ublAddress.getPostalZone());
+        dtoAddress.setDistrict(ublAddress.getDistrict());
+        dtoAddress.setRegion(ublAddress.getRegion());
         if (ublAddress.getCountry() != null)
             dtoAddress.setCountry(ublAddress.getCountry().getName().getValue());
         return dtoAddress;
