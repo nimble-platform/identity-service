@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [9.0.0] - 2019-03-29
+### Added
+- Sort functionality to verified and unverified companies
+- Additional address fields for company registration
+- Functionality to persist product favorites
+
 ## [8.0.0] - 2019-02-28
 ### Added
 - Multilinguality support
