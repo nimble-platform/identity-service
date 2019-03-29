@@ -3,7 +3,8 @@ package eu.nimble.core.infrastructure.identity.system;
 
 import eu.nimble.core.infrastructure.identity.entity.dto.statistics.PlatformIdentityStatistics;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
-import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
+import eu.nimble.core.infrastructure.identity.repository.PersonRepository;import eu.nimble.core.infrastructure.identity.service.AdminService;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -15,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import java.util.List;
 
 @Controller
 @RequestMapping(path = "/statistics")
@@ -29,6 +31,9 @@ public class StatisticsController {
     @Autowired
     private PersonRepository personRepository;
 
+    @Autowired
+    private AdminService adminService;
+
     @ApiOperation(value = "Aggregate statistics of companies.", nickname = "getPlatformStats", response = PlatformIdentityStatistics.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "EPC codes registered"),
@@ -38,9 +43,12 @@ public class StatisticsController {
 
         logger.info("Collecting platform statistics");
 
-        // collect platform statistics
-        long numParties = partyRepository.count();
         long numUsers = personRepository.count();
+
+        List<PartyType> verifiedCompanies = adminService.queryCompanies(AdminService.CompanyState.VERIFIED);
+
+        long numParties = verifiedCompanies.size();
+
         PlatformIdentityStatistics statistics = new PlatformIdentityStatistics(numUsers, numParties);
 
         return ResponseEntity.ok(statistics);

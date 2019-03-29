@@ -89,6 +89,8 @@ public class CompanySettingsControllerTests {
         // GIVEN: existing company on platform
         PartyType company = identityService.getCompanyOfUser(null).get();
         partyRepository.save(company);
+        UblUtils.setID(company, company.getHjid().toString());
+        partyRepository.save(company);
 
         // WHEN: updating company settings
         CompanyDetails companyDetails = new CompanyDetails();

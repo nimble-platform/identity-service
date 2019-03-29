@@ -4,13 +4,14 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
-import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
+import eu.nimble.core.infrastructure.identity.utils.DataModelUtils;
 import eu.nimble.core.infrastructure.identity.utils.ImageUtils;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
@@ -79,10 +80,10 @@ public class CompanySettingsController {
     private CertificateService certificateService;
 
     @Autowired
-    private KafkaSender kafkaSender;
+    private BinaryContentService binaryContentService;
 
     @Autowired
-    private BinaryContentService binaryContentService;
+    private IndexingClient indexingClient;
 
     @ApiOperation(value = "Retrieve company settings", response = CompanySettings.class)
     @RequestMapping(value = "/{companyID}", produces = {"application/json"}, method = RequestMethod.GET)
@@ -103,12 +104,15 @@ public class CompanySettingsController {
         return new ResponseEntity<>(settings, HttpStatus.OK);
     }
 
-    @ApiOperation(value = "Change company settings")
+    @ApiOperation(value = "Change company settings", response = CompanySettings.class)
     @RequestMapping(value = "/{companyID}", consumes = {"application/json"}, method = RequestMethod.PUT)
-    ResponseEntity<CompanySettings> setSettings(
+    ResponseEntity<?> setSettings(
             @RequestHeader(value = "Authorization") String bearer,
             @ApiParam(value = "Id of company to change settings from.", required = true) @PathVariable Long companyID,
-            @ApiParam(value = "Settings to update.", required = true) @RequestBody CompanySettings newSettings) {
+            @ApiParam(value = "Settings to update.", required = true) @RequestBody CompanySettings newSettings)throws IOException{
+
+        if (identityService.hasAnyRole(bearer,COMPANY_ADMIN,LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
+            return new ResponseEntity<>("Only legal representatives, company admin or platform managers are allowed add images", HttpStatus.FORBIDDEN);
 
         PartyType existingCompany = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
@@ -132,8 +136,9 @@ public class CompanySettingsController {
 
         partyRepository.save(existingCompany);
 
-        // broadcast changes
-        kafkaSender.broadcastCompanyUpdate(UblAdapter.adaptPartyIdentifier(existingCompany), bearer);
+        //indexing the new company in the indexing service
+        eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(existingCompany);
+        indexingClient.setParty(party);
 
         newSettings = adaptCompanySettings(existingCompany, qualifyingParty);
         return new ResponseEntity<>(newSettings, HttpStatus.ACCEPTED);
@@ -147,8 +152,8 @@ public class CompanySettingsController {
             @RequestParam(value = "isLogo", defaultValue = "false") String isLogo,
             @RequestParam(value = "file") MultipartFile imageFile) throws IOException {
 
-        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
-            return new ResponseEntity<>("Only legal representatives or platform managers are allowed add images", HttpStatus.FORBIDDEN);
+        if (identityService.hasAnyRole(bearer,COMPANY_ADMIN,LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
+            return new ResponseEntity<>("Only legal representatives, company admin or platform managers are allowed add images", HttpStatus.FORBIDDEN);
 
         if (imageFile.getSize() > MAX_IMAGE_SIZE)
             throw new ControllerUtils.FileTooLargeException();
@@ -347,8 +352,9 @@ public class CompanySettingsController {
 
         logger.info("Updated negotiation settings {} for company {}", existingSettings.getId(), UblAdapter.adaptPartyIdentifier(company));
 
-        // broadcast changes
-        kafkaSender.broadcastCompanyUpdate(UblAdapter.adaptPartyIdentifier(company), bearer);
+        //indexing the updated company in the indexing service
+        eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(company);
+        indexingClient.setParty(party);
 
         return ResponseEntity.ok().build();
     }
@@ -364,17 +370,6 @@ public class CompanySettingsController {
         logger.info("Fetched negotiation settings {} for company {}", negotiationSettings.getId(), UblAdapter.adaptPartyIdentifier(company));
 
         return ResponseEntity.ok().body(negotiationSettings);
-    }
-
-    @ApiOperation(value = "", notes = "Fake changes of company")
-    @RequestMapping(value = "/{companyID}/fake-changes/", method = RequestMethod.GET)
-    ResponseEntity<?> kafkaTest(
-            @RequestHeader(value = "Authorization") String bearer,
-            @ApiParam(value = "Id of party to fake changes.", required = true) @PathVariable String companyID) {
-
-        this.kafkaSender.broadcastCompanyUpdate(companyID, bearer);
-
-        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @ApiOperation(value = "", notes = "Get profile completeness of company.", response = PartyType.class)

@@ -31,6 +31,9 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static eu.nimble.core.infrastructure.identity.uaa.OAuthClient.Role.*;
+import static eu.nimble.core.infrastructure.identity.uaa.OAuthClient.Role.INITIAL_REPRESENTATIVE;
+
 @Controller
 public class InvitationController {
 
@@ -62,7 +65,7 @@ public class InvitationController {
             HttpServletRequest request) throws IOException {
 
         OpenIdConnectUserDetails userDetails = OpenIdConnectUserDetails.fromBearer(bearer);
-        if (identityService.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE, OAuthClient.Role.PLATFORM_MANAGER) == false)
             return new ResponseEntity<>("Only legal representatives are allowed to invite users", HttpStatus.UNAUTHORIZED);
 
         String emailInvitee = invitation.getEmail();
@@ -87,12 +90,10 @@ public class InvitationController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        // saving invitation
         List<String> userRoleIDs = invitation.getRoleIDs() == null ? new ArrayList() : invitation.getRoleIDs();
-        UserInvitation userInvitation = new UserInvitation(emailInvitee, companyId, userRoleIDs, sender);
-        userInvitationRepository.save(userInvitation);
-
         List<String> prettifedRoles = KeycloakAdmin.prettfiyRoleIDs(userRoleIDs);
+
+        UserInvitation userInvitation = new UserInvitation(emailInvitee, companyId, userRoleIDs, sender);
 
         // check if user is already registered
         Optional<UaaUser> potentialInvitee = uaaUserRepository.findByUsername(emailInvitee).stream().findFirst();
@@ -106,6 +107,7 @@ public class InvitationController {
                 logger.info("Invitation: User {} is already member of another company.", emailInvitee);
                 return new ResponseEntity<>(HttpStatus.CONFLICT);
             }
+
 
             // ToDo: let user accept invitation
 
@@ -130,6 +132,9 @@ public class InvitationController {
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         }
 
+        // saving invitation
+        userInvitationRepository.save(userInvitation);
+
         // send invitation
         String companyName = UblUtils.getName(company.getPartyName(), NimbleConfigurationProperties.LanguageID.ENGLISH);
         emailService.sendInvite(emailInvitee, senderName, companyName, prettifedRoles);
@@ -140,13 +145,30 @@ public class InvitationController {
     }
 
     @ApiOperation(value = "", notes = "Get list of company members.", response = UserInvitation.class, responseContainer = "List", tags = {})
-    @RequestMapping(value = "/company_members", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<?> pendingInvitations(@RequestHeader(value = "Authorization") String bearer) throws IOException {
-        UaaUser user = identityService.getUserfromBearer(bearer);
+    @RequestMapping(value = "/company_members/{companyID}", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<?> pendingInvitations(
+            @RequestHeader(value = "Authorization") String bearer,
+            @ApiParam(value = "Id of company to change settings from.", required = true) @PathVariable Long companyID) throws IOException {
 
-        Optional<PartyType> companyOpt = identityService.getCompanyOfUser(user);
+        if (identityService.hasAnyRole(bearer,COMPANY_ADMIN,LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
+            return new ResponseEntity<>("Only legal representatives, company admin or platform managers are allowed to retrieve company members", HttpStatus.FORBIDDEN);
+
+        if (identityService.hasAnyRole(bearer,PLATFORM_MANAGER) == false){
+            UaaUser user = identityService.getUserfromBearer(bearer);
+
+            Optional<PartyType> userCompanyOpt = identityService.getCompanyOfUser(user);
+
+            if (userCompanyOpt.isPresent() == true) {
+                PartyType company = userCompanyOpt.get();
+                if(!companyID.equals(company.getHjid()))
+                    return new ResponseEntity<>("Only platform managers are allowed to retrieve all company members", HttpStatus.FORBIDDEN);
+            }
+        }
+
+        Optional<PartyType> companyOpt = partyRepository.findByHjid(companyID).stream().findFirst();
+
         if (companyOpt.isPresent() == false) {
-            logger.info("Company members: Requested party for user {} not found.", user.getUsername());
+            logger.info("Company members: Requested party for not found.");
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         PartyType company = companyOpt.get();
