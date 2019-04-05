@@ -330,6 +330,29 @@ public class IdentityController {
         return success ? ResponseEntity.ok().build() : ResponseEntity.badRequest().build();
     }
 
+    @ApiOperation(value = "", notes = "Send email to reset the password")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Password reset email sent successfully"),
+            @ApiResponse(code = 404, message = "Username not found")})
+    @RequestMapping(value = "/password-recovery", consumes = {"application/json"}, method = RequestMethod.POST)
+    ResponseEntity<?> passwordRecovery(@ApiParam(value = "Email Account", required = true) @RequestBody ResetCredentials resetCredentials) throws IOException {
+        logger.info("Password recovery request received for : {}", resetCredentials.getUsername());
+        String token = keycloakAdmin.initiatePasswordRecoveryProcess(resetCredentials.getUsername());
+        emailService.sendResetCredentialsLink(resetCredentials.getUsername(), token);
+        return ResponseEntity.ok().build();
+    }
+
+    @ApiOperation(value = "", notes = "Reset a users password with action token")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Password reset was successful"),
+            @ApiResponse(code = 400, message = "Invalid link/token")})
+    @RequestMapping(value = "/reset-forgot-password", consumes = {"application/json"}, method = RequestMethod.POST)
+    ResponseEntity<?> resetForgotPassword(@ApiParam(value = "Action token and new credentials", required = true) @RequestBody ResetCredentials resetCredentials) throws IOException {
+
+        keycloakAdmin.resetPasswordViaRecoveryProcess(resetCredentials.getKey(), resetCredentials.getNewPassword());
+        return ResponseEntity.ok().build();
+    }
+
     @ApiOperation(value = "", notes = "Get user info", response = Map.class, tags = {})
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Found user", response = Map.class),

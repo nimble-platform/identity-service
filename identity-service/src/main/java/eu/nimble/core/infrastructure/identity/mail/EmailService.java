@@ -47,6 +47,16 @@ public class EmailService {
     @Value("${nimble.supportEmail}")
     private String supportEmail;
 
+    public void sendResetCredentialsLink(String toEmail, String credentials) throws UnsupportedEncodingException{
+        String resetCredentialsURL = frontendUrl + "/#/user-mgmt/forgot/?key=" + URLEncoder.encode(credentials, "UTF-8");
+        Context context = new Context();
+        context.setVariable("resetPasswordURL", resetCredentialsURL);
+
+        String subject = "Reset Password to the NIMBLE platform";
+
+        this.send(new String[]{toEmail}, subject, "password-reset", context, new String[]{});
+    }
+
     public void sendInvite(String toEmail, String senderName, String companyName, Collection<String> roles) throws UnsupportedEncodingException {
         String invitationUrl = frontendUrl + "/#/user-mgmt/registration/?email=" + URLEncoder.encode(toEmail, "UTF-8");
 
