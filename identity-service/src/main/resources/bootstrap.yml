@@ -107,8 +107,8 @@ nimble:
   supportEmail: ${SUPPORT_EMAIL:nimble-support@salzburgresearch.at}
   indexing:
     url: ${INDEXING_SERVICE_URL:http://localhost:8090}
-  platformName: ${PLATFORM_NAME:Staging}
-  platformHost: ${IDENTITY_SERVICE_URL:httlp://localhost:9096}
+  platformName : ${PLATFORM_NAME:Staging}
+  platformHost : ${IDENTITY_SERVICE_URL:httlp://localhost:9096}
 management:
   health:
     mail:
