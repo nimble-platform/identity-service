@@ -20,6 +20,10 @@ public class SwaggerConfig {
     private String platformHost;
     @Bean
     public Docket api() {
+
+        platformHost = platformHost.replace("https://", "");
+        platformHost = platformHost.replace("http://","");
+
         return new Docket(DocumentationType.SWAGGER_2)
                 .host(platformHost)
                 .select()
