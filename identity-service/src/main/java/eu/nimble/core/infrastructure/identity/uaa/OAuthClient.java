@@ -66,7 +66,8 @@ public class OAuthClient {
         INITIAL_REPRESENTATIVE("initial_representative"),
         LEGAL_REPRESENTATIVE("legal_representative"),
         PLATFORM_MANAGER("platform_manager"),
-        COMPANY_ADMIN("company_admin");
+        COMPANY_ADMIN("company_admin"),
+        PUBLISHER("publisher");
 
         private final String role;
 
