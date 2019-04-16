@@ -401,7 +401,6 @@ public class CompanySettingsController {
         qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_DESCRIPTION, descriptionCompleteness));
         qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_CERTIFICATE_DETAILS, certificateCompleteness));
         qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_TRADE_DETAILS, tradeCompleteness));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_DELIVERY_DETAILS, deliveryAddressCompleteness));
         PartyType completenessParty = new PartyType();
         completenessParty.setQualityIndicator(qualityIndicators);
         UblUtils.setID(completenessParty, UblAdapter.adaptPartyIdentifier(company));
