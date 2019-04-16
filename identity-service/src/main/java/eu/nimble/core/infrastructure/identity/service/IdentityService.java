@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.service;
 
+import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.Address;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanyDescription;
@@ -10,8 +11,10 @@ import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.LocationType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.TradingPreferences;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,9 +140,24 @@ public class IdentityService {
         completenessWeights.add(companyDescription.getLogoImageId() != null ? 1.0 : 0.0);
         completenessWeights.add(companyDescription.getCompanyPhotoList() != null && companyDescription.getCompanyPhotoList().size() > 0 ? 1.0 : 0.0);
         completenessWeights.add(companyDescription.getSocialMediaList() != null && companyDescription.getSocialMediaList().size() > 0 ? 1.0 : 0.0);
-        completenessWeights.add(companyDescription.getEvents() != null && companyDescription.getEvents().size() > 0 ? 1.0 : 0.0);
-        completenessWeights.add(companyDescription.getExternalResources() != null && companyDescription.getExternalResources().size() > 0 ? 1.0 : 0.0);
         return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
+    }
+
+    public static Double computeDeliveryAddressCompleteness(PartyType party) {
+        List<Double> completenessWeights = new ArrayList<>();
+        TradingPreferences tradingPreferences = party.getPurchaseTerms();
+        if (null == tradingPreferences.getDeliveryTerms().get(0).getDeliveryLocation()) {
+            return 0.0;
+        }else {
+            LocationType locationType = tradingPreferences.getDeliveryTerms().get(0).getDeliveryLocation();
+            completenessWeights.add(locationType.getAddress().getStreetName() != null ? 1.0 : 0.0);
+            completenessWeights.add(locationType.getAddress().getBuildingNumber() != null ? 1.0 : 0.0);
+            completenessWeights.add(locationType.getAddress().getCityName() != null ? 1.0 : 0.0);
+            completenessWeights.add(locationType.getAddress().getRegion() != null ? 1.0 : 0.0);
+            completenessWeights.add(locationType.getAddress().getPostalZone() != null ? 1.0 : 0.0);
+            completenessWeights.add(locationType.getAddress().getCountry() != null ? 1.0 : 0.0);
+            return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
+        }
     }
 
     public static Double computeCertificateCompleteness(PartyType party) {
@@ -148,10 +166,25 @@ public class IdentityService {
         return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
     }
 
-    public static Double computeTradeCompleteness(CompanyTradeDetails tradeDetails) {
+    public static Double computeTradeCompleteness(NegotiationSettings negotiationSettings) {
         List<Double> completenessWeights = new ArrayList<>();
-        completenessWeights.add(tradeDetails.getDeliveryTerms() != null && tradeDetails.getDeliveryTerms().size() > 0 ? 1.0 : 0.0);
-        completenessWeights.add(tradeDetails.getPpapCompatibilityLevel() != null && tradeDetails.getPpapCompatibilityLevel() > 0 ? 1.0 : 0.0);
+        completenessWeights.add(negotiationSettings.getPaymentMeans() != null && negotiationSettings.getPaymentMeans().size() > 0 ? 1.0 : 0.0);
+        completenessWeights.add(negotiationSettings.getPaymentTerms() != null && negotiationSettings.getPaymentTerms().size() > 0 ? 1.0 : 0.0);
+        completenessWeights.add(negotiationSettings.getIncoterms() != null && negotiationSettings.getIncoterms().size() > 0 ? 1.0 : 0.0);
+        return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
+    }
+
+    public static Double computeAdditionalDataCompleteness(PartyType party, CompanyTradeDetails tradeDetails, CompanyDescription companyDescription) {
+        List<Double> completenessWeights = new ArrayList<>();
+
+        if(null != party.getPurchaseTerms().getDeliveryTerms().get(0).getSpecialTerms()
+                && party.getPurchaseTerms().getDeliveryTerms().get(0).getSpecialTerms().size() >0){
+            completenessWeights.add(1.0);
+        }
+
+        completenessWeights.add(companyDescription.getEvents() != null && companyDescription.getEvents().size() > 0 ? 1.0 : 0.0);
+        completenessWeights.add(companyDescription.getEvents() != null && companyDescription.getEvents().size() > 0 ? 1.0 : 0.0);
+        completenessWeights.add(companyDescription.getExternalResources() != null && companyDescription.getExternalResources().size() > 0 ? 1.0 : 0.0);
         return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
     }
 }
