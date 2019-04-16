@@ -388,12 +388,12 @@ public class CompanySettingsController {
         Double detailsCompleteness = IdentityService.computeDetailsCompleteness(companySettings.getDetails()) * 3;
         Double descriptionCompleteness = IdentityService.computeDescriptionCompleteness(companySettings.getDescription()) * 2;
         Double deliveryAddressCompleteness = IdentityService.computeDeliveryAddressCompleteness(company) * 2;
-        Double certificateCompleteness = IdentityService.computeCertificateCompleteness(company);
+        Double certificateCompleteness = IdentityService.computeCertificateCompleteness(company) * 1.5;
         Double tradeCompleteness = IdentityService.computeTradeCompleteness(negotiationSettings);
-        Double nonMandatoryDataCompleteness = IdentityService.computeAdditionalDataCompleteness(company, companySettings.getTradeDetails(), companySettings.getDescription());
+        Double nonMandatoryDataCompleteness = IdentityService.computeAdditionalDataCompleteness(company, companySettings.getTradeDetails(), companySettings.getDescription()) * 1.5;
 
         Double overallCompleteness = (detailsCompleteness + descriptionCompleteness + certificateCompleteness +
-                tradeCompleteness + deliveryAddressCompleteness+ nonMandatoryDataCompleteness) / 10.0;
+                 deliveryAddressCompleteness+ nonMandatoryDataCompleteness) / 10.0;
 
         List<QualityIndicatorType> qualityIndicators = new ArrayList<>();
         qualityIndicators.add(UblAdapter.adaptQualityIndicator(PROFILE_COMPLETENESS, overallCompleteness));

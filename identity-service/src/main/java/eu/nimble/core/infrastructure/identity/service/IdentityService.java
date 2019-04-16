@@ -50,8 +50,9 @@ public class IdentityService {
 
     /**
      * Checks if the bearer contains at least one of the given roles.
+     *
      * @param bearer Token containing roles
-     * @param roles Roles to check
+     * @param roles  Roles to check
      * @return True if at least one matching role was found.
      * @throws IOException if roles could not be extracted from token
      */
@@ -84,8 +85,7 @@ public class IdentityService {
         try {
             UaaUser uaaUser = uaaUserRepository.findByUblPerson(personType).stream().findFirst().orElseThrow(NotFoundException::new);
             return fetchRoles(uaaUser);
-        }
-        catch (Exception exception) {
+        } catch (Exception exception) {
             logger.error("Error while fetching roles for person", exception);
         }
         return Collections.emptySet();
@@ -97,7 +97,7 @@ public class IdentityService {
         try {
             // collect roles
             logger.debug("Fetching roles of user {}", user.getUsername());
-            roles = keycloakAdmin.getUserRoles(user.getExternalID(), KeycloakAdmin.NON_NIMBLE_ROLES );
+            roles = keycloakAdmin.getUserRoles(user.getExternalID(), KeycloakAdmin.NON_NIMBLE_ROLES);
         } catch (Exception ex) {
             logger.error("Error while fetch roles of user", ex);
         }
@@ -138,7 +138,6 @@ public class IdentityService {
         completenessWeights.add(StringUtils.isNotEmpty(companyDescription.getCompanyStatement()) ? 1.0 : 0.0);
         completenessWeights.add(StringUtils.isNotEmpty(companyDescription.getWebsite()) ? 1.0 : 0.0);
         completenessWeights.add(companyDescription.getLogoImageId() != null ? 1.0 : 0.0);
-        completenessWeights.add(companyDescription.getCompanyPhotoList() != null && companyDescription.getCompanyPhotoList().size() > 0 ? 1.0 : 0.0);
         completenessWeights.add(companyDescription.getSocialMediaList() != null && companyDescription.getSocialMediaList().size() > 0 ? 1.0 : 0.0);
         return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
     }
@@ -146,9 +145,9 @@ public class IdentityService {
     public static Double computeDeliveryAddressCompleteness(PartyType party) {
         List<Double> completenessWeights = new ArrayList<>();
         TradingPreferences tradingPreferences = party.getPurchaseTerms();
-        if (null == tradingPreferences.getDeliveryTerms().get(0).getDeliveryLocation()) {
+        if (tradingPreferences.getDeliveryTerms().size() == 0 || null == tradingPreferences.getDeliveryTerms().get(0).getDeliveryLocation()) {
             return 0.0;
-        }else {
+        } else {
             LocationType locationType = tradingPreferences.getDeliveryTerms().get(0).getDeliveryLocation();
             completenessWeights.add(locationType.getAddress().getStreetName() != null ? 1.0 : 0.0);
             completenessWeights.add(locationType.getAddress().getBuildingNumber() != null ? 1.0 : 0.0);
@@ -168,22 +167,20 @@ public class IdentityService {
 
     public static Double computeTradeCompleteness(NegotiationSettings negotiationSettings) {
         List<Double> completenessWeights = new ArrayList<>();
-        completenessWeights.add(negotiationSettings.getPaymentMeans() != null && negotiationSettings.getPaymentMeans().size() > 0 ? 1.0 : 0.0);
-        completenessWeights.add(negotiationSettings.getPaymentTerms() != null && negotiationSettings.getPaymentTerms().size() > 0 ? 1.0 : 0.0);
-        completenessWeights.add(negotiationSettings.getIncoterms() != null && negotiationSettings.getIncoterms().size() > 0 ? 1.0 : 0.0);
+        try {
+            completenessWeights.add(negotiationSettings.getPaymentMeans() != null && negotiationSettings.getPaymentMeans().size() > 0 ? 1.0 : 0.0);
+            completenessWeights.add(negotiationSettings.getPaymentTerms() != null && negotiationSettings.getPaymentTerms().size() > 0 ? 1.0 : 0.0);
+            completenessWeights.add(negotiationSettings.getIncoterms() != null && negotiationSettings.getIncoterms().size() > 0 ? 1.0 : 0.0);
+        }catch (Exception e){
+            logger.error("Exception occurred while computing the tradCompletenessSocre", e);
+        }
         return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
     }
 
     public static Double computeAdditionalDataCompleteness(PartyType party, CompanyTradeDetails tradeDetails, CompanyDescription companyDescription) {
         List<Double> completenessWeights = new ArrayList<>();
-
-        if(null != party.getPurchaseTerms().getDeliveryTerms().get(0).getSpecialTerms()
-                && party.getPurchaseTerms().getDeliveryTerms().get(0).getSpecialTerms().size() >0){
-            completenessWeights.add(1.0);
-        }
-
         completenessWeights.add(companyDescription.getEvents() != null && companyDescription.getEvents().size() > 0 ? 1.0 : 0.0);
-        completenessWeights.add(companyDescription.getEvents() != null && companyDescription.getEvents().size() > 0 ? 1.0 : 0.0);
+        completenessWeights.add(companyDescription.getCompanyPhotoList() != null && companyDescription.getCompanyPhotoList().size() > 0 ? 1.0 : 0.0);
         completenessWeights.add(companyDescription.getExternalResources() != null && companyDescription.getExternalResources().size() > 0 ? 1.0 : 0.0);
         return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
     }

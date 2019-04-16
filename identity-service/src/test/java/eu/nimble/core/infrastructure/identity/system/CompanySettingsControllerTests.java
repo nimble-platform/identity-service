@@ -402,7 +402,7 @@ public class CompanySettingsControllerTests {
         assertTrue(descriptionCompleteness.getQuantity().getValue().doubleValue() > 0.0);
         assertTrue(detailCompleteness.getQuantity().getValue().doubleValue() > 0.0);
         assertFalse(certificationCompleteness.getQuantity().getValue().doubleValue() > 0.0);
-        assertTrue(tradeCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertFalse(tradeCompleteness.getQuantity().getValue().doubleValue() > 0.0);
     }
 
     @Test
