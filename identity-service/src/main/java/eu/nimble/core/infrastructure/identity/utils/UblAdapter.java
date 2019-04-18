@@ -175,10 +175,15 @@ public class UblAdapter {
             companyDescription.setExternalResources(externalResources);
         }
 
+        Map<NimbleConfigurationProperties.LanguageID, String> companyDescriptionMap = new HashMap<>();
+
         if (qualifyingPartyType != null) {
-            if (qualifyingPartyType.getEconomicOperatorRole() != null && qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().isEmpty() == false)
-                companyDescription.setCompanyStatement(qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().stream()
-                        .collect(Collectors.toMap(t -> NimbleConfigurationProperties.LanguageID.fromString(t.getLanguageID()), t -> t.getValue())));
+            if (qualifyingPartyType.getEconomicOperatorRole() != null && qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().isEmpty() == false){
+                qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().forEach(desc -> {
+                    companyDescriptionMap.put(NimbleConfigurationProperties.LanguageID.fromString(desc.getLanguageID()), desc.getValue());
+                });
+                companyDescription.setCompanyStatement(companyDescriptionMap);
+            }
 
             // adapt events
             if (qualifyingPartyType.getEvent() != null) {
