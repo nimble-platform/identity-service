@@ -3,7 +3,8 @@ package eu.nimble.core.infrastructure.identity.entity.dto;
 import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties.LanguageID;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by Johannes Innerbichler on 25.09.18.
@@ -35,14 +36,14 @@ public class CompanyDetails {
     private Integer yearOfCompanyRegistration;
 
     @ApiModelProperty(value = "List of industry sectors in which company is active in.")
-    private List<String> industrySectors = new ArrayList<>();
+    private Map<LanguageID, String> industrySectors = new HashMap<>();
 
     public CompanyDetails() {
     }
 
     public CompanyDetails(Map<LanguageID, String> brandName, Map<LanguageID, String> legalName, String vatNumber,
                           String verificationInformation, Address address, String businessType, Map<LanguageID, String> businessKeywords,
-                          Integer yearOfCompanyRegistration, List<String> industrySectors) {
+                          Integer yearOfCompanyRegistration, Map<LanguageID, String> industrySectors) {
         this.brandName = brandName;
         this.legalName = legalName;
         this.vatNumber = vatNumber;
@@ -118,11 +119,11 @@ public class CompanyDetails {
         this.yearOfCompanyRegistration = yearOfCompanyRegistration;
     }
 
-    public List<String> getIndustrySectors() {
+    public Map<LanguageID, String> getIndustrySectors() {
         return industrySectors;
     }
 
-    public void setIndustrySectors(List<String> industrySectors) {
+    public void setIndustrySectors(Map<LanguageID, String> industrySectors) {
         this.industrySectors = industrySectors;
     }
 }
