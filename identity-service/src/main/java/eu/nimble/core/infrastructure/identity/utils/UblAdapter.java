@@ -357,7 +357,7 @@ public class UblAdapter {
         }
 
         // industry sectors
-        List<TextType> industrySectors = UblAdapter.adaptIndustrySectors(settings.getDetails().getIndustrySectors());
+        List<TextType> industrySectors = UblAdapter.adaptLanguageMapToTextType(settings.getDetails().getIndustrySectors());
         companyToChange.getIndustrySector().clear();
         companyToChange.getIndustrySector().addAll(industrySectors);
 
@@ -432,7 +432,7 @@ public class UblAdapter {
 
             // company statement
             EconomicOperatorRoleType economicOperatorRole = new EconomicOperatorRoleType();
-            economicOperatorRole.setRoleDescription(adaptIndustrySectors(settings.getDescription().getCompanyStatement()));
+            economicOperatorRole.setRoleDescription(adaptLanguageMapToTextType(settings.getDescription().getCompanyStatement()));
             qualifyingParty.setEconomicOperatorRole(economicOperatorRole);
         }
 
@@ -592,8 +592,8 @@ public class UblAdapter {
                 }).collect(Collectors.toList());
     }
 
-    public static List<TextType> adaptIndustrySectors(Map<NimbleConfigurationProperties.LanguageID, String> industrySectors) {
-        return industrySectors.entrySet().stream()
+    public static List<TextType> adaptLanguageMapToTextType(Map<NimbleConfigurationProperties.LanguageID, String> languageMap) {
+        return languageMap.entrySet().stream()
                 .map(sector -> {
                     TextType textType = new TextType();
                     textType.setLanguageID(sector.getKey().toString());

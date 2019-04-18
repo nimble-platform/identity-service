@@ -135,7 +135,7 @@ public class IdentityService {
 
     public static Double computeDescriptionCompleteness(CompanyDescription companyDescription) {
         List<Double> completenessWeights = new ArrayList<>();
-        completenessWeights.add(companyDescription.getCompanyStatement().isEmpty() ? 1.0 : 0.0);
+        completenessWeights.add(!companyDescription.getCompanyStatement().isEmpty() ? 1.0 : 0.0);
         completenessWeights.add(StringUtils.isNotEmpty(companyDescription.getWebsite()) ? 1.0 : 0.0);
         completenessWeights.add(companyDescription.getLogoImageId() != null ? 1.0 : 0.0);
         completenessWeights.add(companyDescription.getSocialMediaList() != null && companyDescription.getSocialMediaList().size() > 0 ? 1.0 : 0.0);

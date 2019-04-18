@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,7 +16,7 @@ import java.util.Map;
 public class CompanyDescription {
 
     @ApiModelProperty(value = "Statement of the company")
-    private Map<NimbleConfigurationProperties.LanguageID, String> companyStatement = null;
+    private Map<NimbleConfigurationProperties.LanguageID, String> companyStatement = new HashMap<>();
 
     @ApiModelProperty(value = "Main website of the company")
     private String website = null;

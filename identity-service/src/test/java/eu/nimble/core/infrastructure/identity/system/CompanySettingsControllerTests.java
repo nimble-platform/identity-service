@@ -160,10 +160,10 @@ public class CompanySettingsControllerTests {
                 .andExpect(jsonPath("$.details.businessKeywords.en", is("k1")))
                 .andExpect(jsonPath("$.details.yearOfCompanyRegistration", is(2001)))
                 .andExpect(jsonPath("$.details.industrySectors.length()", is(2)))
-                .andExpect(jsonPath("$.details.industrySectors[0]", is("industry sector 1")))
-                .andExpect(jsonPath("$.details.industrySectors[1]", is("industry sector 2")))
+                .andExpect(jsonPath("$.details.industrySectors['en']", is("industry sector 1")))
+                .andExpect(jsonPath("$.details.industrySectors['es']", is("industry sector 2")))
                 // check description
-                .andExpect(jsonPath("$.description.companyStatement", is("company statement")))
+                .andExpect(jsonPath("$.description.companyStatement['en']", is("company statement")))
                 .andExpect(jsonPath("$.description.website", is("website")))
                 .andExpect(jsonPath("$.description.socialMediaList.length()", is(2)))
                 .andExpect(jsonPath("$.description.socialMediaList[0]", is("social media 1")))
