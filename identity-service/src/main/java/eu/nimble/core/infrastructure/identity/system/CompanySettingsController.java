@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -437,6 +438,24 @@ public class CompanySettingsController {
         HttpResponse<JsonNode> response = Unirest.get("https://taxapi.io/api/v1/vat?vat_number=" + vat).asJson();
         return new ResponseEntity<>(response.getBody().toString(), HttpStatus.OK);
     }
+
+    /**
+     * admin endpoint to reindex all parties in indexing service (for admin purposes only)
+     * @return 200 OK
+     * @throws UnirestException
+     */
+    @RequestMapping(value = "/reindexParties", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<?> reindexAllCompanies() {
+        logger.debug("indexing all companies. ");
+        Iterable<PartyType> allParties = partyRepository.findAll(new Sort(Sort.Direction.ASC, "hjid"));
+        for(PartyType party : allParties){
+            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
+            logger.info("indexing party : " + newParty.getId() + " legalName : " +  newParty.getLegalName());
+            indexingClient.setParty(newParty);
+        }
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
 
     private void enrichImageMetadata(PartyType party) {
         // fetch only identifiers of images in order to avoid fetch of entire binary files
