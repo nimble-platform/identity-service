@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -41,9 +42,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static eu.nimble.core.infrastructure.identity.uaa.OAuthClient.Role.*;
 import static eu.nimble.core.infrastructure.identity.utils.UblAdapter.*;
 import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
-import static eu.nimble.core.infrastructure.identity.uaa.OAuthClient.Role.*;
 
 /**
  * Created by Johannes Innerbichler on 04/07/17.
@@ -111,7 +112,7 @@ public class CompanySettingsController {
             @ApiParam(value = "Id of company to change settings from.", required = true) @PathVariable Long companyID,
             @ApiParam(value = "Settings to update.", required = true) @RequestBody CompanySettings newSettings)throws IOException{
 
-        if (identityService.hasAnyRole(bearer,COMPANY_ADMIN,LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
+        if (identityService.hasAnyRole(bearer,COMPANY_ADMIN,LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE, PUBLISHER) == false)
             return new ResponseEntity<>("Only legal representatives, company admin or platform managers are allowed add images", HttpStatus.FORBIDDEN);
 
         PartyType existingCompany = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
@@ -379,24 +380,28 @@ public class CompanySettingsController {
     ) {
         // search relevant parties
         PartyType company = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
-
         QualifyingPartyType qualifyingParty = qualifyingPartyRepository.findByParty(company).stream().findFirst().orElse(null);
+        NegotiationSettings negotiationSettings = negotiationSettingsRepository.findByCompany(company).stream().findFirst().orElse(null);
 
         CompanySettings companySettings = UblAdapter.adaptCompanySettings(company, qualifyingParty);
 
         // compute completeness factors
-        Double detailsCompleteness = IdentityService.computeDetailsCompleteness(companySettings.getDetails());
-        Double descriptionCompleteness = IdentityService.computeDescriptionCompleteness(companySettings.getDescription());
-        Double certificateCompleteness = IdentityService.computeCertificateCompleteness(company);
-        Double tradeCompleteness = IdentityService.computeTradeCompleteness(companySettings.getTradeDetails());
-        Double overallCompleteness = (detailsCompleteness + descriptionCompleteness + certificateCompleteness + tradeCompleteness) / 4.0;
+        Double detailsCompleteness = IdentityService.computeDetailsCompleteness(companySettings.getDetails()) * 3;
+        Double descriptionCompleteness = IdentityService.computeDescriptionCompleteness(companySettings.getDescription()) * 2;
+        Double deliveryAddressCompleteness = IdentityService.computeDeliveryAddressCompleteness(company) * 2;
+        Double certificateCompleteness = IdentityService.computeCertificateCompleteness(company) * 1.5;
+        Double tradeCompleteness = IdentityService.computeTradeCompleteness(negotiationSettings);
+        Double nonMandatoryDataCompleteness = IdentityService.computeAdditionalDataCompleteness(company, companySettings.getTradeDetails(), companySettings.getDescription()) * 1.5;
+
+        Double overallCompleteness = (detailsCompleteness + descriptionCompleteness + certificateCompleteness +
+                 deliveryAddressCompleteness+ nonMandatoryDataCompleteness) / 10.0;
 
         List<QualityIndicatorType> qualityIndicators = new ArrayList<>();
         qualityIndicators.add(UblAdapter.adaptQualityIndicator(PROFILE_COMPLETENESS, overallCompleteness));
         qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_GENERAL_DETAILS, detailsCompleteness));
         qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_DESCRIPTION, descriptionCompleteness));
         qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_CERTIFICATE_DETAILS, certificateCompleteness));
-        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_TRADE_DETAILS, overallCompleteness));
+        qualityIndicators.add(UblAdapter.adaptQualityIndicator(COMPLETENESS_OF_COMPANY_TRADE_DETAILS, tradeCompleteness));
         PartyType completenessParty = new PartyType();
         completenessParty.setQualityIndicator(qualityIndicators);
         UblUtils.setID(completenessParty, UblAdapter.adaptPartyIdentifier(company));
@@ -433,6 +438,24 @@ public class CompanySettingsController {
         HttpResponse<JsonNode> response = Unirest.get("https://taxapi.io/api/v1/vat?vat_number=" + vat).asJson();
         return new ResponseEntity<>(response.getBody().toString(), HttpStatus.OK);
     }
+
+    /**
+     * admin endpoint to reindex all parties in indexing service (for admin purposes only)
+     * @return 200 OK
+     * @throws UnirestException
+     */
+    @RequestMapping(value = "/reindexParties", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<?> reindexAllCompanies() {
+        logger.debug("indexing all companies. ");
+        Iterable<PartyType> allParties = partyRepository.findAll(new Sort(Sort.Direction.ASC, "hjid"));
+        for(PartyType party : allParties){
+            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
+            logger.info("indexing party : " + newParty.getId() + " legalName : " +  newParty.getLegalName());
+            indexingClient.setParty(newParty);
+        }
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
 
     private void enrichImageMetadata(PartyType party) {
         // fetch only identifiers of images in order to avoid fetch of entire binary files

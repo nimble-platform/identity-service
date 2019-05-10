@@ -72,8 +72,8 @@ public class UblAdapter {
         settings.getRecentlyUsedProductCategories().clear();
         settings.getRecentlyUsedProductCategories().addAll(recentlyUsedProductCategories);
 
-        // set industry sectors
-        List<String> industrySectors = party.getIndustrySector().stream().map(CodeType::getValue).collect(Collectors.toList());
+        Map< NimbleConfigurationProperties.LanguageID, String> industrySectors = party.getIndustrySector().stream()
+                .collect(Collectors.toMap(t -> NimbleConfigurationProperties.LanguageID.fromString(t.getLanguageID()), t -> t.getValue()));
         settings.getDetails().setIndustrySectors(industrySectors);
 
         return settings;
@@ -175,9 +175,15 @@ public class UblAdapter {
             companyDescription.setExternalResources(externalResources);
         }
 
+        Map<NimbleConfigurationProperties.LanguageID, String> companyDescriptionMap = new HashMap<>();
+
         if (qualifyingPartyType != null) {
-            if (qualifyingPartyType.getEconomicOperatorRole() != null && qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().isEmpty() == false)
-                companyDescription.setCompanyStatement(qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().get(0));
+            if (qualifyingPartyType.getEconomicOperatorRole() != null && qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().isEmpty() == false){
+                qualifyingPartyType.getEconomicOperatorRole().getRoleDescription().forEach(desc -> {
+                    companyDescriptionMap.put(NimbleConfigurationProperties.LanguageID.fromString(desc.getLanguageID()), desc.getValue());
+                });
+                companyDescription.setCompanyStatement(companyDescriptionMap);
+            }
 
             // adapt events
             if (qualifyingPartyType.getEvent() != null) {
@@ -356,7 +362,7 @@ public class UblAdapter {
         }
 
         // industry sectors
-        List<CodeType> industrySectors = UblAdapter.adaptIndustrySectors(settings.getDetails().getIndustrySectors());
+        List<TextType> industrySectors = UblAdapter.adaptLanguageMapToTextType(settings.getDetails().getIndustrySectors());
         companyToChange.getIndustrySector().clear();
         companyToChange.getIndustrySector().addAll(industrySectors);
 
@@ -431,7 +437,7 @@ public class UblAdapter {
 
             // company statement
             EconomicOperatorRoleType economicOperatorRole = new EconomicOperatorRoleType();
-            economicOperatorRole.setRoleDescription(Collections.singletonList(settings.getDescription().getCompanyStatement()));
+            economicOperatorRole.setRoleDescription(adaptLanguageMapToTextType(settings.getDescription().getCompanyStatement()));
             qualifyingParty.setEconomicOperatorRole(economicOperatorRole);
         }
 
@@ -591,12 +597,13 @@ public class UblAdapter {
                 }).collect(Collectors.toList());
     }
 
-    public static List<CodeType> adaptIndustrySectors(List<String> industrySectors) {
-        return industrySectors.stream()
+    public static List<TextType> adaptLanguageMapToTextType(Map<NimbleConfigurationProperties.LanguageID, String> languageMap) {
+        return languageMap.entrySet().stream()
                 .map(sector -> {
-                    CodeType code = new CodeType();
-                    code.setValue(sector);
-                    return code;
+                    TextType textType = new TextType();
+                    textType.setLanguageID(sector.getKey().toString());
+                    textType.setValue(sector.getValue());
+                    return textType;
                 }).collect(Collectors.toList());
     }
 

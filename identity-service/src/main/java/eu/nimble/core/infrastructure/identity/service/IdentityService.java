@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.service;
 
+import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.Address;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanyDescription;
@@ -10,8 +11,10 @@ import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.LocationType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.TradingPreferences;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +50,9 @@ public class IdentityService {
 
     /**
      * Checks if the bearer contains at least one of the given roles.
+     *
      * @param bearer Token containing roles
-     * @param roles Roles to check
+     * @param roles  Roles to check
      * @return True if at least one matching role was found.
      * @throws IOException if roles could not be extracted from token
      */
@@ -81,8 +85,7 @@ public class IdentityService {
         try {
             UaaUser uaaUser = uaaUserRepository.findByUblPerson(personType).stream().findFirst().orElseThrow(NotFoundException::new);
             return fetchRoles(uaaUser);
-        }
-        catch (Exception exception) {
+        } catch (Exception exception) {
             logger.error("Error while fetching roles for person", exception);
         }
         return Collections.emptySet();
@@ -94,7 +97,7 @@ public class IdentityService {
         try {
             // collect roles
             logger.debug("Fetching roles of user {}", user.getUsername());
-            roles = keycloakAdmin.getUserRoles(user.getExternalID(), KeycloakAdmin.NON_NIMBLE_ROLES );
+            roles = keycloakAdmin.getUserRoles(user.getExternalID(), KeycloakAdmin.NON_NIMBLE_ROLES);
         } catch (Exception ex) {
             logger.error("Error while fetch roles of user", ex);
         }
@@ -132,14 +135,28 @@ public class IdentityService {
 
     public static Double computeDescriptionCompleteness(CompanyDescription companyDescription) {
         List<Double> completenessWeights = new ArrayList<>();
-        completenessWeights.add(StringUtils.isNotEmpty(companyDescription.getCompanyStatement()) ? 1.0 : 0.0);
+        completenessWeights.add(!companyDescription.getCompanyStatement().isEmpty() ? 1.0 : 0.0);
         completenessWeights.add(StringUtils.isNotEmpty(companyDescription.getWebsite()) ? 1.0 : 0.0);
         completenessWeights.add(companyDescription.getLogoImageId() != null ? 1.0 : 0.0);
-        completenessWeights.add(companyDescription.getCompanyPhotoList() != null && companyDescription.getCompanyPhotoList().size() > 0 ? 1.0 : 0.0);
         completenessWeights.add(companyDescription.getSocialMediaList() != null && companyDescription.getSocialMediaList().size() > 0 ? 1.0 : 0.0);
-        completenessWeights.add(companyDescription.getEvents() != null && companyDescription.getEvents().size() > 0 ? 1.0 : 0.0);
-        completenessWeights.add(companyDescription.getExternalResources() != null && companyDescription.getExternalResources().size() > 0 ? 1.0 : 0.0);
         return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
+    }
+
+    public static Double computeDeliveryAddressCompleteness(PartyType party) {
+        List<Double> completenessWeights = new ArrayList<>();
+        TradingPreferences tradingPreferences = party.getPurchaseTerms();
+        if (tradingPreferences.getDeliveryTerms().size() == 0 || null == tradingPreferences.getDeliveryTerms().get(0).getDeliveryLocation()) {
+            return 0.0;
+        } else {
+            LocationType locationType = tradingPreferences.getDeliveryTerms().get(0).getDeliveryLocation();
+            completenessWeights.add(locationType.getAddress().getStreetName() != null ? 1.0 : 0.0);
+            completenessWeights.add(locationType.getAddress().getBuildingNumber() != null ? 1.0 : 0.0);
+            completenessWeights.add(locationType.getAddress().getCityName() != null ? 1.0 : 0.0);
+            completenessWeights.add(locationType.getAddress().getRegion() != null ? 1.0 : 0.0);
+            completenessWeights.add(locationType.getAddress().getPostalZone() != null ? 1.0 : 0.0);
+            completenessWeights.add(locationType.getAddress().getCountry() != null ? 1.0 : 0.0);
+            return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
+        }
     }
 
     public static Double computeCertificateCompleteness(PartyType party) {
@@ -148,10 +165,23 @@ public class IdentityService {
         return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
     }
 
-    public static Double computeTradeCompleteness(CompanyTradeDetails tradeDetails) {
+    public static Double computeTradeCompleteness(NegotiationSettings negotiationSettings) {
         List<Double> completenessWeights = new ArrayList<>();
-        completenessWeights.add(tradeDetails.getDeliveryTerms() != null && tradeDetails.getDeliveryTerms().size() > 0 ? 1.0 : 0.0);
-        completenessWeights.add(tradeDetails.getPpapCompatibilityLevel() != null && tradeDetails.getPpapCompatibilityLevel() > 0 ? 1.0 : 0.0);
+        try {
+            completenessWeights.add(negotiationSettings.getPaymentMeans() != null && negotiationSettings.getPaymentMeans().size() > 0 ? 1.0 : 0.0);
+            completenessWeights.add(negotiationSettings.getPaymentTerms() != null && negotiationSettings.getPaymentTerms().size() > 0 ? 1.0 : 0.0);
+            completenessWeights.add(negotiationSettings.getIncoterms() != null && negotiationSettings.getIncoterms().size() > 0 ? 1.0 : 0.0);
+        }catch (Exception e){
+            logger.error("Exception occurred while computing the tradCompletenessSocre", e);
+        }
+        return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
+    }
+
+    public static Double computeAdditionalDataCompleteness(PartyType party, CompanyTradeDetails tradeDetails, CompanyDescription companyDescription) {
+        List<Double> completenessWeights = new ArrayList<>();
+        completenessWeights.add(companyDescription.getEvents() != null && companyDescription.getEvents().size() > 0 ? 1.0 : 0.0);
+        completenessWeights.add(companyDescription.getCompanyPhotoList() != null && companyDescription.getCompanyPhotoList().size() > 0 ? 1.0 : 0.0);
+        completenessWeights.add(companyDescription.getExternalResources() != null && companyDescription.getExternalResources().size() > 0 ? 1.0 : 0.0);
         return completenessWeights.stream().mapToDouble(d -> d).average().orElse(0.0);
     }
 }

@@ -1,6 +1,10 @@
 package eu.nimble.core.infrastructure.identity.uaa;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.exceptions.SignatureVerificationException;
 import com.google.common.collect.Sets;
+import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import org.apache.commons.lang.WordUtils;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
@@ -18,16 +22,21 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.auth0.jwt.algorithms.Algorithm.HMAC512;
 
 @SuppressWarnings("Convert2MethodRef")
 @Service
@@ -59,6 +68,8 @@ public class KeycloakAdmin {
 
     private Keycloak keycloak;
 
+    private static long oneHourInMilliSeconds = 3600000;
+
     @PostConstruct
     @SuppressWarnings("unused")
     public void init() {
@@ -73,6 +84,47 @@ public class KeycloakAdmin {
                 .clientSecret(keycloakConfig.getAdmin().getCliendSecret())
                 .resteasyClient(client)
                 .build();
+    }
+
+    public String initiatePasswordRecoveryProcess(String email) {
+        RealmResource realmResource = this.keycloak.realm(keycloakConfig.getRealm());
+        UsersResource userResource = realmResource.users();
+
+        List<UserRepresentation> userList = userResource.search(email);
+        if (userList.size() != 0) {
+            UserRepresentation user = userList.get(0);
+            return JWT.create()
+                    .withJWTId(user.getId())
+                    .withClaim(GlobalConstants.JWT_TYPE_ATTRIBUTE_STRING, "reset-credentials")
+                    .withSubject(user.getId())
+                    .withExpiresAt(new Date(System.currentTimeMillis() + oneHourInMilliSeconds))
+                    .sign(HMAC512(keycloakConfig.getAdmin().getCliendSecret().getBytes()));
+        }else {
+            throw new ResourceNotFoundException("Resource not found for the user name");
+        }
+    }
+
+    public void resetPasswordViaRecoveryProcess(String token, String newPassword) {
+
+        try {
+            JWTVerifier verifier = JWT.require(HMAC512(keycloakConfig.getAdmin().getCliendSecret().getBytes())).build();
+            verifier.verify(token);
+        } catch (SignatureVerificationException e) {
+            logger.warn("Invalid token received for password reset");
+            throw new BadRequestException("Invalid Token");
+        }
+
+        long exp = JWT.decode(token).getClaim(GlobalConstants.JWT_EXPIRY_ATTRIBUTE_STRING).asLong();
+        if (System.currentTimeMillis() > exp) {
+            String sub = JWT.decode(token).getClaim(GlobalConstants.JWT_SUBJECT_ATTRIBUTE_STRING).asString();
+            RealmResource realmResource = this.keycloak.realm(keycloakConfig.getRealm());
+            UserResource use = realmResource.users().get(sub);
+            CredentialRepresentation passwordCredential = createPasswordCredentials(newPassword);
+            passwordCredential.setTemporary(false);
+            this.keycloak.realm(keycloakConfig.getRealm()).users().get(sub).resetPassword(passwordCredential);
+        }else {
+            throw new NotAuthorizedException("URL expired");
+        }
     }
 
     /**

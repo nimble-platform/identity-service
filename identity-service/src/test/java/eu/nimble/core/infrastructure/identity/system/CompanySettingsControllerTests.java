@@ -41,6 +41,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 
 import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
 import static org.hamcrest.Matchers.hasItem;
@@ -102,11 +103,13 @@ public class CompanySettingsControllerTests {
         companyDetails.setBusinessKeywords(Collections.singletonMap(NimbleConfigurationProperties.LanguageID.ENGLISH, "k1"));
         companyDetails.setBusinessType("business type");
         companyDetails.setYearOfCompanyRegistration(2001);
-        companyDetails.getIndustrySectors().add("industry sector 1");
-        companyDetails.getIndustrySectors().add("industry sector 2");
+        companyDetails.getIndustrySectors().put(NimbleConfigurationProperties.LanguageID.ENGLISH, "industry sector 1");
+        companyDetails.getIndustrySectors().put(NimbleConfigurationProperties.LanguageID.SPANISH, "industry sector 2");
 
         CompanyDescription companyDescription = new CompanyDescription();
-        companyDescription.setCompanyStatement("company statement");
+        companyDescription.setCompanyStatement(new HashMap<NimbleConfigurationProperties.LanguageID, String>() {{
+            put(NimbleConfigurationProperties.LanguageID.ENGLISH, "company statement");
+        }});
         companyDescription.setWebsite("website");
         companyDescription.setSocialMediaList(Arrays.asList("social media 1", "social media 2"));
         Address eventAddress = new Address("event street", "event building", "event city", "event postal", "event country");
@@ -157,10 +160,10 @@ public class CompanySettingsControllerTests {
                 .andExpect(jsonPath("$.details.businessKeywords.en", is("k1")))
                 .andExpect(jsonPath("$.details.yearOfCompanyRegistration", is(2001)))
                 .andExpect(jsonPath("$.details.industrySectors.length()", is(2)))
-                .andExpect(jsonPath("$.details.industrySectors[0]", is("industry sector 1")))
-                .andExpect(jsonPath("$.details.industrySectors[1]", is("industry sector 2")))
+                .andExpect(jsonPath("$.details.industrySectors['en']", is("industry sector 1")))
+                .andExpect(jsonPath("$.details.industrySectors['es']", is("industry sector 2")))
                 // check description
-                .andExpect(jsonPath("$.description.companyStatement", is("company statement")))
+                .andExpect(jsonPath("$.description.companyStatement['en']", is("company statement")))
                 .andExpect(jsonPath("$.description.website", is("website")))
                 .andExpect(jsonPath("$.description.socialMediaList.length()", is(2)))
                 .andExpect(jsonPath("$.description.socialMediaList[0]", is("social media 1")))
@@ -373,7 +376,9 @@ public class CompanySettingsControllerTests {
         companyDetails.setLegalName(Collections.singletonMap(NimbleConfigurationProperties.LanguageID.ENGLISH, "company name"));
         companySettings.setDetails(companyDetails);
         CompanyDescription companyDescription = new CompanyDescription();
-        companyDescription.setCompanyStatement("company statement");
+        companyDescription.setCompanyStatement(new HashMap<NimbleConfigurationProperties.LanguageID, String>() {{
+            put(NimbleConfigurationProperties.LanguageID.ENGLISH, "company statement");
+        }});
         companySettings.setDescription(companyDescription);
         CompanyTradeDetails companyTradeDetails = new CompanyTradeDetails();
         companyTradeDetails.setPpapCompatibilityLevel(5);
@@ -402,7 +407,7 @@ public class CompanySettingsControllerTests {
         assertTrue(descriptionCompleteness.getQuantity().getValue().doubleValue() > 0.0);
         assertTrue(detailCompleteness.getQuantity().getValue().doubleValue() > 0.0);
         assertFalse(certificationCompleteness.getQuantity().getValue().doubleValue() > 0.0);
-        assertTrue(tradeCompleteness.getQuantity().getValue().doubleValue() > 0.0);
+        assertFalse(tradeCompleteness.getQuantity().getValue().doubleValue() > 0.0);
     }
 
     @Test
