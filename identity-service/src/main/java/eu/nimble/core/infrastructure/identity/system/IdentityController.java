@@ -1,14 +1,15 @@
 package eu.nimble.core.infrastructure.identity.system;
 
+import com.auth0.jwt.JWT;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
-import eu.nimble.core.infrastructure.identity.system.dto.CompanyRegistrationResponse;
-import eu.nimble.core.infrastructure.identity.system.dto.UserRegistration;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
+import eu.nimble.core.infrastructure.identity.system.dto.CompanyRegistrationResponse;
+import eu.nimble.core.infrastructure.identity.system.dto.UserRegistration;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
@@ -36,7 +37,10 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.WebApplicationException;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Controller
@@ -88,6 +92,61 @@ public class IdentityController {
 
     @Autowired
     private IndexingClient indexingClient;
+
+    @ApiOperation(value = "Authenticate a federated user.", response = FrontEndUser.class, tags = {})
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "User authenticated", response = FrontEndUser.class),
+            @ApiResponse(code = 400, message = "Invalid Token", response = FrontEndUser.class)})
+    @RequestMapping(value = "/federation/login", produces = {"application/json"}, consumes = {"application/json"}, method = RequestMethod.POST)
+    ResponseEntity<FrontEndUser> loginFederatedUser(
+            @ApiParam(value = "Access token provided by the IDP", required = true) @RequestBody Token token) {
+
+        FrontEndUser frontEndUser = new FrontEndUser();
+        String audience = JWT.decode(token.getAccessToken()).getClaim("aud").asString();
+        String keycloakUserID = JWT.decode(token.getAccessToken()).getClaim("sub").asString();
+        String email = JWT.decode(token.getAccessToken()).getClaim("email").asString();
+
+        // check identity database
+        UaaUser potentialUser = uaaUserRepository.findByExternalID(keycloakUserID);
+        if (potentialUser == null) {
+            logger.info("User " + email + " not found in local database, but on Keycloak.");
+            // create a new user
+
+            frontEndUser.setUsername(email);
+            frontEndUser.setFirstname(JWT.decode(token.getAccessToken()).getClaim("name").asString());
+            frontEndUser.setLastname(JWT.decode(token.getAccessToken()).getClaim("family_name").asString());
+            // create UBL party of user
+            PersonType newUser = UblAdapter.adaptPerson(frontEndUser);
+            personRepository.save(newUser);
+
+            // update id of user
+            newUser.setID(newUser.getHjid().toString());
+            personRepository.save(newUser);
+
+            // create entry in identity DB
+            UaaUser uaaUser = new UaaUser(email, newUser, keycloakUserID);
+            uaaUserRepository.save(uaaUser);
+
+            // update user data
+            frontEndUser.setUserID(Long.parseLong(newUser.getID()));
+            frontEndUser.setUsername(email);
+            frontEndUser.setAccessToken(token.getAccessToken());
+            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, token.getAccessToken());
+            logger.info("Registering a new user with email {} and id {}", frontEndUser.getEmail(), frontEndUser.getUserID());
+
+        }else {
+            // create front end user DTO
+            List<PartyType> companies = partyRepository.findByPerson(potentialUser.getUBLPerson());
+            frontEndUser = UblAdapter.adaptUser(potentialUser, companies);
+
+            // set and store tokens
+            frontEndUser.setAccessToken(token.getAccessToken());
+            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, token.getAccessToken());
+            logger.info("User " + email + " successfully logged in.");
+        }
+
+        return new ResponseEntity<>(frontEndUser, HttpStatus.OK);
+    }
 
     @ApiOperation(value = "Register a new user to the nimble.", response = FrontEndUser.class, tags = {})
     @ApiResponses(value = {
@@ -421,7 +480,7 @@ public class IdentityController {
     ResponseEntity<?> setFavouriteIdList(
             @ApiParam(value = "Id of company to change settings from.", required = true) @PathVariable Long personId,
             @RequestParam("status") Integer status,
-            @ApiParam(value = "Set of roles to apply.", required = true) @RequestBody List<String> itemIds)throws IOException{
+            @ApiParam(value = "Set of roles to apply.", required = true) @RequestBody List<String> itemIds) throws IOException {
 
         logger.debug("Requesting person favourite catalogue line id's for {}", personId);
         // search for persons
