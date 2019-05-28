@@ -1,8 +1,10 @@
 package eu.nimble.core.infrastructure.identity.utils;
 
 import eu.nimble.service.model.solr.party.PartyType;
+import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import eu.nimble.service.model.ubl.extension.QualityIndicatorParameter;
 
+import java.util.List;
 
 /**
  * Created by Dileepa Jayakody on 15/03/19
@@ -56,6 +58,15 @@ public class DataModelUtils {
                 }
             }
         });
+        if(party.getIndustrySector() != null){
+                List<TextType> industrySectors = party.getIndustrySector();
+                for(TextType sector : industrySectors){
+                    indexParty.addActivitySector(sector.getLanguageID(), sector.getValue());
+                }
+        }
+        if(party.getIndustryClassificationCode() != null){
+            indexParty.setBusinessType(party.getIndustryClassificationCode().getValue());
+        }
         return indexParty;
     }
 

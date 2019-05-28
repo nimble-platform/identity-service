@@ -2,6 +2,7 @@ package eu.nimble.core.infrastructure.identity.system;
 
 import com.auth0.jwt.JWT;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
+import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
@@ -31,6 +32,7 @@ import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedExc
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -317,6 +319,11 @@ public class IdentityController {
 
         //indexing the new company in the indexing service
         eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(newCompany);
+        Map<NimbleConfigurationProperties.LanguageID, String> businessKeywords = companyRegistration.getSettings().getDetails().getBusinessKeywords();
+        List<TextType> keywordsList = UblAdapter.adaptLanguageMapToTextType(businessKeywords);
+        for(TextType keyword : keywordsList){
+            newParty.addBusinessKeyword(keyword.getLanguageID(), keyword.getValue());
+        }
         indexingClient.setParty(newParty);
 
         logger.info("Registered company with id {} for user with id {}", companyRegistration.getCompanyID(), companyRegistration.getUserID());

@@ -184,6 +184,12 @@ public class CompanySettingsController {
 
         imageDocument.setID(imageDocument.getHjid().toString());
         imageDocument.getAttachment().getEmbeddedDocumentBinaryObject().setUri(null); // reset uri (images are handled differently)
+
+        //indexing logo image uri for the existing party
+        eu.nimble.service.model.solr.party.PartyType indexParty =  indexingClient.getParty(company.getHjid().toString());
+        indexParty.setLogoId(imageDocument.getID());
+        indexingClient.setParty(indexParty);
+
         return ResponseEntity.ok(imageDocument);
     }
 
@@ -244,6 +250,11 @@ public class CompanySettingsController {
             company.getDocumentReference().remove(toDelete.get());
             partyRepository.save(company);
         }
+
+        //removing logo image id from the indexed the party
+        eu.nimble.service.model.solr.party.PartyType indexParty =  indexingClient.getParty(company.getHjid().toString());
+        indexParty.setLogoId("");
+        indexingClient.setParty(indexParty);
 
         return ResponseEntity.ok().build();
     }
