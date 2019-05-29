@@ -9,8 +9,10 @@ import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
+import eu.nimble.core.infrastructure.identity.service.RocketChatService;
 import eu.nimble.core.infrastructure.identity.system.dto.CompanyRegistrationResponse;
 import eu.nimble.core.infrastructure.identity.system.dto.UserRegistration;
+import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.RocketChatResponse;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
@@ -18,6 +20,7 @@ import eu.nimble.core.infrastructure.identity.utils.DataModelUtils;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
+import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -32,7 +35,6 @@ import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedExc
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -91,6 +93,9 @@ public class IdentityController {
 
     @Autowired
     private UblUtils ublUtils;
+
+    @Autowired
+    private RocketChatService chatService;
 
     @Autowired
     private IndexingClient indexingClient;
@@ -229,6 +234,8 @@ public class IdentityController {
             logger.info("Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(), newUser.getID(), ublUtils.getName(company), UblAdapter.adaptPartyIdentifier(company));
         }
 
+        // Create a user in rocket chat
+        chatService.registerUser(frontEndUser, credentials, false);
         logger.info("Registering a new user with email {} and id {}", frontEndUser.getEmail(), frontEndUser.getUserID());
 
         return new ResponseEntity<>(frontEndUser, HttpStatus.OK);
@@ -331,6 +338,17 @@ public class IdentityController {
         return new ResponseEntity<>(companyRegistration, HttpStatus.OK);
     }
 
+    @ApiOperation(value = "", notes = "Login controller for rocket chat.", response = CompanyRegistrationResponse.class, tags = {})
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful login", response = FrontEndUser.class),
+            @ApiResponse(code = 401, message = "Unauthorized access", response = FrontEndUser.class)})
+    @RequestMapping(value = "/sso", produces = {"application/json"}, method = RequestMethod.POST)
+    ResponseEntity sso(@CookieValue("rocket_chat_token") String rocketChatToken) {
+        RocketChatResponse rocketChatResponse = new RocketChatResponse();
+        rocketChatResponse.setLoginToken(rocketChatToken);
+        return new ResponseEntity<>(rocketChatResponse, HttpStatus.OK);
+    }
+
     @ApiOperation(value = "", notes = "Login controller with credentials.", response = CompanyRegistrationResponse.class, tags = {})
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successful login", response = FrontEndUser.class),
@@ -372,7 +390,8 @@ public class IdentityController {
         // set and store tokens
         frontEndUser.setAccessToken(accessToken.getValue());
         httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, accessToken.getRefreshToken().getValue());
-
+        String rocketChatToken = chatService.loginUser(frontEndUser, credentials);
+        frontEndUser.setRocketChatToken(rocketChatToken);
         logger.info("User " + credentials.getUsername() + " successfully logged in.");
 
         return new ResponseEntity<>(frontEndUser, HttpStatus.OK);

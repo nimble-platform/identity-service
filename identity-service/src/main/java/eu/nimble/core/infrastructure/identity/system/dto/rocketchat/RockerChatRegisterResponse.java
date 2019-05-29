@@ -3,6 +3,7 @@ package eu.nimble.core.infrastructure.identity.system.dto.rocketchat;
 public class RockerChatRegisterResponse {
 
     private boolean success = false;
+    private String error;
     private RocketChatUser user;
 
     public boolean isSuccess() {
@@ -19,5 +20,13 @@ public class RockerChatRegisterResponse {
 
     public void setUser(RocketChatUser user) {
         this.user = user;
+    }
+
+    public String getError() {
+        return error;
+    }
+
+    public void setError(String error) {
+        this.error = error;
     }
 }
