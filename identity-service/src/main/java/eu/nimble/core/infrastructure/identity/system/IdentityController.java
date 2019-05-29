@@ -343,7 +343,8 @@ public class IdentityController {
             @ApiResponse(code = 200, message = "Successful login", response = FrontEndUser.class),
             @ApiResponse(code = 401, message = "Unauthorized access", response = FrontEndUser.class)})
     @RequestMapping(value = "/sso", produces = {"application/json"}, method = RequestMethod.POST)
-    ResponseEntity sso(@CookieValue("rocket_chat_token") String rocketChatToken) {
+    ResponseEntity sso(@CookieValue(value = "rocket_chat_token") String rocketChatToken) {
+        logger.info("Rocket chat sso endpoint has been reached and the cookie value is : " + rocketChatToken);
         RocketChatResponse rocketChatResponse = new RocketChatResponse();
         rocketChatResponse.setLoginToken(rocketChatToken);
         return new ResponseEntity<>(rocketChatResponse, HttpStatus.OK);
