@@ -29,6 +29,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
@@ -99,6 +100,9 @@ public class IdentityController {
 
     @Autowired
     private IndexingClient indexingClient;
+
+    @Value("${nimble.rocketChat.isEnabled}")
+    private boolean isChatEnabled;
 
     @ApiOperation(value = "Authenticate a federated user.", response = FrontEndUser.class, tags = {})
     @ApiResponses(value = {
@@ -234,8 +238,10 @@ public class IdentityController {
             logger.info("Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(), newUser.getID(), ublUtils.getName(company), UblAdapter.adaptPartyIdentifier(company));
         }
 
-        // Create a user in rocket chat
-        chatService.registerUser(frontEndUser, credentials, false);
+        // Create a user in rocket isChatEnabled
+        if (isChatEnabled) {
+            chatService.registerUser(frontEndUser, credentials, false);
+        }
         logger.info("Registering a new user with email {} and id {}", frontEndUser.getEmail(), frontEndUser.getUserID());
 
         return new ResponseEntity<>(frontEndUser, HttpStatus.OK);
@@ -338,13 +344,13 @@ public class IdentityController {
         return new ResponseEntity<>(companyRegistration, HttpStatus.OK);
     }
 
-    @ApiOperation(value = "", notes = "Login controller for rocket chat.", response = CompanyRegistrationResponse.class, tags = {})
+    @ApiOperation(value = "", notes = "Login controller for rocket isChatEnabled.", response = CompanyRegistrationResponse.class, tags = {})
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successful login", response = FrontEndUser.class),
             @ApiResponse(code = 401, message = "Unauthorized access", response = FrontEndUser.class)})
     @RequestMapping(value = "/sso", produces = {"application/json"}, method = RequestMethod.POST)
     ResponseEntity sso(@CookieValue(value = "rocket_chat_token") String rocketChatToken) {
-        logger.info("Rocket chat sso endpoint has been reached and the cookie value is : " + rocketChatToken);
+        logger.info("Rocket isChatEnabled sso endpoint has been reached and the cookie value is : " + rocketChatToken);
         RocketChatResponse rocketChatResponse = new RocketChatResponse();
         rocketChatResponse.setLoginToken(rocketChatToken);
         return new ResponseEntity<>(rocketChatResponse, HttpStatus.OK);
@@ -391,8 +397,12 @@ public class IdentityController {
         // set and store tokens
         frontEndUser.setAccessToken(accessToken.getValue());
         httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, accessToken.getRefreshToken().getValue());
-        String rocketChatToken = chatService.loginUser(frontEndUser, credentials);
-        frontEndUser.setRocketChatToken(rocketChatToken);
+
+        if(isChatEnabled){
+            String rocketChatToken = chatService.loginUser(frontEndUser, credentials);
+            frontEndUser.setRocketChatToken(rocketChatToken);
+        }
+
         logger.info("User " + credentials.getUsername() + " successfully logged in.");
 
         return new ResponseEntity<>(frontEndUser, HttpStatus.OK);

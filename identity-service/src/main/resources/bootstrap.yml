@@ -106,6 +106,7 @@ nimble:
     url: ${IDENTITY_BINARY_CONTENT_URL:IdentityBinaryContentUri:}
   supportEmail: ${SUPPORT_EMAIL:nimble-support@salzburgresearch.at}
   rocketChat:
+    isEnabled: ${ROCKET_CHAT:false}
     url: ${ROCKET_CHAT_URL:http://localhost:3000}
   indexing:
     url: ${INDEXING_SERVICE_URL:http://localhost:8090}
