@@ -14,10 +14,9 @@ import eu.nimble.core.infrastructure.identity.system.dto.UserRegistration;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
-import eu.nimble.core.infrastructure.identity.utils.DataModelUtils;
-import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
-import eu.nimble.core.infrastructure.identity.utils.UblUtils;
+import eu.nimble.core.infrastructure.identity.utils.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
+import eu.nimble.utility.LoggerUtils;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -347,14 +346,23 @@ public class IdentityController {
         OAuth2AccessToken accessToken;
         String keycloakUserID;
         try {
-            logger.info("User " + credentials.getUsername() + " wants to login...");
+            Map<String,String> paramMap = new HashMap<String, String>();
+            paramMap.put("userId",credentials.getUsername());
+            paramMap.put("activity", LogEvent.LOGIN_ATTEMPT.getActivity());
+            LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "User " + credentials.getUsername() + " wants to login...");
             accessToken = oAuthClient.getToken(credentials.getUsername(), credentials.getPassword());
             keycloakUserID = new OpenIdConnectUserDetails(accessToken.getValue()).getUserId();
         } catch (OAuth2AccessDeniedException ex) {
-            logger.error("User " + credentials.getUsername() + " not found in Keycloak?", ex);
+            Map<String,String> paramMap = new HashMap<String, String>();
+            paramMap.put("userId",credentials.getUsername());
+            paramMap.put("activity", LogEvent.LOGIN_ERROR.getActivity());
+            LoggerUtils.logErrorWithMDC(logger, paramMap,"User " + credentials.getUsername() + " not found in Keycloak?", ex);
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } catch (IOException ex) {
-            logger.error("Error in decoding " + credentials.getUsername() + "'s access token", ex);
+            Map<String,String> paramMap = new HashMap<String, String>();
+            paramMap.put("userId",credentials.getUsername());
+            paramMap.put("activity", LogEvent.LOGIN_ERROR.getActivity());
+            LoggerUtils.logErrorWithMDC(logger, paramMap, "Error in decoding " + credentials.getUsername() + "'s access token", ex);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
@@ -373,7 +381,13 @@ public class IdentityController {
         frontEndUser.setAccessToken(accessToken.getValue());
         httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, accessToken.getRefreshToken().getValue());
 
-        logger.info("User " + credentials.getUsername() + " successfully logged in.");
+        Map<String,String> paramMap = new HashMap<String, String>();
+        paramMap.put("userId",credentials.getUsername());
+        paramMap.put("activity", LogEvent.LOGIN_SUCCESS.getActivity());
+        paramMap.put("companyId", frontEndUser.getCompanyID());
+        paramMap.put("companyName", frontEndUser.getCompanyName().get(NimbleConfigurationProperties.LanguageID.ENGLISH));
+
+        LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "User " + credentials.getUsername() + " successfully logged in.");
 
         return new ResponseEntity<>(frontEndUser, HttpStatus.OK);
     }
