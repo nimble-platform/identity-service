@@ -161,7 +161,9 @@ public class NegotiationSettings implements Serializable {
         this.paymentTerms.clear();
         this.paymentTerms.addAll(newSettings.getPaymentTerms());
 
-        this.company = newSettings.company;
+        if (null != newSettings.company) {
+            this.company.setSalesTerms(newSettings.company.getSalesTerms());
+        }
     }
 
     @Entity
