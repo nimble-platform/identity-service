@@ -18,6 +18,7 @@ import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.core.infrastructure.identity.utils.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
+import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import eu.nimble.utility.LoggerUtils;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -410,7 +411,6 @@ public class IdentityController {
             frontEndUser.setRocketChatToken(rocketChatToken);
         }
 
-        logger.info("User " + credentials.getUsername() + " successfully logged in.");
         Map<String,String> paramMap = new HashMap<String, String>();
         paramMap.put("userId",credentials.getUsername());
         paramMap.put("activity", LogEvent.LOGIN_SUCCESS.getActivity());
