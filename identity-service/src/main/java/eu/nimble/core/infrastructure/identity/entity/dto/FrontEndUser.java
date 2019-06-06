@@ -28,6 +28,8 @@ public class FrontEndUser {
 
     private String accessToken = null;
 
+    private String rocketChatToken = null;
+
     private Boolean showWelcomeInfo = false;
 
     public Map<NimbleConfigurationProperties.LanguageID, String> getCompanyName() {
@@ -124,6 +126,14 @@ public class FrontEndUser {
 
     public void setShowWelcomeInfo(Boolean showWelcomeInfo) {
         this.showWelcomeInfo = showWelcomeInfo;
+    }
+
+    public String getRocketChatToken() {
+        return rocketChatToken;
+    }
+
+    public void setRocketChatToken(String rocketChatToken) {
+        this.rocketChatToken = rocketChatToken;
     }
 
     @Override

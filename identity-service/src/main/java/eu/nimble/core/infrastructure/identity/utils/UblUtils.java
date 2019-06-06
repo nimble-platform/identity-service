@@ -2,7 +2,9 @@ package eu.nimble.core.infrastructure.identity.utils;
 
 import com.google.common.collect.Sets;
 import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyNameType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.QualityIndicatorType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import eu.nimble.service.model.ubl.extension.QualityIndicatorParameter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,8 +36,8 @@ public class UblUtils {
         return textType.stream().filter(tt -> tt.getLanguageID().equals(languageID.toString())).map(TextType::getValue).findFirst().orElse(null);
     }
 
-    public String getText(Collection<TextType> textType) {
-        return getText(textType, nimbleConfiguration.getDefaultLanguageID());
+    public static String getText(Collection<TextType> textType) {
+        return textType.stream().filter(tt -> !tt.getValue().isEmpty()).map(TextType::getValue).findFirst().orElse(null);
     }
 
     public static String getName(Collection<PartyNameType> partyNameTypes, NimbleConfigurationProperties.LanguageID languageID) {
@@ -43,8 +45,23 @@ public class UblUtils {
         return getText(textTypes, languageID);
     }
 
+    public static String getName(Collection<PartyNameType> partyNameTypes) {
+        List<TextType> textTypes = partyNameTypes.stream().map(PartyNameType::getName).collect(Collectors.toList());
+        return getText(textTypes);
+    }
+
+
+    /**
+     * This method will return the party name (legal name) of a company, preference will be given to the default language ID
+     * @param partyType
+     * @return
+     */
     public String getName(PartyType partyType) {
-        return getName(partyType.getPartyName(), nimbleConfiguration.getDefaultLanguageID());
+        String name = getName(partyType.getPartyName(), nimbleConfiguration.getDefaultLanguageID());
+        if(name == null){
+            name = getName(partyType.getPartyName());
+        }
+        return name;
     }
 
     public static PartyType setID(PartyType party, String identifier ) {
