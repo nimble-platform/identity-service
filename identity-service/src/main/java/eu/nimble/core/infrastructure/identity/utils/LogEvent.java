@@ -1,8 +1,8 @@
 package eu.nimble.core.infrastructure.identity.utils;
 
 public enum LogEvent {
-    LOGIN_ATTEMPT("loginAttempt"), LOGIN_SUCCESS(("loginSuccess")), LOGIN_ERROR("loginError"),
-    REGISTER_USER(("registerUser")), REGISTER_COMPANY(("registerCompany")), UPDATE_COMPANY(("updateCompany"));
+    LOGIN_ATTEMPT("loginAttempt"), LOGIN_SUCCESS("loginSuccess"), LOGIN_ERROR("loginError"),
+    REGISTER_USER("registerUser"), REGISTER_USER_ERROR("registerUserError"), REGISTER_COMPANY("registerCompany"), UPDATE_COMPANY("updateCompany");
 
     private String activity;
 

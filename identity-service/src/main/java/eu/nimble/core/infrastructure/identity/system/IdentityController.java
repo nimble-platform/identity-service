@@ -119,6 +119,7 @@ public class IdentityController {
         // check identity database
         UaaUser potentialUser = uaaUserRepository.findByExternalID(keycloakUserID);
         if (potentialUser == null) {
+
             logger.info("User " + email + " not found in local database, but on Keycloak.");
             // create a new user
 
@@ -172,7 +173,9 @@ public class IdentityController {
         // validate data
         if (frontEndUser == null || credentials == null
                 || credentials.getUsername() == null || credentials.getUsername().equals(frontEndUser.getEmail()) == false) {
-            logger.info(" Tried to register an invalid user {}", userRegistration.toString());
+            Map<String,String> paramMap = new HashMap<String, String>();
+            paramMap.put("activity", LogEvent.REGISTER_USER_ERROR.getActivity());
+            LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, " Tried to register an invalid user {}", userRegistration.toString());
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
@@ -182,6 +185,9 @@ public class IdentityController {
             keycloakID = keycloakAdmin.registerUser(
                     frontEndUser.getFirstname(), frontEndUser.getLastname(), credentials.getPassword(), frontEndUser.getEmail());
         } catch (WebApplicationException ex) {
+            Map<String,String> paramMap = new HashMap<String, String>();
+            paramMap.put("activity", LogEvent.REGISTER_USER_ERROR.getActivity());
+            LoggerUtils.logErrorWithMDC(logger, paramMap," Error occurred in keycloak while registering the user", ex);
             if (ex.getResponse().getStatus() == HttpStatus.CONFLICT.value())
                 return new ResponseEntity<>(HttpStatus.CONFLICT);
             throw ex;
@@ -211,7 +217,9 @@ public class IdentityController {
             // fetch company
             Optional<PartyType> companyOpt = partyRepository.findByHjid(Long.parseLong(invitation.getCompanyId())).stream().findFirst();
             if (companyOpt.isPresent() == false) {
-                logger.error("Invalid invitation: Company %s not found", invitation.getCompanyId());
+                Map<String,String> paramMap = new HashMap<String, String>();
+                paramMap.put("activity", LogEvent.REGISTER_USER_ERROR.getActivity());
+                LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.ERROR, "Invalid invitation: Company %s not found", invitation.getCompanyId());
                 return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
             }
             PartyType company = companyOpt.get();
@@ -234,7 +242,15 @@ public class IdentityController {
                 }
             }
 
-            logger.info("Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(), newUser.getID(), ublUtils.getName(company), UblAdapter.adaptPartyIdentifier(company));
+            String companyName = ublUtils.getName(company);
+            String companyId = UblAdapter.adaptPartyIdentifier(company);
+            Map<String,String> paramMap = new HashMap<String, String>();
+            paramMap.put("userId",credentials.getUsername());
+            paramMap.put("companyId",companyId);
+            paramMap.put("companyName",companyName);
+            paramMap.put("activity", LogEvent.REGISTER_USER.getActivity());
+            LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(),
+                    newUser.getID(), companyName, companyId);
         }
 
         // Create a user in rocket isChatEnabled
