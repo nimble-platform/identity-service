@@ -1,4 +1,4 @@
-package eu.nimble.core.infrastructure.identity.system.dto.rocketchat;
+package eu.nimble.core.infrastructure.identity.system.dto.rocketchat.sso;
 
 public class RocketChatResponse {
     private String loginToken;

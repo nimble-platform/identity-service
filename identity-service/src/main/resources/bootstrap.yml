@@ -108,6 +108,8 @@ nimble:
   rocketChat:
     isEnabled: ${ROCKET_CHAT:false}
     url: ${ROCKET_CHAT_URL:http://localhost:3000}
+    user: ${ROCKET_CHAT_USER:nimble@gmail.com}
+    password: ${ROCKET_CHAT_PASSWORD:123456}
   indexing:
     url: ${INDEXING_SERVICE_URL:http://localhost:8090}
   platformName : ${PLATFORM_NAME:Staging}

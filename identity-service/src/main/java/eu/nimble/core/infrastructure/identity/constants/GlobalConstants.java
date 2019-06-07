@@ -12,5 +12,7 @@ public class GlobalConstants {
     public static final String JWT_SUBJECT_ATTRIBUTE_STRING = "sub";
     public static final String JWT_EXPIRY_ATTRIBUTE_STRING = "exp";
     public static final String JWT_TYPE_ATTRIBUTE_STRING = "type";
+    public static final String EMAIL_STRING = "email";
+    public static final String USER_NAME_STRING = "username";
 
 }

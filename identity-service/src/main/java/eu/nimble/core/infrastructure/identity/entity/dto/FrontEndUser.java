@@ -30,6 +30,10 @@ public class FrontEndUser {
 
     private String rocketChatToken = null;
 
+    private String rocketChatUsername = null;
+
+    private String rocketChatUserID = null;
+
     private Boolean showWelcomeInfo = false;
 
     public Map<NimbleConfigurationProperties.LanguageID, String> getCompanyName() {
@@ -134,6 +138,22 @@ public class FrontEndUser {
 
     public void setRocketChatToken(String rocketChatToken) {
         this.rocketChatToken = rocketChatToken;
+    }
+
+    public String getRocketChatUsername() {
+        return rocketChatUsername;
+    }
+
+    public void setRocketChatUsername(String rocketChatUsername) {
+        this.rocketChatUsername = rocketChatUsername;
+    }
+
+    public String getRocketChatUserID() {
+        return rocketChatUserID;
+    }
+
+    public void setRocketChatUserID(String rocketChatUserID) {
+        this.rocketChatUserID = rocketChatUserID;
     }
 
     @Override

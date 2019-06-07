@@ -12,11 +12,15 @@ import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.service.RocketChatService;
 import eu.nimble.core.infrastructure.identity.system.dto.CompanyRegistrationResponse;
 import eu.nimble.core.infrastructure.identity.system.dto.UserRegistration;
-import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.RocketChatResponse;
+import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.login.RocketChatLoginResponse;
+import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.sso.RocketChatResponse;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
-import eu.nimble.core.infrastructure.identity.utils.*;
+import eu.nimble.core.infrastructure.identity.utils.DataModelUtils;
+import eu.nimble.core.infrastructure.identity.utils.LogEvent;
+import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
+import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import eu.nimble.utility.LoggerUtils;
@@ -423,8 +427,10 @@ public class IdentityController {
         httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, accessToken.getRefreshToken().getValue());
 
         if(isChatEnabled){
-            String rocketChatToken = chatService.loginUser(frontEndUser, credentials);
-            frontEndUser.setRocketChatToken(rocketChatToken);
+            RocketChatLoginResponse rocketChatToken = chatService.loginUser(frontEndUser, credentials);
+            frontEndUser.setRocketChatToken(rocketChatToken.getData().getAuthToken());
+            frontEndUser.setRocketChatUsername(rocketChatToken.getData().getMe().getUsername());
+            frontEndUser.setRocketChatUserID(rocketChatToken.getData().getUserId());
         }
 
         Map<String,String> paramMap = new HashMap<String, String>();
