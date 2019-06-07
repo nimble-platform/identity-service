@@ -95,7 +95,7 @@ public class ChatController {
         List<String> channelMembersUsernameList = new ArrayList<>();
 
         // Get the list of the users in Rocket.Chat to obtain the user's Rocket.Chat username
-        ChatUsers chatUsers = chatService.listUsers(createChannelRequest.getUserToken(), createChannelRequest.getUserId());
+        ChatUsers chatUsers = chatService.listUsers();
 
         // Find the users who are not yet registered in Rocket.Chat
         Map<String, String> map = chatService.getMissingEmails(chatUsers, initiatingCompanyMembersList, respondingCompanyMembersList);

@@ -427,7 +427,7 @@ public class IdentityController {
         httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, accessToken.getRefreshToken().getValue());
 
         if(isChatEnabled){
-            RocketChatLoginResponse rocketChatToken = chatService.loginUser(frontEndUser, credentials);
+            RocketChatLoginResponse rocketChatToken = chatService.loginOrCreateUser(frontEndUser, credentials, true, true);
             frontEndUser.setRocketChatToken(rocketChatToken.getData().getAuthToken());
             frontEndUser.setRocketChatUsername(rocketChatToken.getData().getMe().getUsername());
             frontEndUser.setRocketChatUserID(rocketChatToken.getData().getUserId());

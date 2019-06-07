@@ -124,6 +124,14 @@ public class RocketChatService {
         return emailUsernameMap;
     }
 
+    public ChatUsers listUsers() {
+        Credentials credentials = new Credentials();
+        credentials.setUsername(rocketChatUser);
+        credentials.setPassword(rocketChatPassword);
+        RocketChatLoginResponse rocketChatLoginResponse = loginOrCreateUser(new FrontEndUser(), credentials, false, false);
+        return listUsers(rocketChatLoginResponse.getData().getAuthToken(), rocketChatLoginResponse.getData().getUserId());
+    }
+
     /**
      * This function uses the admin users credentials to obtain user list as normal users credentials will only fetch user name
      *
@@ -132,16 +140,14 @@ public class RocketChatService {
      * @return
      */
     public ChatUsers listUsers(String authToken, String userID) {
-        Credentials credentials = new Credentials();
-        credentials.setUsername(rocketChatUser);
-        RocketChatLoginResponse rocketChatLoginResponse = loginUser(new FrontEndUser(), credentials);
+
         ChatUsers chatUsers = new ChatUsers();
         String uri = rocketChatURL + "/api/v1/users.list";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("X-User-Id", rocketChatLoginResponse.getData().getUserId());
-        headers.set("X-Auth-Token", rocketChatLoginResponse.getData().getAuthToken());
+        headers.set("X-User-Id", userID);
+        headers.set("X-Auth-Token", authToken);
         HttpEntity<String> entity = new HttpEntity<String>(headers);
 
         RestTemplate rs = new RestTemplate();
@@ -194,12 +200,12 @@ public class RocketChatService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> entity = new HttpEntity<String>(request.toString(), headers);
 
-        ResponseEntity<String> loginResponse = rs.exchange(uri, HttpMethod.POST, entity, String.class);
+        ResponseEntity<String> registerResponse = rs.exchange(uri, HttpMethod.POST, entity, String.class);
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         RockerChatRegisterResponse rockerChatRegisterResponse = new RockerChatRegisterResponse();
         try {
-            rockerChatRegisterResponse = mapper.readValue(loginResponse.getBody(), RockerChatRegisterResponse.class);
+            rockerChatRegisterResponse = mapper.readValue(registerResponse.getBody(), RockerChatRegisterResponse.class);
 
             if (rockerChatRegisterResponse.isSuccess() && null == rockerChatRegisterResponse.getError()) {
                 logger.info("A new user have been created in Rocket.Chat with username {}", rockerChatRegisterResponse.getUser().getUsername());
@@ -227,14 +233,18 @@ public class RocketChatService {
      * @param credentials
      * @return
      */
-    public RocketChatLoginResponse loginUser(FrontEndUser frontEndUser, Credentials credentials) {
+    public RocketChatLoginResponse loginOrCreateUser(FrontEndUser frontEndUser, Credentials credentials, boolean createIfMissing, boolean generatePass) {
 
         RestTemplate rs = new RestTemplate();
         String uri = rocketChatURL + "/api/v1/login";
 
         JSONObject request = new JSONObject();
         request.put(GlobalConstants.EMAIL_STRING, credentials.getUsername());
-        request.put("password", new Md5PasswordEncoder().encodePassword(credentials.getUsername(), null).substring(0, 8));
+        if (generatePass) {
+            request.put("password", new Md5PasswordEncoder().encodePassword(credentials.getUsername(), null).substring(0, 8));
+        }else {
+            request.put("password", credentials.getPassword());
+        }
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -249,9 +259,9 @@ public class RocketChatService {
             rocketChatLoginResponse = mapper.readValue(loginResponse.getBody(), RocketChatLoginResponse.class);
 
         } catch (HttpStatusCodeException exception) {
-            if (exception.getStatusCode().value() == 401) {
+            if (exception.getStatusCode().value() == 401 && createIfMissing) {
                 registerUser(frontEndUser, credentials, false);
-                rocketChatLoginResponse = loginUser(frontEndUser, credentials);
+                rocketChatLoginResponse = loginOrCreateUser(frontEndUser, credentials, false, true);
             }
         } catch (IOException e) {
             e.printStackTrace();
