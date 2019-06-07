@@ -4,7 +4,9 @@ import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
 import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
+import eu.nimble.core.infrastructure.identity.utils.LogEvent;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
+import eu.nimble.utility.LoggerUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
@@ -18,7 +20,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by Johannes Innerbichler on 12.09.18.
@@ -83,7 +87,10 @@ public class AdminController {
         if (identityService.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
             return new ResponseEntity<>("Only legal platform managers are allowed to verify companies", HttpStatus.UNAUTHORIZED);
 
-        logger.info("Verifying company with id {}", companyId);
+        Map<String,String> paramMap = new HashMap<String, String>();
+        paramMap.put("activity", LogEvent.VERIFY_COMPANY.getActivity());
+        paramMap.put("companyId", String.valueOf(companyId));
+        LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "Verifying company with id {}", companyId);
         adminService.verifyCompany(companyId);
 
         return ResponseEntity.ok().build();
@@ -96,8 +103,10 @@ public class AdminController {
 
         if (identityService.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
             return new ResponseEntity<>("Only platform managers are allowed to delete companies", HttpStatus.UNAUTHORIZED);
-
-        logger.info("Deleting company with id {}", companyId);
+        Map<String,String> paramMap = new HashMap<String, String>();
+        paramMap.put("activity", LogEvent.DELETE_COMPANY.getActivity());
+        paramMap.put("companyId", String.valueOf(companyId));
+        LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "Deleting company with id {}", companyId);
         adminService.deleteCompany(companyId);
 
         return ResponseEntity.ok().build();
