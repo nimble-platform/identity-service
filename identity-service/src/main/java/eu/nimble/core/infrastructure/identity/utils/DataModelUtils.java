@@ -58,13 +58,23 @@ public class DataModelUtils {
                 }
             }
         });
-        if(party.getIndustrySector() != null){
-                List<TextType> industrySectors = party.getIndustrySector();
-                for(TextType sector : industrySectors){
-                    indexParty.addActivitySector(sector.getLanguageID(), sector.getValue());
+        if (party.getIndustrySector() != null) {
+            List<TextType> industrySectors = party.getIndustrySector();
+            for (TextType sector : industrySectors) {
+                String newLineChar = "\n";
+                if (sector.getValue() != null) {
+                    if (sector.getValue().contains(newLineChar)) {
+                        String[] sectors = sector.getValue().split(newLineChar);
+                        for (String sectorString : sectors) {
+                            indexParty.addActivitySector(sector.getLanguageID(), sectorString);
+                        }
+                    } else {
+                        indexParty.addActivitySector(sector.getLanguageID(), sector.getValue());
+                    }
                 }
+            }
         }
-        if(party.getIndustryClassificationCode() != null){
+        if (party.getIndustryClassificationCode() != null) {
             indexParty.setBusinessType(party.getIndustryClassificationCode().getValue());
         }
         return indexParty;

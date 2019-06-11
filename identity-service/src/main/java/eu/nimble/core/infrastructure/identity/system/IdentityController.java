@@ -353,8 +353,19 @@ public class IdentityController {
         eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(newCompany);
         Map<NimbleConfigurationProperties.LanguageID, String> businessKeywords = companyRegistration.getSettings().getDetails().getBusinessKeywords();
         List<TextType> keywordsList = UblAdapter.adaptLanguageMapToTextType(businessKeywords);
-        for(TextType keyword : keywordsList){
-            newParty.addBusinessKeyword(keyword.getLanguageID(), keyword.getValue());
+        for (TextType keyword : keywordsList) {
+            //check for line separators in the string
+            String newLineChar = "\n";
+            if (keyword.getValue() != null) {
+                if (keyword.getValue().contains(newLineChar)) {
+                    String[] keywords = keyword.getValue().split(newLineChar);
+                    for (String keywordString : keywords) {
+                        newParty.addBusinessKeyword(keyword.getLanguageID(), keywordString);
+                    }
+                } else {
+                    newParty.addBusinessKeyword(keyword.getLanguageID(), keyword.getValue());
+                }
+            }
         }
         indexingClient.setParty(newParty);
 
@@ -436,8 +447,12 @@ public class IdentityController {
         Map<String,String> paramMap = new HashMap<String, String>();
         paramMap.put("userId",credentials.getUsername());
         paramMap.put("activity", LogEvent.LOGIN_SUCCESS.getActivity());
-        paramMap.put("companyId", frontEndUser.getCompanyID());
-        paramMap.put("companyName", frontEndUser.getCompanyName().get(NimbleConfigurationProperties.LanguageID.ENGLISH));
+        if (frontEndUser != null) {
+            paramMap.put("companyId", frontEndUser.getCompanyID());
+            if (frontEndUser.getCompanyName() != null) {
+                paramMap.put("companyName", frontEndUser.getCompanyName().get(NimbleConfigurationProperties.LanguageID.ENGLISH));
+            }
+        }
 
         LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "User " + credentials.getUsername() + " successfully logged in.");
 
