@@ -177,7 +177,7 @@ public class RocketChatService {
      * @param userNameAlreadyExists
      * @return
      */
-    public RockerChatRegisterResponse registerUser(FrontEndUser frontEndUser, Credentials credentials, boolean userNameAlreadyExists) {
+    public RockerChatRegisterResponse registerUser(FrontEndUser frontEndUser, Credentials credentials, boolean userNameAlreadyExists, int retryCounter) {
 
         RestTemplate rs = new RestTemplate();
         String uri = rocketChatURL + "/api/v1/users.register";
@@ -187,7 +187,7 @@ public class RocketChatService {
 
         String rocketChatUserName = frontEndUser.getFirstname() + "." + frontEndUser.getLastname() + "." + companyEmailName;
         if (userNameAlreadyExists) {
-            rocketChatUserName = rocketChatUserName + ((int) (Math.random() * 10));
+            rocketChatUserName = rocketChatUserName + ((int) (Math.random() * 100));
         }
 
         JSONObject request = new JSONObject();
@@ -213,9 +213,9 @@ public class RocketChatService {
 
             // If the user name already exists then a new user name should be created
             if (rockerChatRegisterResponse.isSuccess() && null != rockerChatRegisterResponse.getError()) {
-                if (rockerChatRegisterResponse.getError().equals("Username is already in use")) {
+                if (rockerChatRegisterResponse.getError().equals("Username is already in use") && retryCounter <=1) {
                     logger.info("User name conflict when creating a new user with username {}", rocketChatUserName);
-                    rockerChatRegisterResponse = registerUser(frontEndUser, credentials, true);
+                    rockerChatRegisterResponse = registerUser(frontEndUser, credentials, true, retryCounter+1);
                 }
             }
         } catch (IOException e) {
@@ -260,7 +260,7 @@ public class RocketChatService {
 
         } catch (HttpStatusCodeException exception) {
             if (exception.getStatusCode().value() == 401 && createIfMissing) {
-                RockerChatRegisterResponse rockerChatRegisterResponse = registerUser(frontEndUser, credentials, false);
+                RockerChatRegisterResponse rockerChatRegisterResponse = registerUser(frontEndUser, credentials, false, 0);
                 if (rockerChatRegisterResponse.isSuccess()) {
                     rocketChatLoginResponse = loginOrCreateUser(frontEndUser, credentials, false, true);
                 }

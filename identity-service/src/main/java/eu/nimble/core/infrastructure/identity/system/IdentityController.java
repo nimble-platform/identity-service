@@ -259,7 +259,7 @@ public class IdentityController {
 
         // Create a user in rocket isChatEnabled
         if (isChatEnabled) {
-            chatService.registerUser(frontEndUser, credentials, false);
+            chatService.registerUser(frontEndUser, credentials, false, 0);
         }
         logger.info("Registering a new user with email {} and id {}", frontEndUser.getEmail(), frontEndUser.getUserID());
 

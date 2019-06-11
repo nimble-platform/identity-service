@@ -114,7 +114,7 @@ public class ChatController {
                 Credentials c = new Credentials();
                 c.setUsername(key);
 
-                RockerChatRegisterResponse rockerChatRegisterResponse = chatService.registerUser(frontEndUser, c, false);
+                RockerChatRegisterResponse rockerChatRegisterResponse = chatService.registerUser(frontEndUser, c, false, 0);
                 map.put(key, rockerChatRegisterResponse.getUser().getUsername());
                 channelMembersUsernameList.add(rockerChatRegisterResponse.getUser().getUsername());
             }else {
