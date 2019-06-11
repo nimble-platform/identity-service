@@ -260,8 +260,10 @@ public class RocketChatService {
 
         } catch (HttpStatusCodeException exception) {
             if (exception.getStatusCode().value() == 401 && createIfMissing) {
-                registerUser(frontEndUser, credentials, false);
-                rocketChatLoginResponse = loginOrCreateUser(frontEndUser, credentials, false, true);
+                RockerChatRegisterResponse rockerChatRegisterResponse = registerUser(frontEndUser, credentials, false);
+                if (rockerChatRegisterResponse.isSuccess()) {
+                    rocketChatLoginResponse = loginOrCreateUser(frontEndUser, credentials, false, true);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
