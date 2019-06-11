@@ -369,7 +369,15 @@ public class IdentityController {
         }
         indexingClient.setParty(newParty);
 
-        logger.info("Registered company with id {} for user with id {}", companyRegistration.getCompanyID(), companyRegistration.getUserID());
+        String companyName = ublUtils.getName(newCompany);
+        String companyId = String.valueOf(companyRegistration.getCompanyID());
+        String userId = String.valueOf(companyRegistration.getUserID());
+        Map<String,String> paramMap = new HashMap<String, String>();
+        paramMap.put("userId", userId);
+        paramMap.put("companyId",companyId);
+        paramMap.put("companyName",companyName);
+        paramMap.put("activity", LogEvent.REGISTER_COMPANY.getActivity());
+        LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "Registered company with id {} for user with id {}", companyRegistration.getCompanyID(), companyRegistration.getUserID());
 
         return new ResponseEntity<>(companyRegistration, HttpStatus.OK);
     }
