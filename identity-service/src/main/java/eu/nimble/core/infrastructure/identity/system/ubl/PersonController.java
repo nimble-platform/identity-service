@@ -1,8 +1,9 @@
 package eu.nimble.core.infrastructure.identity.system.ubl;
 
-import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
+import eu.nimble.core.infrastructure.identity.service.IdentityService;
+import eu.nimble.core.infrastructure.identity.system.dto.PeopleList;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -13,10 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -62,6 +60,36 @@ public class PersonController {
 
         logger.debug("Returning requested person with Id {}", person.getHjid());
         return new ResponseEntity<>(person, HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "Get personal information for a list of IDs.", notes = "Roles are fetched from Keycloak", response = PersonType.class, tags = {})
+    @RequestMapping(value = "/people", produces = {"application/json"}, method = RequestMethod.POST)
+    ResponseEntity<List<PersonType>> getPeople(
+            @ApiParam(value = "Ids of people to retrieve.", required = true) @RequestBody PeopleList peopleList) {
+
+        List<PersonType> personTypeList = new ArrayList<>();
+
+        for (Long personId : peopleList.getIds()) {
+            logger.debug("Requesting person information for {}", personId);
+
+            // search for persons
+            List<PersonType> foundPersons = personRepository.findByHjid(personId);
+
+            // check if person was found
+            if (foundPersons.isEmpty()) {
+                logger.info("Requested person with Id {} not found", personId);
+            }else {
+                PersonType person = foundPersons.get(0);
+
+                // fetch and set roles
+                List<String> roles = new ArrayList<>(identityService.fetchRoles(person));
+                person.setRole(roles);
+
+                logger.debug("Returning requested person with Id {}", person.getHjid());
+                personTypeList.add(person);
+            }
+        }
+        return new ResponseEntity<>(personTypeList, HttpStatus.OK);
     }
 
     @ApiOperation(value = "", notes = "Resolve Person for access token.", response = PersonType.class)
