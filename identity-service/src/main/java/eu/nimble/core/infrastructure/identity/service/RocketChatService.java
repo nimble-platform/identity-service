@@ -45,6 +45,9 @@ public class RocketChatService {
     @Value("${nimble.rocketChat.password}")
     private String rocketChatPassword;
 
+    @Value("${nimble.rocketChat.chatServiceURL}")
+    private String chatServiceURL;
+
     public CreateChannelRequest createChannel(CreateChannelRequest createChannelRequest, List<String> members) {
 
         String uri = rocketChatURL + "/api/v1/channels.create";
@@ -71,12 +74,88 @@ public class RocketChatService {
             // handle channel name conflict
             if (!createChannelResponse.isSuccess()) {
 
+            }else {
+                persistChannelName(createChannelRequest);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         return createChannelRequest;
+    }
+
+    /**
+     *
+     * @param createChannelRequest
+     * @return
+     */
+    public String checkIfChannelExist(CreateChannelRequest createChannelRequest) {
+
+        RestTemplate rs = new RestTemplate();
+        String uri = chatServiceURL + "/channels";
+
+        JSONObject request = new JSONObject();
+        request.put("catalogueID", createChannelRequest.getProductName());
+        request.put("initiatingPartyID", createChannelRequest.getInitiatingPartyID());
+        request.put("respondingPartyID", createChannelRequest.getRespondingPartyID());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> entity = new HttpEntity<String>(request.toString(), headers);
+
+        try {
+            ResponseEntity<String> registerResponse = rs.exchange(uri, HttpMethod.POST, entity, String.class);
+            if(registerResponse.getStatusCode().value() == 200){
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                CreateChannelRequest rq = mapper.readValue(registerResponse.getBody(), CreateChannelRequest.class);
+                logger.info("Channel name : {} found in chat service", rq.getChannelName());
+                return rq.getChannelName();
+            }else {
+                logger.info("Existing channel not found for: {}", createChannelRequest.toString());
+                return null;
+            }
+        } catch (Exception e) {
+            logger.error("Error when obtaining channel data from chat service: {}", createChannelRequest.toString());
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     *
+     * @param createChannelRequest
+     * @return
+     */
+    public boolean persistChannelName(CreateChannelRequest createChannelRequest) {
+
+        RestTemplate rs = new RestTemplate();
+        String uri = chatServiceURL + "/channel";
+
+        JSONObject request = new JSONObject();
+        request.put("catalogueID", createChannelRequest.getProductName());
+        request.put("initiatingPartyID", createChannelRequest.getInitiatingPartyID());
+        request.put("respondingPartyID", createChannelRequest.getRespondingPartyID());
+        request.put("channelName", createChannelRequest.getChannelName());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> entity = new HttpEntity<String>(request.toString(), headers);
+
+        try {
+            ResponseEntity<String> registerResponse = rs.exchange(uri, HttpMethod.POST, entity, String.class);
+            if(registerResponse.getStatusCode().value() == 201){
+                logger.info("Channel name : {} persisted in chat service", createChannelRequest.getChannelName());
+                return true;
+            }else {
+                logger.info("Error when persisting channel : {} , name in chat service", createChannelRequest.getChannelName());
+                return false;
+            }
+        } catch (Exception e) {
+            logger.info("Error when persisting channel : {} , name in chat service", createChannelRequest.getChannelName());
+            e.printStackTrace();
+        }
+        return false;
     }
 
 

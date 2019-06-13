@@ -61,6 +61,13 @@ public class ChatController {
     ResponseEntity<CreateChannelRequest> createNegotiationChannel(
             @ApiParam(value = "CreateChannelRequest creation request containing collaborating organization details", required = true) @RequestBody CreateChannelRequest createChannelRequest) {
 
+        String channelName = chatService.checkIfChannelExist(createChannelRequest);
+        // If a channel has been already created for this product return the channel name
+        if (null != channelName) {
+            createChannelRequest.setChannelName(channelName);
+            return new ResponseEntity<>(createChannelRequest, HttpStatus.OK);
+        }
+
         // Find the initiating party members email list
         PartyType initiatingCompany = partyRepository.findByHjid(Long.valueOf(createChannelRequest.getInitiatingPartyID()))
                 .stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
@@ -88,7 +95,7 @@ public class ChatController {
         }
 
         // Create a unique name to the channel, Rocket.Chat channel cannot be created with whitespace
-        String channelName = createChannelRequest.getProductName().replaceAll(" ", "_").toLowerCase()
+        channelName = createChannelRequest.getProductName().replaceAll(" ", "_").toLowerCase()
                 + ((int) (Math.random() * 100));
         createChannelRequest.setChannelName(channelName);
 

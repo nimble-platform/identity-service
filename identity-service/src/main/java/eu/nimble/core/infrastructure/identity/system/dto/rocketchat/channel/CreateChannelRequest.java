@@ -60,4 +60,28 @@ public class CreateChannelRequest {
     public void setChannelName(String channelName) {
         this.channelName = channelName;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("class CreateChannelRequest {\n");
+
+        sb.append("    initiatingPartyID: ").append(toIndentedString(initiatingPartyID)).append("\n");
+        sb.append("    respondingPartyID: ").append(toIndentedString(respondingPartyID)).append("\n");
+        sb.append("    productName: ").append(toIndentedString(productName)).append("\n");
+        sb.append("    channelName: ").append(toIndentedString(channelName)).append("\n");
+        sb.append("}");
+        return sb.toString();
+    }
+
+    /**
+     * Convert the given object to string with each line indented by 4 spaces
+     * (except the first line).
+     */
+    private String toIndentedString(Object o) {
+        if (o == null) {
+            return "null";
+        }
+        return o.toString().replace("\n", "\n    ");
+    }
 }
