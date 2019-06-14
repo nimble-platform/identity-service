@@ -364,9 +364,9 @@ public class CompanySettingsController {
 
         logger.info("Updated negotiation settings {} for company {}", existingSettings.getId(), UblAdapter.adaptPartyIdentifier(company));
 
-        //indexing the updated company in the indexing service
-        eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(company);
-        indexingClient.setParty(party);
+//        //indexing the updated company in the indexing service
+//        eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(company);
+//        indexingClient.setParty(party);
 
         return ResponseEntity.ok().build();
     }
@@ -459,10 +459,10 @@ public class CompanySettingsController {
     ResponseEntity<?> reindexAllCompanies() {
         logger.debug("indexing all companies. ");
         Iterable<PartyType> allParties = partyRepository.findAll(new Sort(Sort.Direction.ASC, "hjid"));
-        for(PartyType party : allParties){
-            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
-            logger.info("indexing party : " + newParty.getId() + " legalName : " +  newParty.getLegalName());
-            indexingClient.setParty(newParty);
+        for(PartyType party : allParties) {
+                eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
+                logger.info("Indexing party from database to index : " + newParty.getId() + " legalName : " +  newParty.getLegalName());
+                indexingClient.setParty(newParty);
         }
         return new ResponseEntity<>(HttpStatus.OK);
     }

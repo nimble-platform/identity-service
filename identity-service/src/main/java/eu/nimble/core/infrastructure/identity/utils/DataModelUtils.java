@@ -1,6 +1,7 @@
 package eu.nimble.core.infrastructure.identity.utils;
 
 import eu.nimble.service.model.solr.party.PartyType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.DocumentReferenceType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import eu.nimble.service.model.ubl.extension.QualityIndicatorParameter;
 
@@ -76,6 +77,15 @@ public class DataModelUtils {
         }
         if (party.getIndustryClassificationCode() != null) {
             indexParty.setBusinessType(party.getIndustryClassificationCode().getValue());
+        }
+        //adding logo id
+        if (party.getDocumentReference() != null) {
+            for (DocumentReferenceType documentReference : party.getDocumentReference()) {
+                if (UblAdapter.DOCUMENT_TYPE_COMPANY_LOGO.equals(documentReference.getDocumentType())) {
+                    indexParty.setLogoId(documentReference.getHjid().toString());
+                    break;
+                }
+            }
         }
         return indexParty;
     }
