@@ -107,6 +107,7 @@ nimble:
   supportEmail: ${SUPPORT_EMAIL:nimble-support@salzburgresearch.at}
   rocketChat:
     isEnabled: ${ROCKET_CHAT:false}
+    chatServiceURL: ${CHAT_SERVICE_URL:http://localhost:8095}
     url: ${ROCKET_CHAT_URL:http://localhost:3000}
     user: ${ROCKET_CHAT_USER:nimble@gmail.com}
     password: ${ROCKET_CHAT_PASSWORD:123456}
