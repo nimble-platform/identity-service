@@ -1,8 +1,11 @@
 package eu.nimble.core.infrastructure.identity.utils;
 
 import eu.nimble.service.model.solr.party.PartyType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.DocumentReferenceType;
+import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import eu.nimble.service.model.ubl.extension.QualityIndicatorParameter;
 
+import java.util.List;
 
 /**
  * Created by Dileepa Jayakody on 15/03/19
@@ -56,6 +59,34 @@ public class DataModelUtils {
                 }
             }
         });
+        if (party.getIndustrySector() != null) {
+            List<TextType> industrySectors = party.getIndustrySector();
+            for (TextType sector : industrySectors) {
+                String newLineChar = "\n";
+                if (sector.getValue() != null) {
+                    if (sector.getValue().contains(newLineChar)) {
+                        String[] sectors = sector.getValue().split(newLineChar);
+                        for (String sectorString : sectors) {
+                            indexParty.addActivitySector(sector.getLanguageID(), sectorString);
+                        }
+                    } else {
+                        indexParty.addActivitySector(sector.getLanguageID(), sector.getValue());
+                    }
+                }
+            }
+        }
+        if (party.getIndustryClassificationCode() != null) {
+            indexParty.setBusinessType(party.getIndustryClassificationCode().getValue());
+        }
+        //adding logo id
+        if (party.getDocumentReference() != null) {
+            for (DocumentReferenceType documentReference : party.getDocumentReference()) {
+                if (UblAdapter.DOCUMENT_TYPE_COMPANY_LOGO.equals(documentReference.getDocumentType())) {
+                    indexParty.setLogoId(documentReference.getHjid().toString());
+                    break;
+                }
+            }
+        }
         return indexParty;
     }
 

@@ -25,7 +25,6 @@ public class NegotiationSettings implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @JsonIgnore
     @OneToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
     @JoinColumn(unique = true)
     private PartyType company;
@@ -161,6 +160,10 @@ public class NegotiationSettings implements Serializable {
 
         this.paymentTerms.clear();
         this.paymentTerms.addAll(newSettings.getPaymentTerms());
+
+        if (null != newSettings.company) {
+            this.company.setSalesTerms(newSettings.company.getSalesTerms());
+        }
     }
 
     @Entity

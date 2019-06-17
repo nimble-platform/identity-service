@@ -44,7 +44,6 @@ node('nimble-jenkins-slave') {
             sh 'git submodule init'
             sh 'git submodule update'
         }
-
         stage('Run Tests') {
             sh 'mvn clean test'
         }
@@ -76,7 +75,6 @@ node('nimble-jenkins-slave') {
             sh 'git submodule init'
             sh 'git submodule update'
         }
-
         stage('Run Tests') {
             sh 'mvn clean test'
         }
@@ -96,7 +94,6 @@ node('nimble-jenkins-slave') {
             sh 'git submodule init'
             sh 'git submodule update'
         }
-
         stage('Set version') {
             sh 'mvn org.codehaus.mojo:versions-maven-plugin:2.1:set -DnewVersion=' + env.TAG_NAME
             sh 'mvn -f identity-service/pom.xml org.codehaus.mojo:versions-maven-plugin:2.1:set -DnewVersion=' + env.TAG_NAME

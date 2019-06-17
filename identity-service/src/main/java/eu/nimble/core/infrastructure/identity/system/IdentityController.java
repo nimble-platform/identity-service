@@ -1,21 +1,29 @@
 package eu.nimble.core.infrastructure.identity.system;
 
+import com.auth0.jwt.JWT;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
-import eu.nimble.core.infrastructure.identity.system.dto.CompanyRegistrationResponse;
-import eu.nimble.core.infrastructure.identity.system.dto.UserRegistration;
+import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
+import eu.nimble.core.infrastructure.identity.service.RocketChatService;
+import eu.nimble.core.infrastructure.identity.system.dto.CompanyRegistrationResponse;
+import eu.nimble.core.infrastructure.identity.system.dto.UserRegistration;
+import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.login.RocketChatLoginResponse;
+import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.sso.RocketChatResponse;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.core.infrastructure.identity.utils.DataModelUtils;
+import eu.nimble.core.infrastructure.identity.utils.LogEvent;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
+import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
+import eu.nimble.utility.LoggerUtils;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -24,6 +32,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
@@ -36,7 +45,10 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.WebApplicationException;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Controller
@@ -87,7 +99,69 @@ public class IdentityController {
     private UblUtils ublUtils;
 
     @Autowired
+    private RocketChatService chatService;
+
+    @Autowired
     private IndexingClient indexingClient;
+
+    @Value("${nimble.rocketChat.isEnabled}")
+    private boolean isChatEnabled;
+
+    @ApiOperation(value = "Authenticate a federated user.", response = FrontEndUser.class, tags = {})
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "User authenticated", response = FrontEndUser.class),
+            @ApiResponse(code = 400, message = "Invalid Token", response = FrontEndUser.class)})
+    @RequestMapping(value = "/federation/login", produces = {"application/json"}, consumes = {"application/json"}, method = RequestMethod.POST)
+    ResponseEntity<FrontEndUser> loginFederatedUser(
+            @ApiParam(value = "Access token provided by the IDP", required = true) @RequestBody Token token) {
+
+        FrontEndUser frontEndUser = new FrontEndUser();
+        String audience = JWT.decode(token.getAccessToken()).getClaim("aud").asString();
+        String keycloakUserID = JWT.decode(token.getAccessToken()).getClaim("sub").asString();
+        String email = JWT.decode(token.getAccessToken()).getClaim("email").asString();
+
+        // check identity database
+        UaaUser potentialUser = uaaUserRepository.findByExternalID(keycloakUserID);
+        if (potentialUser == null) {
+
+            logger.info("User " + email + " not found in local database, but on Keycloak.");
+            // create a new user
+
+            frontEndUser.setUsername(email);
+            frontEndUser.setFirstname(JWT.decode(token.getAccessToken()).getClaim("name").asString());
+            frontEndUser.setLastname(JWT.decode(token.getAccessToken()).getClaim("family_name").asString());
+            // create UBL party of user
+            PersonType newUser = UblAdapter.adaptPerson(frontEndUser);
+            personRepository.save(newUser);
+
+            // update id of user
+            newUser.setID(newUser.getHjid().toString());
+            personRepository.save(newUser);
+
+            // create entry in identity DB
+            UaaUser uaaUser = new UaaUser(email, newUser, keycloakUserID);
+            uaaUserRepository.save(uaaUser);
+
+            // update user data
+            frontEndUser.setUserID(Long.parseLong(newUser.getID()));
+            frontEndUser.setUsername(email);
+            frontEndUser.setAccessToken(token.getAccessToken());
+            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, token.getAccessToken());
+            logger.info("Registering a new user with email {} and id {}", frontEndUser.getEmail(), frontEndUser.getUserID());
+
+        }else {
+            // create front end user DTO
+            List<PartyType> companies = partyRepository.findByPerson(potentialUser.getUBLPerson());
+            frontEndUser = UblAdapter.adaptUser(potentialUser, companies);
+
+            // set and store tokens
+            frontEndUser.setAccessToken(token.getAccessToken());
+            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, token.getAccessToken());
+            logger.info("User " + email + " successfully logged in.");
+        }
+
+        return new ResponseEntity<>(frontEndUser, HttpStatus.OK);
+    }
 
     @ApiOperation(value = "Register a new user to the nimble.", response = FrontEndUser.class, tags = {})
     @ApiResponses(value = {
@@ -103,7 +177,9 @@ public class IdentityController {
         // validate data
         if (frontEndUser == null || credentials == null
                 || credentials.getUsername() == null || credentials.getUsername().equals(frontEndUser.getEmail()) == false) {
-            logger.info(" Tried to register an invalid user {}", userRegistration.toString());
+            Map<String,String> paramMap = new HashMap<String, String>();
+            paramMap.put("activity", LogEvent.REGISTER_USER_ERROR.getActivity());
+            LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, " Tried to register an invalid user {}", userRegistration.toString());
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
@@ -113,6 +189,9 @@ public class IdentityController {
             keycloakID = keycloakAdmin.registerUser(
                     frontEndUser.getFirstname(), frontEndUser.getLastname(), credentials.getPassword(), frontEndUser.getEmail());
         } catch (WebApplicationException ex) {
+            Map<String,String> paramMap = new HashMap<String, String>();
+            paramMap.put("activity", LogEvent.REGISTER_USER_ERROR.getActivity());
+            LoggerUtils.logErrorWithMDC(logger, paramMap," Error occurred in keycloak while registering the user", ex);
             if (ex.getResponse().getStatus() == HttpStatus.CONFLICT.value())
                 return new ResponseEntity<>(HttpStatus.CONFLICT);
             throw ex;
@@ -142,7 +221,9 @@ public class IdentityController {
             // fetch company
             Optional<PartyType> companyOpt = partyRepository.findByHjid(Long.parseLong(invitation.getCompanyId())).stream().findFirst();
             if (companyOpt.isPresent() == false) {
-                logger.error("Invalid invitation: Company %s not found", invitation.getCompanyId());
+                Map<String,String> paramMap = new HashMap<String, String>();
+                paramMap.put("activity", LogEvent.REGISTER_USER_ERROR.getActivity());
+                LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.ERROR, "Invalid invitation: Company %s not found", invitation.getCompanyId());
                 return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
             }
             PartyType company = companyOpt.get();
@@ -165,9 +246,21 @@ public class IdentityController {
                 }
             }
 
-            logger.info("Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(), newUser.getID(), ublUtils.getName(company), UblAdapter.adaptPartyIdentifier(company));
+            String companyName = ublUtils.getName(company);
+            String companyId = UblAdapter.adaptPartyIdentifier(company);
+            Map<String,String> paramMap = new HashMap<String, String>();
+            paramMap.put("userId",credentials.getUsername());
+            paramMap.put("companyId",companyId);
+            paramMap.put("companyName",companyName);
+            paramMap.put("activity", LogEvent.REGISTER_USER.getActivity());
+            LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(),
+                    newUser.getID(), companyName, companyId);
         }
 
+        // Create a user in rocket isChatEnabled
+        if (isChatEnabled) {
+            chatService.registerUser(frontEndUser, credentials, false, 0);
+        }
         logger.info("Registering a new user with email {} and id {}", frontEndUser.getEmail(), frontEndUser.getUserID());
 
         return new ResponseEntity<>(frontEndUser, HttpStatus.OK);
@@ -258,11 +351,47 @@ public class IdentityController {
 
         //indexing the new company in the indexing service
         eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(newCompany);
+        Map<NimbleConfigurationProperties.LanguageID, String> businessKeywords = companyRegistration.getSettings().getDetails().getBusinessKeywords();
+        List<TextType> keywordsList = UblAdapter.adaptLanguageMapToTextType(businessKeywords);
+        for (TextType keyword : keywordsList) {
+            //check for line separators in the string
+            String newLineChar = "\n";
+            if (keyword.getValue() != null) {
+                if (keyword.getValue().contains(newLineChar)) {
+                    String[] keywords = keyword.getValue().split(newLineChar);
+                    for (String keywordString : keywords) {
+                        newParty.addBusinessKeyword(keyword.getLanguageID(), keywordString);
+                    }
+                } else {
+                    newParty.addBusinessKeyword(keyword.getLanguageID(), keyword.getValue());
+                }
+            }
+        }
         indexingClient.setParty(newParty);
 
-        logger.info("Registered company with id {} for user with id {}", companyRegistration.getCompanyID(), companyRegistration.getUserID());
+        String companyName = ublUtils.getName(newCompany);
+        String companyId = String.valueOf(companyRegistration.getCompanyID());
+        String userId = String.valueOf(companyRegistration.getUserID());
+        Map<String,String> paramMap = new HashMap<String, String>();
+        paramMap.put("userId", userId);
+        paramMap.put("companyId",companyId);
+        paramMap.put("companyName",companyName);
+        paramMap.put("activity", LogEvent.REGISTER_COMPANY.getActivity());
+        LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "Registered company with id {} for user with id {}", companyRegistration.getCompanyID(), companyRegistration.getUserID());
 
         return new ResponseEntity<>(companyRegistration, HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "", notes = "Login controller for rocket isChatEnabled.", response = CompanyRegistrationResponse.class, tags = {})
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful login", response = FrontEndUser.class),
+            @ApiResponse(code = 401, message = "Unauthorized access", response = FrontEndUser.class)})
+    @RequestMapping(value = "/sso", produces = {"application/json"}, method = RequestMethod.POST)
+    ResponseEntity sso(@CookieValue(value = "rocket_chat_token") String rocketChatToken) {
+        logger.info("Rocket isChatEnabled sso endpoint has been reached and the cookie value is : " + rocketChatToken);
+        RocketChatResponse rocketChatResponse = new RocketChatResponse();
+        rocketChatResponse.setLoginToken(rocketChatToken);
+        return new ResponseEntity<>(rocketChatResponse, HttpStatus.OK);
     }
 
     @ApiOperation(value = "", notes = "Login controller with credentials.", response = CompanyRegistrationResponse.class, tags = {})
@@ -281,14 +410,23 @@ public class IdentityController {
         OAuth2AccessToken accessToken;
         String keycloakUserID;
         try {
-            logger.info("User " + credentials.getUsername() + " wants to login...");
+            Map<String,String> paramMap = new HashMap<String, String>();
+            paramMap.put("userId",credentials.getUsername());
+            paramMap.put("activity", LogEvent.LOGIN_ATTEMPT.getActivity());
+            LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "User " + credentials.getUsername() + " wants to login...");
             accessToken = oAuthClient.getToken(credentials.getUsername(), credentials.getPassword());
             keycloakUserID = new OpenIdConnectUserDetails(accessToken.getValue()).getUserId();
         } catch (OAuth2AccessDeniedException ex) {
-            logger.error("User " + credentials.getUsername() + " not found in Keycloak?", ex);
+            Map<String,String> paramMap = new HashMap<String, String>();
+            paramMap.put("userId",credentials.getUsername());
+            paramMap.put("activity", LogEvent.LOGIN_ERROR.getActivity());
+            LoggerUtils.logErrorWithMDC(logger, paramMap,"User " + credentials.getUsername() + " not found in Keycloak?", ex);
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } catch (IOException ex) {
-            logger.error("Error in decoding " + credentials.getUsername() + "'s access token", ex);
+            Map<String,String> paramMap = new HashMap<String, String>();
+            paramMap.put("userId",credentials.getUsername());
+            paramMap.put("activity", LogEvent.LOGIN_ERROR.getActivity());
+            LoggerUtils.logErrorWithMDC(logger, paramMap, "Error in decoding " + credentials.getUsername() + "'s access token", ex);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
@@ -307,7 +445,24 @@ public class IdentityController {
         frontEndUser.setAccessToken(accessToken.getValue());
         httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, accessToken.getRefreshToken().getValue());
 
-        logger.info("User " + credentials.getUsername() + " successfully logged in.");
+        if(isChatEnabled){
+            RocketChatLoginResponse rocketChatToken = chatService.loginOrCreateUser(frontEndUser, credentials, true, true);
+            frontEndUser.setRocketChatToken(rocketChatToken.getData().getAuthToken());
+            frontEndUser.setRocketChatUsername(rocketChatToken.getData().getMe().getUsername());
+            frontEndUser.setRocketChatUserID(rocketChatToken.getData().getUserId());
+        }
+
+        Map<String,String> paramMap = new HashMap<String, String>();
+        paramMap.put("userId",credentials.getUsername());
+        paramMap.put("activity", LogEvent.LOGIN_SUCCESS.getActivity());
+        if (frontEndUser != null) {
+            paramMap.put("companyId", frontEndUser.getCompanyID());
+            if (frontEndUser.getCompanyName() != null) {
+                paramMap.put("companyName", frontEndUser.getCompanyName().get(NimbleConfigurationProperties.LanguageID.ENGLISH));
+            }
+        }
+
+        LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "User " + credentials.getUsername() + " successfully logged in.");
 
         return new ResponseEntity<>(frontEndUser, HttpStatus.OK);
     }
@@ -421,7 +576,7 @@ public class IdentityController {
     ResponseEntity<?> setFavouriteIdList(
             @ApiParam(value = "Id of company to change settings from.", required = true) @PathVariable Long personId,
             @RequestParam("status") Integer status,
-            @ApiParam(value = "Set of roles to apply.", required = true) @RequestBody List<String> itemIds)throws IOException{
+            @ApiParam(value = "Set of roles to apply.", required = true) @RequestBody List<String> itemIds) throws IOException {
 
         logger.debug("Requesting person favourite catalogue line id's for {}", personId);
         // search for persons

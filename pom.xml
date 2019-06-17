@@ -19,6 +19,7 @@
     <modules>
         <module>libs/common/data-model/ubl-data-model</module>
         <module>libs/common/data-model/solr-data-model</module>
+        <module>libs/common/utility</module>
         <module>identity-service</module>
     </modules>
 </project>

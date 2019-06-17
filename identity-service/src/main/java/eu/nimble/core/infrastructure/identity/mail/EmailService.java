@@ -16,7 +16,6 @@ import org.thymeleaf.context.Context;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -126,6 +125,7 @@ public class EmailService {
         context.setVariable("familyName", legalRepresentative.getFamilyName());
         context.setVariable("companyName", ublUtils.getName(company));
         context.setVariable("supportEmail", supportEmail);
+        context.setVariable("nimbleUrl", frontendUrl);
 
         String subject = "Your company has been verified on NIMBLE (" + platformName +  ")";
 

@@ -11,7 +11,6 @@
     <!-- Appender to send logs to Logstash -->
     <appender name="logstash" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
         <destination>${logstash-uri}</destination>
-
         <!--<encoder class="net.logstash.logback.encoder.LogstashEncoder" />-->
         <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
             <providers>
@@ -31,6 +30,10 @@
                         "class": "%logger{40}",
                         "version": "${build-version:-}",
                         "message": "%message",
+                        "userId": "%X{userId}",
+                        "companyId": "%X{companyId}",
+                        "companyName": "%X{companyName}",
+                        "activity": "%X{activity}",
                         "exception": "%exception"
                         }
                     </pattern>

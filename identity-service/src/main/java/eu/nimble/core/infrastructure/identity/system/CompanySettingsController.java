@@ -184,6 +184,12 @@ public class CompanySettingsController {
 
         imageDocument.setID(imageDocument.getHjid().toString());
         imageDocument.getAttachment().getEmbeddedDocumentBinaryObject().setUri(null); // reset uri (images are handled differently)
+
+        //indexing logo image uri for the existing party
+        eu.nimble.service.model.solr.party.PartyType indexParty =  indexingClient.getParty(company.getHjid().toString());
+        indexParty.setLogoId(imageDocument.getID());
+        indexingClient.setParty(indexParty);
+
         return ResponseEntity.ok(imageDocument);
     }
 
@@ -244,6 +250,11 @@ public class CompanySettingsController {
             company.getDocumentReference().remove(toDelete.get());
             partyRepository.save(company);
         }
+
+        //removing logo image id from the indexed the party
+        eu.nimble.service.model.solr.party.PartyType indexParty =  indexingClient.getParty(company.getHjid().toString());
+        indexParty.setLogoId("");
+        indexingClient.setParty(indexParty);
 
         return ResponseEntity.ok().build();
     }
@@ -353,9 +364,9 @@ public class CompanySettingsController {
 
         logger.info("Updated negotiation settings {} for company {}", existingSettings.getId(), UblAdapter.adaptPartyIdentifier(company));
 
-        //indexing the updated company in the indexing service
-        eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(company);
-        indexingClient.setParty(party);
+//        //indexing the updated company in the indexing service
+//        eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(company);
+//        indexingClient.setParty(party);
 
         return ResponseEntity.ok().build();
     }
@@ -448,10 +459,10 @@ public class CompanySettingsController {
     ResponseEntity<?> reindexAllCompanies() {
         logger.debug("indexing all companies. ");
         Iterable<PartyType> allParties = partyRepository.findAll(new Sort(Sort.Direction.ASC, "hjid"));
-        for(PartyType party : allParties){
-            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
-            logger.info("indexing party : " + newParty.getId() + " legalName : " +  newParty.getLegalName());
-            indexingClient.setParty(newParty);
+        for(PartyType party : allParties) {
+                eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
+                logger.info("Indexing party from database to index : " + newParty.getId() + " legalName : " +  newParty.getLegalName());
+                indexingClient.setParty(newParty);
         }
         return new ResponseEntity<>(HttpStatus.OK);
     }
