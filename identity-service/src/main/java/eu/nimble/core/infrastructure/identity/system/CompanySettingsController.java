@@ -309,6 +309,17 @@ public class CompanySettingsController {
                 .body(certResource);
     }
 
+    @ApiOperation(value = "Certificate download")
+    @RequestMapping(value = "/certificate/{certificateId}/object", method = RequestMethod.GET)
+    ResponseEntity<CertificateType> downloadCertificateObject(@ApiParam(value = "Id of certificate.", required = true) @PathVariable Long certificateId) {
+
+        CertificateType certificateType = certificateService.queryCertificate(certificateId);
+        if (certificateType == null)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+
+        return ResponseEntity.ok().body(certificateType);
+    }
+
     @ApiOperation(value = "Certificate deletion")
     @RequestMapping(value = "/{companyID}/certificate/{certificateId}", method = RequestMethod.DELETE)
     ResponseEntity<?> deleteCertificate(
