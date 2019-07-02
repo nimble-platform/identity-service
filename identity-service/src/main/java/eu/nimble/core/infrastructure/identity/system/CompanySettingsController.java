@@ -267,10 +267,12 @@ public class CompanySettingsController {
             @RequestParam("file") MultipartFile certFile,
             @RequestParam("name") String name,
             @RequestParam("description") String description,
-            @RequestParam("type") String type) throws IOException {
+            @RequestParam("type") String type,
+            @RequestParam("certID") String certID
+    ) throws IOException {
 
         if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
-            return new ResponseEntity<>("Only legal representatives or platform managers are allowed to delete images", HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>("Only legal representatives or platform managers are allowed to upload certificates", HttpStatus.FORBIDDEN);
 
         PartyType company = getCompanySecure(companyID, bearer);
 
@@ -281,6 +283,27 @@ public class CompanySettingsController {
         certificateBinary = binaryContentService.createContent(certificateBinary);
         certificateBinary.setValue(null); // reset value so it is not stored in database
 
+        if(!certID.equals("null")){
+            Long certId = Long.parseLong(certID);
+            // delete binary content
+            CertificateType certificate = certificateRepository.findOne(certId);
+            String uri = certificate.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getUri();
+            binaryContentService.deleteContent(uri);
+
+            // delete certificate
+            certificateRepository.delete(certificate);
+
+            // update list of certificates
+            Optional<CertificateType> toDelete = company.getCertificate().stream()
+                    .filter(c -> c.getHjid() != null)
+                    .filter(c -> c.getHjid().equals(certId))
+                    .findFirst();
+            if (toDelete.isPresent()) {
+                company.getCertificate().remove(toDelete.get());
+                partyRepository.save(company);
+            }
+
+        }
         // create new certificate
         CertificateType certificate = UblAdapter.adaptCertificate(certificateBinary, name, type, description);
 
