@@ -52,17 +52,16 @@ public class NegotiationSettings implements Serializable {
     @ElementCollection(targetClass = String.class)
     private List<String> paymentMeans = new ArrayList<>();
 
-    @OneToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
-    @JoinColumn(unique = true)
     private String serviceLevel;
 
-    @ElementCollection(targetClass = String.class)
+    @JoinTable
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CompanySensor> sensors = new ArrayList<>();
 
 
     public NegotiationSettings(PartyType company, List<Range> deliveryPeriodRanges, List<String> deliveryPeriodUnits, List<Range> warrantyPeriodRange,
                                List<String> warrantyPeriodUnits, List<String> incoterms, List<String> paymentTerms, List<String> paymentMeans,
-                               List<String> sensors, String serviceLevel) {
+                               List<CompanySensor> sensors, String serviceLevel) {
         this.company = company;
         this.deliveryPeriodRanges = deliveryPeriodRanges;
         this.deliveryPeriodUnits = deliveryPeriodUnits;
