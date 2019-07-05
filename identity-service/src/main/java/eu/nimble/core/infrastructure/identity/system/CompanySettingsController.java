@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.system;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
@@ -18,6 +19,7 @@ import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
+import eu.nimble.utility.JsonSerializationUtility;
 import eu.nimble.utility.persistence.binary.BinaryContentService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -45,6 +47,7 @@ import java.util.stream.Collectors;
 import static eu.nimble.core.infrastructure.identity.uaa.OAuthClient.Role.*;
 import static eu.nimble.core.infrastructure.identity.utils.UblAdapter.*;
 import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
+import static eu.nimble.utility.HttpResponseUtil.createResponseEntityAndLog;
 
 /**
  * Created by Johannes Innerbichler on 04/07/17.
@@ -413,9 +416,14 @@ public class CompanySettingsController {
         PartyType company = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
         NegotiationSettings negotiationSettings = findOrCreateNegotiationSettings(company);
 
-        logger.info("Fetched negotiation settings {} for company {}", negotiationSettings.getId(), UblAdapter.adaptPartyIdentifier(company));
+        try {
+            String serializedNegotiationSettings = JsonSerializationUtility.getObjectMapper().writeValueAsString(negotiationSettings);
+            logger.info("Fetched negotiation settings {} for company {}", negotiationSettings.getId(), UblAdapter.adaptPartyIdentifier(company));
+            return new ResponseEntity<>(serializedNegotiationSettings, HttpStatus.OK);
 
-        return ResponseEntity.ok().body(negotiationSettings);
+        } catch (JsonProcessingException e) {
+            return createResponseEntityAndLog(String.format("Serialization error for negotiation settings: %s for company %s", negotiationSettings.getId(),UblAdapter.adaptPartyIdentifier(company)), e, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @ApiOperation(value = "", notes = "Get profile completeness of company.", response = PartyType.class)
