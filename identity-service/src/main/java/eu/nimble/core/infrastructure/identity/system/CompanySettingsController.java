@@ -221,7 +221,7 @@ public class CompanySettingsController {
             @ApiParam(value = "Id of company owning the image", required = true) @PathVariable Long companyID,
             @ApiParam(value = "Id of image to delete", required = true) @PathVariable Long imageId) throws IOException {
 
-        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
+        if (identityService.hasAnyRole(bearer, COMPANY_ADMIN,LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>("Only legal representatives or platform managers are allowed to delete images", HttpStatus.FORBIDDEN);
 
         logger.info("Deleting image with Id " + imageId);
