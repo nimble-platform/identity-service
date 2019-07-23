@@ -85,6 +85,38 @@ node('nimble-jenkins-slave') {
     }
 
     // -----------------------------------------------
+    // --------------- K8s Branch ----------------
+    // -----------------------------------------------
+    if (env.BRANCH_NAME == 'efactory') {
+
+        stage('Clone and Update') {
+            git(url: 'https://github.com/nimble-platform/identity-service.git', branch: env.BRANCH_NAME)
+            sh 'git submodule init'
+            sh 'git submodule update'
+        }
+
+        stage('Run Tests') {
+            sh 'mvn clean test'
+        }
+
+        stage('Build Java') {
+            sh 'mvn clean install -DskipTests'
+        }
+
+        stage('Build Docker') {
+            sh 'mvn -f identity-service/pom.xml docker:build -DdockerImageTag=efactory'
+        }
+
+        stage('Push Docker') {
+            sh 'docker push nimbleplatform/identity-service:efactory'
+        }
+
+        stage('Deploy') {
+            sh 'ssh efac-prod "kubectl delete pod -l  io.kompose.service=identity-service"'
+        }
+    }
+
+    // -----------------------------------------------
     // ---------------- Release Tags -----------------
     // -----------------------------------------------
     if( env.TAG_NAME ==~ /^\d+.\d+.\d+$/) {
