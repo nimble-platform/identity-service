@@ -142,7 +142,7 @@ public class CompanySettingsController {
 
         //indexing the new company in the indexing service
         eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(existingCompany);
-        indexingClient.setParty(party);
+        indexingClient.setParty(party,bearer);
 
         newSettings = adaptCompanySettings(existingCompany, qualifyingParty);
         return new ResponseEntity<>(newSettings, HttpStatus.ACCEPTED);
@@ -189,9 +189,9 @@ public class CompanySettingsController {
         imageDocument.getAttachment().getEmbeddedDocumentBinaryObject().setUri(null); // reset uri (images are handled differently)
 
         //indexing logo image uri for the existing party
-        eu.nimble.service.model.solr.party.PartyType indexParty =  indexingClient.getParty(company.getHjid().toString());
+        eu.nimble.service.model.solr.party.PartyType indexParty =  indexingClient.getParty(company.getHjid().toString(),bearer);
         indexParty.setLogoId(imageDocument.getID());
-        indexingClient.setParty(indexParty);
+        indexingClient.setParty(indexParty,bearer);
 
         return ResponseEntity.ok(imageDocument);
     }
@@ -255,9 +255,9 @@ public class CompanySettingsController {
         }
 
         //removing logo image id from the indexed the party
-        eu.nimble.service.model.solr.party.PartyType indexParty =  indexingClient.getParty(company.getHjid().toString());
+        eu.nimble.service.model.solr.party.PartyType indexParty =  indexingClient.getParty(company.getHjid().toString(),bearer);
         indexParty.setLogoId("");
-        indexingClient.setParty(indexParty);
+        indexingClient.setParty(indexParty,bearer);
 
         return ResponseEntity.ok().build();
     }
@@ -498,13 +498,13 @@ public class CompanySettingsController {
      * @throws UnirestException
      */
     @RequestMapping(value = "/reindexParties", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<?> reindexAllCompanies() {
+    ResponseEntity<?> reindexAllCompanies(@RequestHeader(value = "Authorization") String bearer) {
         logger.debug("indexing all companies. ");
         Iterable<PartyType> allParties = partyRepository.findAll(new Sort(Sort.Direction.ASC, "hjid"));
         for(PartyType party : allParties) {
                 eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
                 logger.info("Indexing party from database to index : " + newParty.getId() + " legalName : " +  newParty.getLegalName());
-                indexingClient.setParty(newParty);
+                indexingClient.setParty(newParty,bearer);
         }
         return new ResponseEntity<>(HttpStatus.OK);
     }
