@@ -11,17 +11,17 @@ import org.springframework.stereotype.Component;
 public class IndexingClientFallback implements IndexingClient {
 
     @Override
-    public Boolean setParty(PartyType party) {
+    public Boolean setParty(PartyType party,String bearerToken) {
         return false;
     }
 
     @Override
-    public PartyType getParty(String uri) {
+    public PartyType getParty(String uri,String bearerToken) {
         return null;
     }
 
     @Override
-    public Boolean deleteParty(PartyType party) {
+    public Boolean deleteParty(PartyType party,String bearerToken) {
         return false;
     }
 }
