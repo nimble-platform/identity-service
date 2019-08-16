@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.system;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
@@ -18,6 +19,7 @@ import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
+import eu.nimble.utility.JsonSerializationUtility;
 import eu.nimble.utility.persistence.binary.BinaryContentService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -45,6 +47,7 @@ import java.util.stream.Collectors;
 import static eu.nimble.core.infrastructure.identity.uaa.OAuthClient.Role.*;
 import static eu.nimble.core.infrastructure.identity.utils.UblAdapter.*;
 import static eu.nimble.service.model.ubl.extension.QualityIndicatorParameter.*;
+import static eu.nimble.utility.HttpResponseUtil.createResponseEntityAndLog;
 
 /**
  * Created by Johannes Innerbichler on 04/07/17.
@@ -139,7 +142,7 @@ public class CompanySettingsController {
 
         //indexing the new company in the indexing service
         eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(existingCompany);
-        indexingClient.setParty(party);
+        indexingClient.setParty(party,bearer);
 
         newSettings = adaptCompanySettings(existingCompany, qualifyingParty);
         return new ResponseEntity<>(newSettings, HttpStatus.ACCEPTED);
@@ -186,9 +189,9 @@ public class CompanySettingsController {
         imageDocument.getAttachment().getEmbeddedDocumentBinaryObject().setUri(null); // reset uri (images are handled differently)
 
         //indexing logo image uri for the existing party
-        eu.nimble.service.model.solr.party.PartyType indexParty =  indexingClient.getParty(company.getHjid().toString());
+        eu.nimble.service.model.solr.party.PartyType indexParty =  indexingClient.getParty(company.getHjid().toString(),bearer);
         indexParty.setLogoId(imageDocument.getID());
-        indexingClient.setParty(indexParty);
+        indexingClient.setParty(indexParty,bearer);
 
         return ResponseEntity.ok(imageDocument);
     }
@@ -221,7 +224,7 @@ public class CompanySettingsController {
             @ApiParam(value = "Id of company owning the image", required = true) @PathVariable Long companyID,
             @ApiParam(value = "Id of image to delete", required = true) @PathVariable Long imageId) throws IOException {
 
-        if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER) == false)
+        if (identityService.hasAnyRole(bearer, COMPANY_ADMIN,LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>("Only legal representatives or platform managers are allowed to delete images", HttpStatus.FORBIDDEN);
 
         logger.info("Deleting image with Id " + imageId);
@@ -252,9 +255,9 @@ public class CompanySettingsController {
         }
 
         //removing logo image id from the indexed the party
-        eu.nimble.service.model.solr.party.PartyType indexParty =  indexingClient.getParty(company.getHjid().toString());
+        eu.nimble.service.model.solr.party.PartyType indexParty =  indexingClient.getParty(company.getHjid().toString(),bearer);
         indexParty.setLogoId("");
-        indexingClient.setParty(indexParty);
+        indexingClient.setParty(indexParty,bearer);
 
         return ResponseEntity.ok().build();
     }
@@ -267,10 +270,12 @@ public class CompanySettingsController {
             @RequestParam("file") MultipartFile certFile,
             @RequestParam("name") String name,
             @RequestParam("description") String description,
-            @RequestParam("type") String type) throws IOException {
+            @RequestParam("type") String type,
+            @RequestParam("certID") String certID
+    ) throws IOException {
 
         if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
-            return new ResponseEntity<>("Only legal representatives or platform managers are allowed to delete images", HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>("Only legal representatives or platform managers are allowed to upload certificates", HttpStatus.FORBIDDEN);
 
         PartyType company = getCompanySecure(companyID, bearer);
 
@@ -281,6 +286,27 @@ public class CompanySettingsController {
         certificateBinary = binaryContentService.createContent(certificateBinary);
         certificateBinary.setValue(null); // reset value so it is not stored in database
 
+        if(!certID.equals("null")){
+            Long certId = Long.parseLong(certID);
+            // delete binary content
+            CertificateType certificate = certificateRepository.findOne(certId);
+            String uri = certificate.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getUri();
+            binaryContentService.deleteContent(uri);
+
+            // delete certificate
+            certificateRepository.delete(certificate);
+
+            // update list of certificates
+            Optional<CertificateType> toDelete = company.getCertificate().stream()
+                    .filter(c -> c.getHjid() != null)
+                    .filter(c -> c.getHjid().equals(certId))
+                    .findFirst();
+            if (toDelete.isPresent()) {
+                company.getCertificate().remove(toDelete.get());
+                partyRepository.save(company);
+            }
+
+        }
         // create new certificate
         CertificateType certificate = UblAdapter.adaptCertificate(certificateBinary, name, type, description);
 
@@ -307,6 +333,17 @@ public class CompanySettingsController {
                 .contentType(MediaType.parseMediaType(certFile.getMimeCode()))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + certFile.getFileName() + "\"")
                 .body(certResource);
+    }
+
+    @ApiOperation(value = "Certificate download")
+    @RequestMapping(value = "/certificate/{certificateId}/object", method = RequestMethod.GET)
+    ResponseEntity<CertificateType> downloadCertificateObject(@ApiParam(value = "Id of certificate.", required = true) @PathVariable Long certificateId) {
+
+        CertificateType certificateType = certificateService.queryCertificate(certificateId);
+        if (certificateType == null)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+
+        return ResponseEntity.ok().body(certificateType);
     }
 
     @ApiOperation(value = "Certificate deletion")
@@ -379,9 +416,14 @@ public class CompanySettingsController {
         PartyType company = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
         NegotiationSettings negotiationSettings = findOrCreateNegotiationSettings(company);
 
-        logger.info("Fetched negotiation settings {} for company {}", negotiationSettings.getId(), UblAdapter.adaptPartyIdentifier(company));
+        try {
+            String serializedNegotiationSettings = JsonSerializationUtility.getObjectMapper().writeValueAsString(negotiationSettings);
+            logger.info("Fetched negotiation settings {} for company {}", negotiationSettings.getId(), UblAdapter.adaptPartyIdentifier(company));
+            return new ResponseEntity<>(serializedNegotiationSettings, HttpStatus.OK);
 
-        return ResponseEntity.ok().body(negotiationSettings);
+        } catch (JsonProcessingException e) {
+            return createResponseEntityAndLog(String.format("Serialization error for negotiation settings: %s for company %s", negotiationSettings.getId(),UblAdapter.adaptPartyIdentifier(company)), e, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @ApiOperation(value = "", notes = "Get profile completeness of company.", response = PartyType.class)
@@ -456,13 +498,13 @@ public class CompanySettingsController {
      * @throws UnirestException
      */
     @RequestMapping(value = "/reindexParties", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<?> reindexAllCompanies() {
+    ResponseEntity<?> reindexAllCompanies(@RequestHeader(value = "Authorization") String bearer) {
         logger.debug("indexing all companies. ");
         Iterable<PartyType> allParties = partyRepository.findAll(new Sort(Sort.Direction.ASC, "hjid"));
         for(PartyType party : allParties) {
                 eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
                 logger.info("Indexing party from database to index : " + newParty.getId() + " legalName : " +  newParty.getLegalName());
-                indexingClient.setParty(newParty);
+                indexingClient.setParty(newParty,bearer);
         }
         return new ResponseEntity<>(HttpStatus.OK);
     }

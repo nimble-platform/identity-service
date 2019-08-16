@@ -367,7 +367,7 @@ public class IdentityController {
                 }
             }
         }
-        indexingClient.setParty(newParty);
+        indexingClient.setParty(newParty,bearer);
 
         String companyName = ublUtils.getName(newCompany);
         String companyId = String.valueOf(companyRegistration.getCompanyID());
