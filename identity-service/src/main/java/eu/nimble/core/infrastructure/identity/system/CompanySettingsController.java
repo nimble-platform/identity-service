@@ -240,7 +240,7 @@ public class CompanySettingsController {
         // delete binary content
         DocumentReferenceType imageDocument = documentReferenceRepository.findOne(imageId);
         String uri = imageDocument.getAttachment().getEmbeddedDocumentBinaryObject().getUri();
-        binaryContentService.deleteContent(uri);
+        binaryContentService.deleteContentIdentity(uri);
 
         // delete document of company
         documentReferenceRepository.delete(imageDocument);
