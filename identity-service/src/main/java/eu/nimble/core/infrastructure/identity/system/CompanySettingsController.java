@@ -366,7 +366,7 @@ public class CompanySettingsController {
         // delete binary content
         CertificateType certificate = certificateRepository.findOne(certificateId);
         String uri = certificate.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getUri();
-        binaryContentService.deleteContent(uri);
+        binaryContentService.deleteContentIdentity(uri);
 
         // delete certificate
         certificateRepository.delete(certificate);
