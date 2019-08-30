@@ -280,20 +280,12 @@ public class CompanySettingsController {
 
         PartyType company = getCompanySecure(companyID, bearer);
 
-        BinaryObjectType certificateBinary = new BinaryObjectType();
-        certificateBinary.setValue(certFile.getBytes());
-        certificateBinary.setFileName(certFile.getOriginalFilename());
-        certificateBinary.setMimeCode(certFile.getContentType());
-        certificateBinary.setLanguageID(languageId);
-        certificateBinary = binaryContentService.createContent(certificateBinary);
-        certificateBinary.setValue(null); // reset value so it is not stored in database
-
         if(!certID.equals("null")){
             Long certId = Long.parseLong(certID);
             // delete binary content
             CertificateType certificate = certificateRepository.findOne(certId);
             String uri = certificate.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getUri();
-            binaryContentService.deleteContent(uri);
+            binaryContentService.deleteContentIdentity(uri);
 
             // delete certificate
             certificateRepository.delete(certificate);
@@ -307,8 +299,16 @@ public class CompanySettingsController {
                 company.getCertificate().remove(toDelete.get());
                 partyRepository.save(company);
             }
-
         }
+
+        BinaryObjectType certificateBinary = new BinaryObjectType();
+        certificateBinary.setValue(certFile.getBytes());
+        certificateBinary.setFileName(certFile.getOriginalFilename());
+        certificateBinary.setMimeCode(certFile.getContentType());
+        certificateBinary.setLanguageID(languageId);
+        certificateBinary = binaryContentService.createContent(certificateBinary);
+        certificateBinary.setValue(null); // reset value so it is not stored in database
+
         // create new certificate
         CertificateType certificate = UblAdapter.adaptCertificate(certificateBinary, name, type, description);
 
