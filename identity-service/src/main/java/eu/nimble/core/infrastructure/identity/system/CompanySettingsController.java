@@ -271,6 +271,7 @@ public class CompanySettingsController {
             @RequestParam("name") String name,
             @RequestParam("description") String description,
             @RequestParam("type") String type,
+            @RequestParam("langId") String languageId,
             @RequestParam("certID") String certID
     ) throws IOException {
 
@@ -283,6 +284,7 @@ public class CompanySettingsController {
         certificateBinary.setValue(certFile.getBytes());
         certificateBinary.setFileName(certFile.getOriginalFilename());
         certificateBinary.setMimeCode(certFile.getContentType());
+        certificateBinary.setLanguageID(languageId);
         certificateBinary = binaryContentService.createContent(certificateBinary);
         certificateBinary.setValue(null); // reset value so it is not stored in database
 
