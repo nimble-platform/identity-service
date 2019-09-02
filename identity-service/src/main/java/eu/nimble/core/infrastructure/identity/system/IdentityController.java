@@ -8,10 +8,12 @@ import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.repository.*;
+import eu.nimble.core.infrastructure.identity.service.FederationService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.service.RocketChatService;
 import eu.nimble.core.infrastructure.identity.system.dto.CompanyRegistrationResponse;
 import eu.nimble.core.infrastructure.identity.system.dto.UserRegistration;
+import eu.nimble.core.infrastructure.identity.system.dto.oauth.Token;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.login.RocketChatLoginResponse;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.sso.RocketChatResponse;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
@@ -103,6 +105,9 @@ public class IdentityController {
     private RocketChatService chatService;
 
     @Autowired
+    private FederationService federationService;
+
+    @Autowired
     private IndexingClient indexingClient;
 
     @Value("${nimble.rocketChat.isEnabled}")
@@ -131,9 +136,21 @@ public class IdentityController {
             @ApiParam(value = "Access token provided by the IDP", required = true) @RequestBody Token token) {
 
         FrontEndUser frontEndUser = new FrontEndUser();
-        String audience = JWT.decode(token.getAccessToken()).getClaim("aud").asString();
-        String keycloakUserID = JWT.decode(token.getAccessToken()).getClaim("sub").asString();
-        String email = JWT.decode(token.getAccessToken()).getClaim("email").asString();
+
+        if (token.getCode() == null) {
+            return new ResponseEntity<>(frontEndUser, HttpStatus.BAD_REQUEST);
+        }
+
+        token = federationService.getAccessToken(token.getCode());
+
+        if (null == token.getAccess_token()) {
+            return new ResponseEntity<>(frontEndUser, HttpStatus.BAD_REQUEST);
+        }
+
+        String accessToken = token.getAccess_token();
+        String audience = JWT.decode(accessToken).getClaim("aud").asString();
+        String keycloakUserID = JWT.decode(accessToken).getClaim("sub").asString();
+        String email = JWT.decode(accessToken).getClaim("email").asString();
 
         // check identity database
         UaaUser potentialUser = uaaUserRepository.findByExternalID(keycloakUserID);
@@ -143,8 +160,8 @@ public class IdentityController {
             // create a new user
 
             frontEndUser.setUsername(email);
-            frontEndUser.setFirstname(JWT.decode(token.getAccessToken()).getClaim("name").asString());
-            frontEndUser.setLastname(JWT.decode(token.getAccessToken()).getClaim("family_name").asString());
+            frontEndUser.setFirstname(JWT.decode(accessToken).getClaim("given_name").asString());
+            frontEndUser.setLastname(JWT.decode(accessToken).getClaim("family_name").asString());
             // create UBL party of user
             PersonType newUser = UblAdapter.adaptPerson(frontEndUser);
             personRepository.save(newUser);
@@ -160,8 +177,8 @@ public class IdentityController {
             // update user data
             frontEndUser.setUserID(Long.parseLong(newUser.getID()));
             frontEndUser.setUsername(email);
-            frontEndUser.setAccessToken(token.getAccessToken());
-            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, token.getAccessToken());
+            frontEndUser.setAccessToken(accessToken);
+            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, accessToken);
             logger.info("Registering a new user with email {} and id {}", frontEndUser.getEmail(), frontEndUser.getUserID());
 
         }else {
@@ -170,8 +187,8 @@ public class IdentityController {
             frontEndUser = UblAdapter.adaptUser(potentialUser, companies);
 
             // set and store tokens
-            frontEndUser.setAccessToken(token.getAccessToken());
-            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, token.getAccessToken());
+            frontEndUser.setAccessToken(accessToken);
+            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, accessToken);
             logger.info("User " + email + " successfully logged in.");
         }
 
