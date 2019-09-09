@@ -238,7 +238,6 @@ public class RocketChatService {
 
             try {
                 chatUsers = mapper.readValue(response.getBody(), ChatUsers.class);
-                String s = new String();
             } catch (IOException e) {
                 e.printStackTrace();
             }
