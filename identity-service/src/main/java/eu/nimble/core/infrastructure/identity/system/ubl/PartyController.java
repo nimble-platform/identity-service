@@ -65,24 +65,31 @@ public class PartyController {
     @SuppressWarnings("PointlessBooleanExpression")
     @ApiOperation(value = "", notes = "Get Party for Id.", response = PartyType.class, tags = {})
     @RequestMapping(value = "/party/{partyId}", method = RequestMethod.GET)
-    ResponseEntity<PartyType> getParty(
+    ResponseEntity<?> getParty(
             @ApiParam(value = "Id of party to retrieve.", required = true) @PathVariable Long partyId,
             @ApiParam(value = "Switch for including roles of persons in response (slower)") @RequestParam(required = false) boolean includeRoles,
             @RequestHeader(value = "Authorization") String bearer) throws IOException {
 
         // search relevant parties
-        PartyType party = partyRepository.findByHjid(partyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+        Optional<PartyType> party  = partyRepository.findByHjid(partyId).stream().findFirst();
 
+        if (party.isPresent() == false) {
+            String message = String.format("Requested party with Id %s not found", partyId);
+            logger.info(message);
+            return new ResponseEntity<>(message, HttpStatus.OK);
+        }
+
+        PartyType foundParty = party.get();
         // remove person depending on access rights
         if (identityService.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false)
-            party.setPerson(new ArrayList<>());
+            foundParty.setPerson(new ArrayList<>());
 
         if (includeRoles)
             // enrich persons with roles
-            identityService.enrichWithRoles(party);
+            identityService.enrichWithRoles(foundParty);
 
-        logger.debug("Returning requested party with Id {}", party.getHjid());
-        return new ResponseEntity<>(party, HttpStatus.OK);
+        logger.debug("Returning requested party with Id {}", foundParty.getHjid());
+        return new ResponseEntity<>(foundParty, HttpStatus.OK);
     }
 
 
@@ -121,7 +128,7 @@ public class PartyController {
             if (party.isPresent() == false) {
                 String message = String.format("Requested party with Id %s not found", partyId);
                 logger.info(message);
-                return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
+                return new ResponseEntity<>(message, HttpStatus.OK);
             }
 
             parties.add(party.get());
