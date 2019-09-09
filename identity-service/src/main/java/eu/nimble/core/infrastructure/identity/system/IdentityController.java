@@ -113,7 +113,7 @@ public class IdentityController {
     @Value("${nimble.rocketChat.isEnabled}")
     private boolean isChatEnabled;
 
-    @ApiOperation(value = "Verify a token.", response = FrontEndUser.class, tags = {})
+    @ApiOperation(value = "Verify a token.", tags = {})
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Valid Token"),
             @ApiResponse(code = 400, message = "Invalid Token")})
