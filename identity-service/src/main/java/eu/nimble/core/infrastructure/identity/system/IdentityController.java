@@ -47,6 +47,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.WebApplicationException;
 import java.io.IOException;
+import java.rmi.ServerException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,6 +112,20 @@ public class IdentityController {
 
     @Value("${nimble.rocketChat.isEnabled}")
     private boolean isChatEnabled;
+
+    @ApiOperation(value = "Verify a token.", response = FrontEndUser.class, tags = {})
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Valid Token"),
+            @ApiResponse(code = 400, message = "Invalid Token")})
+    @RequestMapping(value = "/verify", produces = {"application/json"}, consumes = {"application/json"}, method = RequestMethod.POST)
+    ResponseEntity verifyToken(@ApiParam(value = "Token provided by the IDP", required = true) @RequestBody Token token) throws ServerException {
+        boolean status = keycloakAdmin.verify(token.getAccess_token());
+        if (status) {
+            return new ResponseEntity<>(HttpStatus.OK);
+        }else {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
 
     @ApiOperation(value = "Authenticate a federated user.", response = FrontEndUser.class, tags = {})
     @ApiResponses(value = {
