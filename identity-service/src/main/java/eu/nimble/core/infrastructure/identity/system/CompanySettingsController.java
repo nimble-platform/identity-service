@@ -83,8 +83,7 @@ public class CompanySettingsController {
     @Autowired
     private CertificateService certificateService;
 
-    @Autowired
-    private BinaryContentService binaryContentService;
+    private BinaryContentService binaryContentService = new BinaryContentService();
 
     @Autowired
     private IndexingClient indexingClient;
