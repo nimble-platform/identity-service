@@ -120,15 +120,10 @@ public class AdminControllerTests {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.content.length()", is(0)));
+                .andExpect(jsonPath("$.content.length()", is(1)));
 
         // check repositories
-        assertEquals(0, this.partyRepository.count());
-        assertEquals(0, this.qualifyingPartyRepository.count());
-        assertEquals(0, this.personRepository.count());
-        assertEquals(0, this.uaaUserRepository.count());
-        assertEquals(0, this.deliveryTermsRepository.count());
-        assertEquals(0, this.paymentMeansRepository.count());
-        assertEquals(0, this.documentReferenceRepository.count());
+        assertEquals(1, this.partyRepository.count());
+        assertEquals(1, this.personRepository.count());
     }
 }
