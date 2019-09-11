@@ -56,6 +56,10 @@ public class AdminService {
     private UaaUserRepository uaaUserRepository;
 
     @Autowired
+    private PersonRepository personRepository;
+
+
+    @Autowired
     private IdentityService identityService;
 
     //    @Cacheable("unverifiedCompanies")
@@ -141,41 +145,61 @@ public class AdminService {
         return partyList;
     }
 
-    public long deleteCompany(Long companyId) throws ControllerUtils.CompanyNotFoundException {
+    public boolean deleteCompany(Long companyId) throws ControllerUtils.CompanyNotFoundException {
 
         // query company
         PartyType company = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         // delete associated company members
         for (PersonType member : company.getPerson()) {
-            uaaUserRepository.deleteByUblPerson(member);
+            Long memberHjid = member.getHjid();
+            deletePerson(memberHjid);
         }
 
-        // delete associated qualifying party
-        qualifyingPartyRepository.deleteByParty(company);
+        //set deleted flag fr the party
+        company.setDeleted(true);
 
-        // delete negotiation settings
-        negotiationSettingsRepository.deleteByCompany(company);
+        //update the party
+        partyRepository.save(company);
 
-        // delete trading preferences
-        if (company.getPurchaseTerms() != null) {
-            deliveryTermsRepository.delete(company.getPurchaseTerms().getDeliveryTerms());
-            paymentMeansRepository.delete(company.getPurchaseTerms().getPaymentMeans());
-        }
-        if (company.getSalesTerms() != null) {
-            deliveryTermsRepository.delete(company.getSalesTerms().getDeliveryTerms());
-            paymentMeansRepository.delete(company.getSalesTerms().getPaymentMeans());
-        }
+//        // delete negotiation settings
+//        negotiationSettingsRepository.deleteByCompany(company);
+//
+//        // delete trading preferences
+//        if (company.getPurchaseTerms() != null) {
+//            deliveryTermsRepository.delete(company.getPurchaseTerms().getDeliveryTerms());
+//            paymentMeansRepository.delete(company.getPurchaseTerms().getPaymentMeans());
+//        }
+//        if (company.getSalesTerms() != null) {
+//            deliveryTermsRepository.delete(company.getSalesTerms().getDeliveryTerms());
+//            paymentMeansRepository.delete(company.getSalesTerms().getPaymentMeans());
+//        }
+//
+//        try {
+//            // delete for legacy schema
+//            deliveryTermsRepository.deleteByPartyID(companyId);
+//            paymentMeansRepository.deleteByPartyID(companyId);
+//        } catch (InvalidDataAccessResourceUsageException ex) {
+//            // ignored
+//        }
+//
+//        return partyRepository.deleteByHjid(companyId);
 
-        try {
-            // delete for legacy schema
-            deliveryTermsRepository.deleteByPartyID(companyId);
-            paymentMeansRepository.deleteByPartyID(companyId);
-        } catch (InvalidDataAccessResourceUsageException ex) {
-            // ignored
-        }
+        return true;
+    }
 
-        return partyRepository.deleteByHjid(companyId);
+
+    public boolean deletePerson(Long personHjid) throws ControllerUtils.CompanyNotFoundException {
+        // query person
+        PersonType person = personRepository.findByHjid(personHjid).stream().findFirst().orElseThrow(ControllerUtils.PersonNotFoundException::new);
+
+        //set delete flag for the person
+        person.setDeleted(true);
+
+        //save deleted person
+        personRepository.save(person);
+
+        return true;
     }
 
     public enum CompanyState {
