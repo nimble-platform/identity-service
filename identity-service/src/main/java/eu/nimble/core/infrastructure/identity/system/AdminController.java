@@ -112,6 +112,23 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
+    @ApiOperation(value = "Delete user")
+    @RequestMapping(value = "/delete_user/{userId}", method = RequestMethod.DELETE)
+    ResponseEntity<?> deleteUser(@PathVariable(value = "userId") long userId,
+            @RequestHeader(value = "Authorization") String bearer) throws Exception {
+
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER , OAuthClient.Role.COMPANY_ADMIN) == false)
+            return new ResponseEntity<>("Only platform managers and company admins are allowed to delete users", HttpStatus.UNAUTHORIZED);
+
+        Map<String,String> paramMap = new HashMap<String, String>();
+        paramMap.put("activity", LogEvent.DELETE_USER.getActivity());
+        paramMap.put("userId", String.valueOf(userId));
+        LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "Deleting user with id {}", userId);
+        adminService.deleteCompany(userId);
+
+        return ResponseEntity.ok().build();
+    }
+
     private ResponseEntity<Page<PartyType>> makePage(@RequestParam(value = "page", required = false, defaultValue = "1") int pageNumber, @RequestParam(value = "size", required = false, defaultValue = DEFAULT_PAGE_SIZE) int pageSize, List<PartyType> unverifiedCompanies) {
         int start = (pageNumber - 1) * pageSize;
         int end = (start + pageSize) > unverifiedCompanies.size() ? unverifiedCompanies.size() : (start + pageSize);
