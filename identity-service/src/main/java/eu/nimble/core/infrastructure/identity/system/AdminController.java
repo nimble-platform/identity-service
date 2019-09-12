@@ -124,7 +124,7 @@ public class AdminController {
         paramMap.put("activity", LogEvent.DELETE_USER.getActivity());
         paramMap.put("userId", String.valueOf(userId));
         LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "Deleting user with id {}", userId);
-        adminService.deleteCompany(userId);
+        adminService.deletePerson(userId);
 
         return ResponseEntity.ok().build();
     }
