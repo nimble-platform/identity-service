@@ -63,6 +63,7 @@ public class KeycloakAdmin {
     public static final String INITIAL_REPRESENTATIVE_ROLE = "initial_representative";
     public static final String LEGAL_REPRESENTATIVE_ROLE = "legal_representative";
     public static final String PLATFORM_MANAGER_ROLE = "platform_manager";
+    public static final String NIMBLE_DELETED_USER = "nimble_deleted_user";
 
     public static final String PLATFORM_MANAGER_GROUP = "Platform Manager";
 
