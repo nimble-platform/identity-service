@@ -145,7 +145,7 @@ public class AdminService {
         return partyList;
     }
 
-    public boolean deleteCompany(Long companyId) throws ControllerUtils.CompanyNotFoundException {
+    public boolean deleteCompany(Long companyId) throws Exception {
 
         // query company
         PartyType company = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
@@ -189,12 +189,18 @@ public class AdminService {
     }
 
 
-    public boolean deletePerson(Long personHjid) throws ControllerUtils.CompanyNotFoundException {
+    public boolean deletePerson(Long personHjid) throws Exception {
         // query person
         PersonType person = personRepository.findByHjid(personHjid).stream().findFirst().orElseThrow(ControllerUtils.PersonNotFoundException::new);
 
         //set delete flag for the person
         person.setDeleted(true);
+
+        // adapt role of user and refresh access token
+        List<UaaUser> potentialUser = uaaUserRepository.findByUblPerson(person);
+        UaaUser uaaUser = potentialUser.stream().findFirst().orElseThrow(() -> new Exception("Invalid user mapping"));
+        String keyCloakId = uaaUser.getExternalID();
+        keycloakAdmin.addRole(keyCloakId, KeycloakAdmin.NIMBLE_DELETED_USER);
 
         //save deleted person
         personRepository.save(person);
