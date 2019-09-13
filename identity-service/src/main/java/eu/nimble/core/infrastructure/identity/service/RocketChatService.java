@@ -278,11 +278,12 @@ public class RocketChatService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> entity = new HttpEntity<String>(request.toString(), headers);
 
-        ResponseEntity<String> registerResponse = rs.exchange(uri, HttpMethod.POST, entity, String.class);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         RockerChatRegisterResponse rockerChatRegisterResponse = new RockerChatRegisterResponse();
         try {
+            ResponseEntity<String> registerResponse = rs.exchange(uri, HttpMethod.POST, entity, String.class);
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            rockerChatRegisterResponse = new RockerChatRegisterResponse();
             rockerChatRegisterResponse = mapper.readValue(registerResponse.getBody(), RockerChatRegisterResponse.class);
 
             if (rockerChatRegisterResponse.isSuccess() && null == rockerChatRegisterResponse.getError()) {
@@ -296,7 +297,7 @@ public class RocketChatService {
                     rockerChatRegisterResponse = registerUser(frontEndUser, credentials, true, retryCounter+1);
                 }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 

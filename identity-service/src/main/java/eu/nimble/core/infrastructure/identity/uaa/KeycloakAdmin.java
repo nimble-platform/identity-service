@@ -145,6 +145,8 @@ public class KeycloakAdmin {
 
     /**
      * Verify the jwt token provided by the Keycloak
+     * TODO: Implement verification by using the certs
+     * https://stackoverflow.com/questions/39890232/how-to-decode-keys-from-keycloak-openid-connect-cert-api
      * @param jwtToken
      * @return
      */
