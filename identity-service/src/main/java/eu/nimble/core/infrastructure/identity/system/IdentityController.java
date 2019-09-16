@@ -49,9 +49,11 @@ import javax.ws.rs.WebApplicationException;
 import java.io.IOException;
 import java.rmi.ServerException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Controller
@@ -467,6 +469,16 @@ public class IdentityController {
         if (potentialUser == null) {
             logger.info("User " + credentials.getUsername() + " not found in local database, but on Keycloak.");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        Set<String> roles = keycloakAdmin.getUserRoles(keycloakUserID);
+        Iterator<String> iterator = roles.iterator();
+
+        while (iterator.hasNext()){
+            if(iterator.next().equals(KeycloakAdmin.NIMBLE_DELETED_USER)){
+                logger.info("User " + credentials.getUsername() + " user already deleted from the platform.");
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
         }
 
         // create front end user DTO
