@@ -1,14 +1,18 @@
 package eu.nimble.core.infrastructure.identity.system;
 
+import com.thoughtworks.xstream.core.util.Fields;
+import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
 import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.utils.LogEvent;
+import eu.nimble.service.model.solr.Search;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.utility.LoggerUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.bouncycastle.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +25,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by Johannes Innerbichler on 12.09.18.
@@ -41,6 +49,9 @@ public class AdminController {
 
     @Autowired
     private IdentityService identityService;
+
+    @Autowired
+    private IndexingClient indexingClient;
 
     @ApiOperation(value = "Retrieve unverified companies", response = Page.class)
     @RequestMapping(value = "/unverified_companies", produces = {"application/json"}, method = RequestMethod.GET)
@@ -109,6 +120,32 @@ public class AdminController {
         LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "Deleting company with id {}", companyId);
         adminService.deleteCompany(companyId);
 
+        //find items idexed by the manufaturer
+        eu.nimble.service.model.solr.Search search = new Search();
+        search.setQuery("manufacturerId:"+companyId);
+        eu.nimble.service.model.solr.SearchResult sr = indexingClient.searchItem(search,bearer);
+
+        List<Object> result  = sr.getResult();
+        Set<String> catIds = new HashSet<String>();
+        for(Object ob : result){
+            LinkedHashMap<String,String> lmap = (LinkedHashMap<String, String>) ob;
+            String catLineId = lmap.get("uri");
+            String catalogueId = lmap.get("catalogueId");
+            if(catalogueId != null){
+                catIds.add(catalogueId);
+            }
+            //remove items from indexing
+            indexingClient.removeItem(catLineId,bearer);
+        }
+
+        Iterator iterate = catIds.iterator();
+
+        while (iterate.hasNext()){
+            //remove catalogue from the index
+            indexingClient.deleteCatalogue(iterate.next().toString(),bearer);
+        }
+        //unindex party from the solr
+        indexingClient.deleteParty(String.valueOf(companyId),bearer);
         return ResponseEntity.ok().build();
     }
 

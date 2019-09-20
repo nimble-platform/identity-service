@@ -204,7 +204,6 @@ public class AdminService {
 
         //save deleted person
         personRepository.save(person);
-
         return true;
     }
 
