@@ -1,5 +1,7 @@
 package eu.nimble.core.infrastructure.identity.clients;
 
+import eu.nimble.service.model.solr.Search;
+import eu.nimble.service.model.solr.SearchResult;
 import eu.nimble.service.model.solr.party.PartyType;
 import feign.Headers;
 import org.springframework.cloud.netflix.feign.FeignClient;
@@ -26,8 +28,18 @@ public interface IndexingClient {
     @RequestHeader(value = "Authorization", required = true) String bearerToken);
 
     @RequestMapping(method = RequestMethod.DELETE, value = "/party")
-    Boolean deleteParty(@RequestBody PartyType party,
+    Boolean deleteParty(@RequestParam(value = "uri") String uri,
     @RequestHeader(value = "Authorization", required = true) String bearerToken);
 
+    @RequestMapping(method = RequestMethod.POST, value = "/item/search")
+    SearchResult searchItem(@RequestBody Search search,
+            @RequestHeader(value = "Authorization", required = true) String bearerToken);
 
+    @RequestMapping(method = RequestMethod.DELETE, value = "/item")
+    Boolean removeItem(@RequestParam(value = "uri") String uri,
+            @RequestHeader(value = "Authorization", required = true) String bearerToken);
+
+    @RequestMapping(method = RequestMethod.DELETE, value = "/catalogue")
+    Boolean deleteCatalogue(@RequestParam(value = "uri") String uri,
+            @RequestHeader(value = "Authorization", required = true) String bearerToken);
 }
