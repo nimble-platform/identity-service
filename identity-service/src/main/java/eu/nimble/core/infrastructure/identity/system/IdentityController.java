@@ -243,6 +243,12 @@ public class IdentityController {
         UaaUser uaaUser = new UaaUser(credentials.getUsername(), newUser, keycloakID);
         uaaUserRepository.save(uaaUser);
 
+        Map<String,String> paramMapReg = new HashMap<String, String>();
+        paramMapReg.put("userId",credentials.getUsername());
+        paramMapReg.put("activity", LogEvent.REGISTER_USER.getActivity());
+
+        LoggerUtils.logWithMDC(logger, paramMapReg, LoggerUtils.LogLevel.INFO, "Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(),
+                newUser.getID());
         // update user data
         frontEndUser.setUserID(Long.parseLong(newUser.getID()));
         frontEndUser.setUsername(credentials.getUsername());
@@ -286,7 +292,7 @@ public class IdentityController {
             paramMap.put("userId",credentials.getUsername());
             paramMap.put("companyId",companyId);
             paramMap.put("companyName",companyName);
-            paramMap.put("activity", LogEvent.REGISTER_USER.getActivity());
+            paramMap.put("activity", LogEvent.INVITED_USER_REGISTRATION.getActivity());
             LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(),
                     newUser.getID(), companyName, companyId);
         }
