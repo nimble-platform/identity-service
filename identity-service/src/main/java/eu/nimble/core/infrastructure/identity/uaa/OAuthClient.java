@@ -68,7 +68,8 @@ public class OAuthClient {
         PLATFORM_MANAGER("platform_manager"),
         COMPANY_ADMIN("company_admin"),
         PUBLISHER("publisher"),
-        NIMBLE_DELETED_USER("nimble_deleted_user");
+        NIMBLE_DELETED_USER("nimble_deleted_user"),
+        EFACTORY_USER("eFactoryUser");
 
         private final String role;
 

@@ -53,6 +53,8 @@ import java.rmi.ServerException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static eu.nimble.core.infrastructure.identity.uaa.OAuthClient.Role.EFACTORY_USER;
+
 @Controller
 @SuppressWarnings("SpringJavaAutowiredFieldsWarningInspection")
 public class IdentityController {
@@ -156,7 +158,7 @@ public class IdentityController {
             return new ResponseEntity<>(frontEndUser, HttpStatus.BAD_REQUEST);
         }
 
-        token = federationService.getAccessToken(token.getCode(), GlobalConstants.AUTHORIZATION_CODE_FLOW);
+        token = federationService.getAccessToken(token.getCode(), GlobalConstants.AUTHORIZATION_CODE_FLOW, null);
 
         if (null == token.getAccess_token()) {
             return new ResponseEntity<>(frontEndUser, HttpStatus.BAD_REQUEST);
@@ -193,7 +195,7 @@ public class IdentityController {
             frontEndUser.setUserID(Long.parseLong(newUser.getID()));
             frontEndUser.setUsername(email);
             frontEndUser.setAccessToken(accessToken);
-            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, token.getRefresh_token());
+
             logger.info("Registering a new user with email {} and id {}", frontEndUser.getEmail(), frontEndUser.getUserID());
 
         }else {
@@ -203,10 +205,10 @@ public class IdentityController {
 
             // set and store tokens
             frontEndUser.setAccessToken(accessToken);
-            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, token.getRefresh_token());
+
             logger.info("User " + email + " successfully logged in.");
         }
-
+        httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, token.getRefresh_token());
         return new ResponseEntity<>(frontEndUser, HttpStatus.OK);
     }
 
@@ -327,7 +329,7 @@ public class IdentityController {
     ResponseEntity<?> registerCompany(
             @ApiParam(value = "Company object that is registered on NIMBLE.", required = true) @RequestBody CompanyRegistration companyRegistration,
             @RequestHeader(value = "Authorization") String bearer,
-            HttpServletResponse response, HttpServletRequest request) {
+            HttpServletResponse response, HttpServletRequest request) throws IOException {
 
         Address companyAddress = companyRegistration.getSettings().getDetails().getAddress();
         if (companyAddress == null || companyRegistration.getSettings().getDetails().getLegalName() == null)
@@ -396,11 +398,14 @@ public class IdentityController {
         }
 
         // refresh tokens
-//        if( httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY) != null) {
-//            OAuth2AccessToken tokenResponse = oAuthClient.refreshToken(httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString());
-//            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, tokenResponse.getRefreshToken());
-//            companyRegistration.setAccessToken(tokenResponse.getValue());
-//        }
+        if (identityService.hasAnyRole(bearer, EFACTORY_USER) && httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY) != null) {
+            Token token = federationService.getAccessToken(null, GlobalConstants.REFRESH_TOKEN_FLOW, httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString());
+            companyRegistration.setAccessToken(token.getAccess_token());
+        }else if(httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY) != null) {
+            OAuth2AccessToken tokenResponse = oAuthClient.refreshToken(httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString());
+            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, tokenResponse.getRefreshToken());
+            companyRegistration.setAccessToken(tokenResponse.getValue());
+        }
 
         //indexing the new company in the indexing service
         eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(newCompany);
