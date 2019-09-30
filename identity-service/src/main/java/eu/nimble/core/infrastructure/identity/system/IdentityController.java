@@ -396,11 +396,11 @@ public class IdentityController {
         }
 
         // refresh tokens
-        if( httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY) != null) {
-            OAuth2AccessToken tokenResponse = oAuthClient.refreshToken(httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString());
-            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, tokenResponse.getRefreshToken());
-            companyRegistration.setAccessToken(tokenResponse.getValue());
-        }
+//        if( httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY) != null) {
+//            OAuth2AccessToken tokenResponse = oAuthClient.refreshToken(httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString());
+//            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, tokenResponse.getRefreshToken());
+//            companyRegistration.setAccessToken(tokenResponse.getValue());
+//        }
 
         //indexing the new company in the indexing service
         eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(newCompany);
