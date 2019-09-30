@@ -6,6 +6,8 @@ import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
+import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
+import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import org.slf4j.Logger;
@@ -61,6 +63,7 @@ public class AdminService {
 
     @Autowired
     private IdentityService identityService;
+
 
     //    @Cacheable("unverifiedCompanies")
     public List<PartyType> queryCompanies(CompanyState companyState) {
@@ -145,22 +148,41 @@ public class AdminService {
         return partyList;
     }
 
-    public boolean deleteCompany(Long companyId) throws Exception {
+    public boolean deleteCompany(Long companyId, String bearer, Long userId) throws Exception {
 
         // query company
         PartyType company = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
-        // delete associated company members
+        boolean isUserInCompany = false;
+
         for (PersonType member : company.getPerson()) {
             Long memberHjid = member.getHjid();
-            deletePerson(memberHjid);
+            if(memberHjid.equals(userId)){
+                isUserInCompany = true;
+                break;
+            }
         }
 
-        //set deleted flag fr the party
-        company.setDeleted(true);
+        if(isUserInCompany){
+            // delete associated company members
+            for (PersonType member : company.getPerson()) {
+                Long memberHjid = member.getHjid();
+                deletePerson(memberHjid,bearer,true);
+            }
 
-        //update the party
-        partyRepository.save(company);
+            //set deleted flag fr the party
+            company.setDeleted(true);
+
+            //update the party
+            partyRepository.save(company);
+            return true;
+        }else {
+            return false;
+        }
+
+
+
+
 
 //        // delete negotiation settings
 //        negotiationSettingsRepository.deleteByCompany(company);
@@ -185,26 +207,31 @@ public class AdminService {
 //
 //        return partyRepository.deleteByHjid(companyId);
 
-        return true;
     }
 
 
-    public boolean deletePerson(Long personHjid) throws Exception {
+    public boolean deletePerson(Long personHjid, String bearer , boolean isCompanyDelete) throws Exception {
+
+        OpenIdConnectUserDetails oidUser = identityService.getUserDetails(bearer);
+        String keyCloackuid = oidUser.getUserId();
+
         // query person
         PersonType person = personRepository.findByHjid(personHjid).stream().findFirst().orElseThrow(ControllerUtils.PersonNotFoundException::new);
-
-        //set delete flag for the person
-        person.setDeleted(true);
-
-        // adapt role of user and refresh access token
         List<UaaUser> potentialUser = uaaUserRepository.findByUblPerson(person);
         UaaUser uaaUser = potentialUser.stream().findFirst().orElseThrow(() -> new Exception("Invalid user mapping"));
         String keyCloakId = uaaUser.getExternalID();
-        keycloakAdmin.addRole(keyCloakId, KeycloakAdmin.NIMBLE_DELETED_USER);
 
-        //save deleted person
-        personRepository.save(person);
-        return true;
+        if(keyCloakId.equals(keyCloackuid) || identityService.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == true
+                || isCompanyDelete){
+            //set delete flag for the person
+            person.setDeleted(true);
+            keycloakAdmin.addRole(keyCloakId, KeycloakAdmin.NIMBLE_DELETED_USER);
+            //save deleted person
+            personRepository.save(person);
+            return true;
+        }else{
+            return false;
+        }
     }
 
     public enum CompanyState {
