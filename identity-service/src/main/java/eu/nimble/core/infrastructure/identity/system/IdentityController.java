@@ -3,6 +3,7 @@ package eu.nimble.core.infrastructure.identity.system;
 import com.auth0.jwt.JWT;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
+import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
@@ -13,6 +14,7 @@ import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.service.RocketChatService;
 import eu.nimble.core.infrastructure.identity.system.dto.CompanyRegistrationResponse;
 import eu.nimble.core.infrastructure.identity.system.dto.UserRegistration;
+import eu.nimble.core.infrastructure.identity.system.dto.oauth.AccessToken;
 import eu.nimble.core.infrastructure.identity.system.dto.oauth.Token;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.login.RocketChatLoginResponse;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.sso.RocketChatResponse;
@@ -48,12 +50,7 @@ import javax.servlet.http.HttpSession;
 import javax.ws.rs.WebApplicationException;
 import java.io.IOException;
 import java.rmi.ServerException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
@@ -115,6 +112,22 @@ public class IdentityController {
     @Value("${nimble.rocketChat.isEnabled}")
     private boolean isChatEnabled;
 
+    @ApiOperation(value = "Provide Nimble Token for a trusted identity provider token.", tags = {})
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Token Generated"),
+            @ApiResponse(code = 400, message = "Invalid Token")})
+    @RequestMapping(value = "/federation/exchangeToken", produces = {"application/json"}, consumes = {"application/json"}, method = RequestMethod.POST)
+    ResponseEntity<Token> exchangeToken(@ApiParam(value = "Token provided by the Trusted IDP", required = true) @RequestBody AccessToken accessToken) throws ServerException {
+
+        Token nimbleToken = federationService.exchangeToken(accessToken.getAccess_token());
+
+        if (null != nimbleToken.getAccess_token() && !nimbleToken.getAccess_token().isEmpty()) {
+            return new ResponseEntity<Token>(nimbleToken, HttpStatus.OK);
+        }else {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
     @ApiOperation(value = "Verify a token.", tags = {})
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Valid Token"),
@@ -143,7 +156,7 @@ public class IdentityController {
             return new ResponseEntity<>(frontEndUser, HttpStatus.BAD_REQUEST);
         }
 
-        token = federationService.getAccessToken(token.getCode());
+        token = federationService.getAccessToken(token.getCode(), GlobalConstants.AUTHORIZATION_CODE_FLOW);
 
         if (null == token.getAccess_token()) {
             return new ResponseEntity<>(frontEndUser, HttpStatus.BAD_REQUEST);
