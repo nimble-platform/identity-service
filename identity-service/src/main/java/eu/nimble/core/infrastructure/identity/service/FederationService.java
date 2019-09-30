@@ -53,8 +53,8 @@ public class FederationService {
         } else if (GlobalConstants.CLIENT_CREDENTIALS_FLOW.equals(grantType)) {
             map.add("grant_type", GlobalConstants.CLIENT_CREDENTIALS_FLOW);
         } else if (GlobalConstants.REFRESH_TOKEN_FLOW.equals(grantType)) {
-            map.add("grant_type", GlobalConstants.CLIENT_CREDENTIALS_FLOW);
-            map.add(GlobalConstants.CLIENT_CREDENTIALS_FLOW, refreshToken);
+            map.add("grant_type", GlobalConstants.REFRESH_TOKEN_FLOW);
+            map.add(GlobalConstants.REFRESH_TOKEN_FLOW, refreshToken);
         }
         map.add("client_id", clientId);
         map.add("client_secret", clientSecret);
