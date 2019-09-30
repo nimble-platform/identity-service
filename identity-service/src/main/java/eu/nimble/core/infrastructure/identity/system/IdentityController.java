@@ -193,7 +193,7 @@ public class IdentityController {
             frontEndUser.setUserID(Long.parseLong(newUser.getID()));
             frontEndUser.setUsername(email);
             frontEndUser.setAccessToken(accessToken);
-            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, accessToken);
+            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, token.getRefresh_token());
             logger.info("Registering a new user with email {} and id {}", frontEndUser.getEmail(), frontEndUser.getUserID());
 
         }else {
@@ -203,7 +203,7 @@ public class IdentityController {
 
             // set and store tokens
             frontEndUser.setAccessToken(accessToken);
-            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, accessToken);
+            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, token.getRefresh_token());
             logger.info("User " + email + " successfully logged in.");
         }
 
