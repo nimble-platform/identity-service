@@ -3,6 +3,7 @@ package eu.nimble.core.infrastructure.identity.system;
 import com.auth0.jwt.JWT;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
+import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
@@ -13,6 +14,7 @@ import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.service.RocketChatService;
 import eu.nimble.core.infrastructure.identity.system.dto.CompanyRegistrationResponse;
 import eu.nimble.core.infrastructure.identity.system.dto.UserRegistration;
+import eu.nimble.core.infrastructure.identity.system.dto.oauth.AccessToken;
 import eu.nimble.core.infrastructure.identity.system.dto.oauth.Token;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.login.RocketChatLoginResponse;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.sso.RocketChatResponse;
@@ -48,11 +50,10 @@ import javax.servlet.http.HttpSession;
 import javax.ws.rs.WebApplicationException;
 import java.io.IOException;
 import java.rmi.ServerException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static eu.nimble.core.infrastructure.identity.uaa.OAuthClient.Role.EFACTORY_USER;
 
 @Controller
 @SuppressWarnings("SpringJavaAutowiredFieldsWarningInspection")
@@ -113,6 +114,22 @@ public class IdentityController {
     @Value("${nimble.rocketChat.isEnabled}")
     private boolean isChatEnabled;
 
+    @ApiOperation(value = "Provide Nimble Token for a trusted identity provider token.", tags = {})
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Token Generated"),
+            @ApiResponse(code = 400, message = "Invalid Token")})
+    @RequestMapping(value = "/federation/exchangeToken", produces = {"application/json"}, consumes = {"application/json"}, method = RequestMethod.POST)
+    ResponseEntity<Token> exchangeToken(@ApiParam(value = "Token provided by the Trusted IDP", required = true) @RequestBody AccessToken accessToken) throws ServerException {
+
+        Token nimbleToken = federationService.exchangeToken(accessToken.getAccess_token());
+
+        if (null != nimbleToken.getAccess_token() && !nimbleToken.getAccess_token().isEmpty()) {
+            return new ResponseEntity<Token>(nimbleToken, HttpStatus.OK);
+        }else {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
     @ApiOperation(value = "Verify a token.", tags = {})
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Valid Token"),
@@ -141,7 +158,7 @@ public class IdentityController {
             return new ResponseEntity<>(frontEndUser, HttpStatus.BAD_REQUEST);
         }
 
-        token = federationService.getAccessToken(token.getCode());
+        token = federationService.getAccessToken(token.getCode(), GlobalConstants.AUTHORIZATION_CODE_FLOW, null);
 
         if (null == token.getAccess_token()) {
             return new ResponseEntity<>(frontEndUser, HttpStatus.BAD_REQUEST);
@@ -178,7 +195,7 @@ public class IdentityController {
             frontEndUser.setUserID(Long.parseLong(newUser.getID()));
             frontEndUser.setUsername(email);
             frontEndUser.setAccessToken(accessToken);
-            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, accessToken);
+
             logger.info("Registering a new user with email {} and id {}", frontEndUser.getEmail(), frontEndUser.getUserID());
 
         }else {
@@ -188,10 +205,10 @@ public class IdentityController {
 
             // set and store tokens
             frontEndUser.setAccessToken(accessToken);
-            httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, accessToken);
+
             logger.info("User " + email + " successfully logged in.");
         }
-
+        httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, token.getRefresh_token());
         return new ResponseEntity<>(frontEndUser, HttpStatus.OK);
     }
 
@@ -241,6 +258,12 @@ public class IdentityController {
         UaaUser uaaUser = new UaaUser(credentials.getUsername(), newUser, keycloakID);
         uaaUserRepository.save(uaaUser);
 
+        Map<String,String> paramMapReg = new HashMap<String, String>();
+        paramMapReg.put("userId",credentials.getUsername());
+        paramMapReg.put("activity", LogEvent.REGISTER_USER.getActivity());
+
+        LoggerUtils.logWithMDC(logger, paramMapReg, LoggerUtils.LogLevel.INFO, "Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(),
+                newUser.getID());
         // update user data
         frontEndUser.setUserID(Long.parseLong(newUser.getID()));
         frontEndUser.setUsername(credentials.getUsername());
@@ -284,7 +307,7 @@ public class IdentityController {
             paramMap.put("userId",credentials.getUsername());
             paramMap.put("companyId",companyId);
             paramMap.put("companyName",companyName);
-            paramMap.put("activity", LogEvent.REGISTER_USER.getActivity());
+            paramMap.put("activity", LogEvent.INVITED_USER_REGISTRATION.getActivity());
             LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "Invitation: added user {}({}) to company {}({})", frontEndUser.getEmail(),
                     newUser.getID(), companyName, companyId);
         }
@@ -306,7 +329,7 @@ public class IdentityController {
     ResponseEntity<?> registerCompany(
             @ApiParam(value = "Company object that is registered on NIMBLE.", required = true) @RequestBody CompanyRegistration companyRegistration,
             @RequestHeader(value = "Authorization") String bearer,
-            HttpServletResponse response, HttpServletRequest request) {
+            HttpServletResponse response, HttpServletRequest request) throws IOException {
 
         Address companyAddress = companyRegistration.getSettings().getDetails().getAddress();
         if (companyAddress == null || companyRegistration.getSettings().getDetails().getLegalName() == null)
@@ -375,7 +398,10 @@ public class IdentityController {
         }
 
         // refresh tokens
-        if( httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY) != null) {
+        if (identityService.hasAnyRole(bearer, EFACTORY_USER) && httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY) != null) {
+            Token token = federationService.getAccessToken(null, GlobalConstants.REFRESH_TOKEN_FLOW, httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString());
+            companyRegistration.setAccessToken(token.getAccess_token());
+        }else if(httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY) != null) {
             OAuth2AccessToken tokenResponse = oAuthClient.refreshToken(httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString());
             httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, tokenResponse.getRefreshToken());
             companyRegistration.setAccessToken(tokenResponse.getValue());
@@ -467,6 +493,16 @@ public class IdentityController {
         if (potentialUser == null) {
             logger.info("User " + credentials.getUsername() + " not found in local database, but on Keycloak.");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        Set<String> roles = keycloakAdmin.getUserRoles(keycloakUserID);
+        Iterator<String> iterator = roles.iterator();
+
+        while (iterator.hasNext()){
+            if(iterator.next().equals(KeycloakAdmin.NIMBLE_DELETED_USER)){
+                logger.info("User " + credentials.getUsername() + " user already deleted from the platform.");
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
         }
 
         // create front end user DTO

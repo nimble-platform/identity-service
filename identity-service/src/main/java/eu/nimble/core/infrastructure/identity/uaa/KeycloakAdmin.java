@@ -63,6 +63,7 @@ public class KeycloakAdmin {
     public static final String INITIAL_REPRESENTATIVE_ROLE = "initial_representative";
     public static final String LEGAL_REPRESENTATIVE_ROLE = "legal_representative";
     public static final String PLATFORM_MANAGER_ROLE = "platform_manager";
+    public static final String NIMBLE_DELETED_USER = "nimble_deleted_user";
 
     public static final String PLATFORM_MANAGER_GROUP = "Platform Manager";
 
@@ -144,6 +145,8 @@ public class KeycloakAdmin {
 
     /**
      * Verify the jwt token provided by the Keycloak
+     * TODO: Implement verification by using the certs
+     * https://stackoverflow.com/questions/39890232/how-to-decode-keys-from-keycloak-openid-connect-cert-api
      * @param jwtToken
      * @return
      */

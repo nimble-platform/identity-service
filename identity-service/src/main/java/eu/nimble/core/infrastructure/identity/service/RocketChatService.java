@@ -74,7 +74,7 @@ public class RocketChatService {
             // handle channel name conflict
             if (!createChannelResponse.isSuccess()) {
 
-            }else {
+            } else {
                 persistChannelName(createChannelRequest);
             }
         } catch (IOException e) {
@@ -85,7 +85,6 @@ public class RocketChatService {
     }
 
     /**
-     *
      * @param createChannelRequest
      * @return
      */
@@ -105,13 +104,13 @@ public class RocketChatService {
 
         try {
             ResponseEntity<String> registerResponse = rs.exchange(uri, HttpMethod.POST, entity, String.class);
-            if(registerResponse.getStatusCode().value() == 200){
+            if (registerResponse.getStatusCode().value() == 200) {
                 ObjectMapper mapper = new ObjectMapper();
                 mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
                 CreateChannelRequest rq = mapper.readValue(registerResponse.getBody(), CreateChannelRequest.class);
                 logger.info("Channel name : {} found in chat service", rq.getChannelName());
                 return rq.getChannelName();
-            }else {
+            } else {
                 logger.info("Existing channel not found for: {}", createChannelRequest.toString());
                 return null;
             }
@@ -123,7 +122,6 @@ public class RocketChatService {
     }
 
     /**
-     *
      * @param createChannelRequest
      * @return
      */
@@ -144,10 +142,10 @@ public class RocketChatService {
 
         try {
             ResponseEntity<String> registerResponse = rs.exchange(uri, HttpMethod.POST, entity, String.class);
-            if(registerResponse.getStatusCode().value() == 201){
+            if (registerResponse.getStatusCode().value() == 201) {
                 logger.info("Channel name : {} persisted in chat service", createChannelRequest.getChannelName());
                 return true;
-            }else {
+            } else {
                 logger.info("Error when persisting channel : {} , name in chat service", createChannelRequest.getChannelName());
                 return false;
             }
@@ -161,6 +159,7 @@ public class RocketChatService {
 
     /**
      * This function will return the missing users in Rocket.Chat in a Map
+     *
      * @param chatUsers
      * @return
      */
@@ -257,32 +256,35 @@ public class RocketChatService {
      */
     public RockerChatRegisterResponse registerUser(FrontEndUser frontEndUser, Credentials credentials, boolean userNameAlreadyExists, int retryCounter) {
 
-        RestTemplate rs = new RestTemplate();
-        String uri = rocketChatURL + "/api/v1/users.register";
-
-        String temp = credentials.getUsername().substring(credentials.getUsername().indexOf("@") + 1); // e.g. @google.com
-        String companyEmailName = temp.substring(0, temp.indexOf("."));
-
-        String rocketChatUserName = frontEndUser.getFirstname() + "." + frontEndUser.getLastname() + "." + companyEmailName;
-        if (userNameAlreadyExists) {
-            rocketChatUserName = rocketChatUserName + ((int) (Math.random() * 100));
-        }
-
-        JSONObject request = new JSONObject();
-        request.put(GlobalConstants.EMAIL_STRING, credentials.getUsername());
-        request.put("pass", new Md5PasswordEncoder().encodePassword(credentials.getUsername(), null).substring(0, 8));
-        request.put(GlobalConstants.USER_NAME_STRING, rocketChatUserName);
-        request.put("name", frontEndUser.getFirstname() + " " + frontEndUser.getLastname());
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<String>(request.toString(), headers);
-
-        ResponseEntity<String> registerResponse = rs.exchange(uri, HttpMethod.POST, entity, String.class);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         RockerChatRegisterResponse rockerChatRegisterResponse = new RockerChatRegisterResponse();
+
         try {
+            RestTemplate rs = new RestTemplate();
+            String uri = rocketChatURL + "/api/v1/users.register";
+
+            String temp = credentials.getUsername().substring(credentials.getUsername().indexOf("@") + 1); // e.g. @google.com
+            String companyEmailName = temp.substring(0, temp.indexOf("."));
+
+            String rocketChatUserName = frontEndUser.getFirstname() + "." + frontEndUser.getLastname() + "." + companyEmailName;
+            if (userNameAlreadyExists) {
+                rocketChatUserName = rocketChatUserName + ((int) (Math.random() * 100));
+            }
+
+            JSONObject request = new JSONObject();
+            request.put(GlobalConstants.EMAIL_STRING, credentials.getUsername());
+            request.put("pass", new Md5PasswordEncoder().encodePassword(credentials.getUsername(), null).substring(0, 8));
+            request.put(GlobalConstants.USER_NAME_STRING, rocketChatUserName);
+            request.put("name", frontEndUser.getFirstname() + " " + frontEndUser.getLastname());
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<String> entity = new HttpEntity<String>(request.toString(), headers);
+
+
+            ResponseEntity<String> registerResponse = rs.exchange(uri, HttpMethod.POST, entity, String.class);
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            rockerChatRegisterResponse = new RockerChatRegisterResponse();
             rockerChatRegisterResponse = mapper.readValue(registerResponse.getBody(), RockerChatRegisterResponse.class);
 
             if (rockerChatRegisterResponse.isSuccess() && null == rockerChatRegisterResponse.getError()) {
@@ -291,12 +293,12 @@ public class RocketChatService {
 
             // If the user name already exists then a new user name should be created
             if (rockerChatRegisterResponse.isSuccess() && null != rockerChatRegisterResponse.getError()) {
-                if (rockerChatRegisterResponse.getError().equals("Username is already in use") && retryCounter <=1) {
+                if (rockerChatRegisterResponse.getError().equals("Username is already in use") && retryCounter <= 1) {
                     logger.info("User name conflict when creating a new user with username {}", rocketChatUserName);
-                    rockerChatRegisterResponse = registerUser(frontEndUser, credentials, true, retryCounter+1);
+                    rockerChatRegisterResponse = registerUser(frontEndUser, credentials, true, retryCounter + 1);
                 }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -313,26 +315,27 @@ public class RocketChatService {
      */
     public RocketChatLoginResponse loginOrCreateUser(FrontEndUser frontEndUser, Credentials credentials, boolean createIfMissing, boolean generatePass) {
 
-        RestTemplate rs = new RestTemplate();
-        String uri = rocketChatURL + "/api/v1/login";
-
-        JSONObject request = new JSONObject();
-        request.put(GlobalConstants.EMAIL_STRING, credentials.getUsername());
-        if (generatePass) {
-            request.put("password", new Md5PasswordEncoder().encodePassword(credentials.getUsername(), null).substring(0, 8));
-        }else {
-            request.put("password", credentials.getPassword());
-        }
-
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         RocketChatLoginResponse rocketChatLoginResponse = new RocketChatLoginResponse();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<String>(request.toString(), headers);
-
         try {
+            RestTemplate rs = new RestTemplate();
+            String uri = rocketChatURL + "/api/v1/login";
+
+            JSONObject request = new JSONObject();
+            request.put(GlobalConstants.EMAIL_STRING, credentials.getUsername());
+            if (generatePass) {
+                request.put("password", new Md5PasswordEncoder().encodePassword(credentials.getUsername(), null).substring(0, 8));
+            } else {
+                request.put("password", credentials.getPassword());
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<String> entity = new HttpEntity<String>(request.toString(), headers);
+
             ResponseEntity<String> loginResponse = rs.exchange(uri, HttpMethod.POST, entity, String.class);
             rocketChatLoginResponse = mapper.readValue(loginResponse.getBody(), RocketChatLoginResponse.class);
 
@@ -343,7 +346,7 @@ public class RocketChatService {
                     rocketChatLoginResponse = loginOrCreateUser(frontEndUser, credentials, false, true);
                 }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return rocketChatLoginResponse;

@@ -4,6 +4,8 @@ import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
+import eu.nimble.utility.email.EmailService;
+import eu.nimble.utility.email.ThymeleafConfig;
 import eu.nimble.utility.persistence.binary.BinaryContentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,9 +19,7 @@ import org.springframework.boot.web.support.SpringBootServletInitializer;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.netflix.feign.EnableFeignClients;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.*;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -30,10 +30,11 @@ import javax.sql.DataSource;
 @Configuration
 @EnableDiscoveryClient
 @EnableFeignClients
-@SpringBootApplication(scanBasePackages = {"eu.nimble.utility.persistence.binary", "eu.nimble.utility.persistence.initalizer", "eu.nimble.core.infrastructure.identity"})
+@SpringBootApplication
 @EnableJpaRepositories(basePackages = {"eu.nimble.core.infrastructure.identity"})
 @EntityScan(basePackageClasses = {UaaUser.class, PartyType.class, PersonType.class, CodeType.class})
 @EnableCaching
+@ComponentScan(basePackages = {"eu.nimble.utility", "eu.nimble.utility.persistence.initalizer", "eu.nimble.core.infrastructure.identity"},excludeFilters = {@ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = EmailService.class), @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = ThymeleafConfig.class)})
 public class IdentityServiceApplication extends SpringBootServletInitializer {
 
     private static final Logger logger = LoggerFactory.getLogger(IdentityServiceApplication.class);

@@ -1,7 +1,9 @@
 package eu.nimble.core.infrastructure.identity.service;
 
+import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
 import eu.nimble.core.infrastructure.identity.system.dto.oauth.Token;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -28,7 +30,14 @@ public class FederationService {
     @Value("${nimble.oauth.federationClient.redirectUri}")
     private String redirectUri;
 
-    public Token getAccessToken(String code) {
+    public Token exchangeToken(String trustedToken) {
+        // TODO verify the signature
+        long exp = JWT.decode(trustedToken).getClaim(GlobalConstants.JWT_EXPIRY_ATTRIBUTE_STRING).asLong();
+
+        return getAccessToken(null, GlobalConstants.CLIENT_CREDENTIALS_FLOW, null);
+    }
+
+    public Token getAccessToken(String code, String grantType, String refreshToken) {
         Token token = new Token();
         String url = accessTokenUri;
         RestTemplate restTemplate = new RestTemplate();
@@ -36,11 +45,19 @@ public class FederationService {
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
         MultiValueMap<String, String> map= new LinkedMultiValueMap<String, String>();
-        map.add("grant_type", "authorization_code");
-        map.add("code", code);
+
+        if (GlobalConstants.AUTHORIZATION_CODE_FLOW.equals(grantType)) {
+            map.add("grant_type", GlobalConstants.AUTHORIZATION_CODE_FLOW);
+            map.add("code", code);
+            map.add("redirect_uri", redirectUri);
+        } else if (GlobalConstants.CLIENT_CREDENTIALS_FLOW.equals(grantType)) {
+            map.add("grant_type", GlobalConstants.CLIENT_CREDENTIALS_FLOW);
+        } else if (GlobalConstants.REFRESH_TOKEN_FLOW.equals(grantType)) {
+            map.add("grant_type", GlobalConstants.REFRESH_TOKEN_FLOW);
+            map.add(GlobalConstants.REFRESH_TOKEN_FLOW, refreshToken);
+        }
         map.add("client_id", clientId);
         map.add("client_secret", clientSecret);
-        map.add("redirect_uri", redirectUri);
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
 

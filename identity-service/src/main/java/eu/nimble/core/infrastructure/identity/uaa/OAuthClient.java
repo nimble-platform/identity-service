@@ -67,7 +67,10 @@ public class OAuthClient {
         LEGAL_REPRESENTATIVE("legal_representative"),
         PLATFORM_MANAGER("platform_manager"),
         COMPANY_ADMIN("company_admin"),
-        PUBLISHER("publisher");
+        PUBLISHER("publisher"),
+        NIMBLE_DELETED_USER("nimble_deleted_user"),
+        EXTERNAL_REPRESENTATIVE("external_representative"),
+        EFACTORY_USER("eFactoryUser");
 
         private final String role;
 

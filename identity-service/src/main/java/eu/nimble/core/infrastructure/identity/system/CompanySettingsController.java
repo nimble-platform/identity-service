@@ -83,8 +83,7 @@ public class CompanySettingsController {
     @Autowired
     private CertificateService certificateService;
 
-    @Autowired
-    private BinaryContentService binaryContentService;
+    private BinaryContentService binaryContentService = new BinaryContentService();
 
     @Autowired
     private IndexingClient indexingClient;
@@ -240,7 +239,7 @@ public class CompanySettingsController {
         // delete binary content
         DocumentReferenceType imageDocument = documentReferenceRepository.findOne(imageId);
         String uri = imageDocument.getAttachment().getEmbeddedDocumentBinaryObject().getUri();
-        binaryContentService.deleteContent(uri);
+        binaryContentService.deleteContentIdentity(uri);
 
         // delete document of company
         documentReferenceRepository.delete(imageDocument);
@@ -271,6 +270,7 @@ public class CompanySettingsController {
             @RequestParam("name") String name,
             @RequestParam("description") String description,
             @RequestParam("type") String type,
+            @RequestParam("langId") String languageId,
             @RequestParam("certID") String certID
     ) throws IOException {
 
@@ -279,19 +279,12 @@ public class CompanySettingsController {
 
         PartyType company = getCompanySecure(companyID, bearer);
 
-        BinaryObjectType certificateBinary = new BinaryObjectType();
-        certificateBinary.setValue(certFile.getBytes());
-        certificateBinary.setFileName(certFile.getOriginalFilename());
-        certificateBinary.setMimeCode(certFile.getContentType());
-        certificateBinary = binaryContentService.createContent(certificateBinary);
-        certificateBinary.setValue(null); // reset value so it is not stored in database
-
         if(!certID.equals("null")){
             Long certId = Long.parseLong(certID);
             // delete binary content
             CertificateType certificate = certificateRepository.findOne(certId);
             String uri = certificate.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getUri();
-            binaryContentService.deleteContent(uri);
+            binaryContentService.deleteContentIdentity(uri);
 
             // delete certificate
             certificateRepository.delete(certificate);
@@ -305,8 +298,16 @@ public class CompanySettingsController {
                 company.getCertificate().remove(toDelete.get());
                 partyRepository.save(company);
             }
-
         }
+
+        BinaryObjectType certificateBinary = new BinaryObjectType();
+        certificateBinary.setValue(certFile.getBytes());
+        certificateBinary.setFileName(certFile.getOriginalFilename());
+        certificateBinary.setMimeCode(certFile.getContentType());
+        certificateBinary.setLanguageID(languageId);
+        certificateBinary = binaryContentService.createContent(certificateBinary);
+        certificateBinary.setValue(null); // reset value so it is not stored in database
+
         // create new certificate
         CertificateType certificate = UblAdapter.adaptCertificate(certificateBinary, name, type, description);
 
@@ -364,7 +365,7 @@ public class CompanySettingsController {
         // delete binary content
         CertificateType certificate = certificateRepository.findOne(certificateId);
         String uri = certificate.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getUri();
-        binaryContentService.deleteContent(uri);
+        binaryContentService.deleteContentIdentity(uri);
 
         // delete certificate
         certificateRepository.delete(certificate);
