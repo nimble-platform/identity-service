@@ -68,7 +68,7 @@ public class AdminService {
     //    @Cacheable("unverifiedCompanies")
     public List<PartyType> queryCompanies(CompanyState companyState) {
         List<PartyType> resultingCompanies = new ArrayList<>();
-        Iterable<PartyType> allParties = partyRepository.findAll(new Sort(Sort.Direction.ASC, "hjid"));
+        Iterable<PartyType> allParties = partyRepository.findAllByDeletedIsFalse(new Sort(Sort.Direction.ASC, "hjid"));
         for (PartyType company : allParties) {
 
             // collect roles of company members
