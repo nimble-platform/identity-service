@@ -52,8 +52,16 @@ public class NegotiationSettings implements Serializable {
     @ElementCollection(targetClass = String.class)
     private List<String> paymentMeans = new ArrayList<>();
 
+    private String serviceLevel;
+
+    @JoinTable
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CompanySensor> sensors = new ArrayList<>();
+
+
     public NegotiationSettings(PartyType company, List<Range> deliveryPeriodRanges, List<String> deliveryPeriodUnits, List<Range> warrantyPeriodRange,
-                               List<String> warrantyPeriodUnits, List<String> incoterms, List<String> paymentTerms, List<String> paymentMeans) {
+                               List<String> warrantyPeriodUnits, List<String> incoterms, List<String> paymentTerms, List<String> paymentMeans,
+                               List<CompanySensor> sensors, String serviceLevel) {
         this.company = company;
         this.deliveryPeriodRanges = deliveryPeriodRanges;
         this.deliveryPeriodUnits = deliveryPeriodUnits;
@@ -62,6 +70,8 @@ public class NegotiationSettings implements Serializable {
         this.incoterms = incoterms;
         this.paymentTerms = paymentTerms;
         this.paymentMeans = paymentMeans;
+        this.serviceLevel = serviceLevel;
+        this.sensors = sensors;
     }
 
     public NegotiationSettings() {
@@ -139,6 +149,22 @@ public class NegotiationSettings implements Serializable {
         this.paymentMeans = paymentMeans;
     }
 
+    public List<CompanySensor> getSensors() {
+        return sensors;
+    }
+
+    public void setSensors(List<CompanySensor> sensors) {
+        this.sensors = sensors;
+    }
+
+    public String getServiceLevel() {
+        return serviceLevel;
+    }
+
+    public void setServiceLevel(String serviceLevel) {
+        this.serviceLevel = serviceLevel;
+    }
+
     public void update(NegotiationSettings newSettings) {
         this.deliveryPeriodRanges.clear();
         this.deliveryPeriodRanges.addAll(newSettings.getDeliveryPeriodRanges());
@@ -166,6 +192,30 @@ public class NegotiationSettings implements Serializable {
             this.company.getProcessIDItems().clear();
             this.company.setProcessID(newSettings.company.getProcessID());
         }
+    }
+
+    @Entity
+    public static class CompanySensor {
+
+        @Id
+        @JsonIgnore
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
+
+        @Column
+        @JsonProperty("machine")
+        @SerializedName("machine")
+        private String machine;
+
+        @Column
+        @JsonProperty("sensor")
+        @SerializedName("sensor")
+        private String sensor;
+
+        @Column
+        @JsonProperty("format")
+        @SerializedName("format")
+        private String format;
     }
 
     @Entity
