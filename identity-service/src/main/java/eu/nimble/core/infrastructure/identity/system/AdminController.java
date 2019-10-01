@@ -1,14 +1,19 @@
 package eu.nimble.core.infrastructure.identity.system;
 
+import com.thoughtworks.xstream.core.util.Fields;
+import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
 import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
+import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.core.infrastructure.identity.utils.LogEvent;
+import eu.nimble.service.model.solr.Search;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.utility.LoggerUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.bouncycastle.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +26,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by Johannes Innerbichler on 12.09.18.
@@ -41,6 +50,9 @@ public class AdminController {
 
     @Autowired
     private IdentityService identityService;
+
+    @Autowired
+    private IndexingClient indexingClient;
 
     @ApiOperation(value = "Retrieve unverified companies", response = Page.class)
     @RequestMapping(value = "/unverified_companies", produces = {"application/json"}, method = RequestMethod.GET)
@@ -99,17 +111,73 @@ public class AdminController {
     @ApiOperation(value = "Delete company")
     @RequestMapping(value = "/delete_company/{companyId}", method = RequestMethod.DELETE)
     ResponseEntity<?> deleteCompany(@PathVariable(value = "companyId") long companyId,
+                                    @RequestParam(value = "userId") long userId,
                                     @RequestHeader(value = "Authorization") String bearer) throws Exception {
 
-        if (identityService.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
-            return new ResponseEntity<>("Only platform managers are allowed to delete companies", HttpStatus.UNAUTHORIZED);
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER,OAuthClient.Role.COMPANY_ADMIN,
+                OAuthClient.Role.INITIAL_REPRESENTATIVE,OAuthClient.Role.LEGAL_REPRESENTATIVE,OAuthClient.Role.EXTERNAL_REPRESENTATIVE) == false)
+            return new ResponseEntity<>("Only platform managers,company_admin, external_representative, "
+                    + "initial_representative, legal_representative are allowed to delete companies", HttpStatus.UNAUTHORIZED);
         Map<String,String> paramMap = new HashMap<String, String>();
         paramMap.put("activity", LogEvent.DELETE_COMPANY.getActivity());
         paramMap.put("companyId", String.valueOf(companyId));
         LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "Deleting company with id {}", companyId);
-        adminService.deleteCompany(companyId);
+        boolean isCompanyDeleted = adminService.deleteCompany(companyId,bearer,userId);
+        if(isCompanyDeleted){
+                    //find items idexed by the manufaturer
+                    eu.nimble.service.model.solr.Search search = new Search();
+                    search.setQuery("manufacturerId:"+companyId);
+                    eu.nimble.service.model.solr.SearchResult sr = indexingClient.searchItem(search,bearer);
 
-        return ResponseEntity.ok().build();
+                    List<Object> result  = sr.getResult();
+                    Set<String> catIds = new HashSet<String>();
+                    for(Object ob : result){
+                        LinkedHashMap<String,String> lmap = (LinkedHashMap<String, String>) ob;
+                        String catLineId = lmap.get("uri");
+                        String catalogueId = lmap.get("catalogueId");
+                        if(catalogueId != null){
+                            catIds.add(catalogueId);
+                        }
+                        //remove items from indexing
+                        indexingClient.removeItem(catLineId,bearer);
+                    }
+
+                    Iterator iterate = catIds.iterator();
+
+                    while (iterate.hasNext()){
+                        //remove catalogue from the index
+                        indexingClient.deleteCatalogue(iterate.next().toString(),bearer);
+                    }
+                    //unindex party from the solr
+                    indexingClient.deleteParty(String.valueOf(companyId),bearer);
+            return ResponseEntity.ok().build();
+        }else{
+            return new ResponseEntity<>("Only company_admin, external_representative, "
+                    + "initial_representative, legal_representative of company are allowed to delete companies",
+                    HttpStatus.UNAUTHORIZED);
+        }
+
+
+    }
+
+    @ApiOperation(value = "Delete user")
+    @RequestMapping(value = "/delete_user/{userId}", method = RequestMethod.DELETE)
+    ResponseEntity<?> deleteUser(@PathVariable(value = "userId") long userId,
+            @RequestHeader(value = "Authorization") String bearer) throws Exception {
+
+        Map<String,String> paramMap = new HashMap<String, String>();
+        paramMap.put("activity", LogEvent.DELETE_USER.getActivity());
+        paramMap.put("userId", String.valueOf(userId));
+        LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "Deleting user with id {}", userId);
+        boolean status = adminService.deletePerson(userId,bearer,false);
+
+        if(status){
+            return ResponseEntity.ok().build();
+
+        }else{
+            return new ResponseEntity<>("Only platform managers and users by them are allowed to delete users", HttpStatus.UNAUTHORIZED);
+        }
+
     }
 
     private ResponseEntity<Page<PartyType>> makePage(@RequestParam(value = "page", required = false, defaultValue = "1") int pageNumber, @RequestParam(value = "size", required = false, defaultValue = DEFAULT_PAGE_SIZE) int pageSize, List<PartyType> unverifiedCompanies) {

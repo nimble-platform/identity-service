@@ -3,9 +3,13 @@ package eu.nimble.core.infrastructure.identity.uaa;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.exceptions.SignatureVerificationException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
+import eu.nimble.core.infrastructure.identity.system.dto.oauth.RealmConfigs;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.WordUtils;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
@@ -23,16 +27,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
+import org.springframework.http.*;
+import org.springframework.security.jwt.JwtHelper;
+import org.springframework.security.jwt.crypto.sign.RsaVerifier;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.net.URI;
+import java.rmi.ServerException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -48,6 +63,7 @@ public class KeycloakAdmin {
     public static final String INITIAL_REPRESENTATIVE_ROLE = "initial_representative";
     public static final String LEGAL_REPRESENTATIVE_ROLE = "legal_representative";
     public static final String PLATFORM_MANAGER_ROLE = "platform_manager";
+    public static final String NIMBLE_DELETED_USER = "nimble_deleted_user";
 
     public static final String PLATFORM_MANAGER_GROUP = "Platform Manager";
 
@@ -124,6 +140,58 @@ public class KeycloakAdmin {
             this.keycloak.realm(keycloakConfig.getRealm()).users().get(sub).resetPassword(passwordCredential);
         }else {
             throw new NotAuthorizedException("URL expired");
+        }
+    }
+
+    /**
+     * Verify the jwt token provided by the Keycloak
+     * TODO: Implement verification by using the certs
+     * https://stackoverflow.com/questions/39890232/how-to-decode-keys-from-keycloak-openid-connect-cert-api
+     * @param jwtToken
+     * @return
+     */
+    public boolean verify(String jwtToken) throws ServerException {
+
+        String uri = keycloakConfig.getServerUrl() + "/realms/master";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> entity = new HttpEntity<String>(headers);
+        RestTemplate rs = new RestTemplate();
+
+        try {
+            ResponseEntity<String> response = rs.exchange(uri, HttpMethod.GET, entity, String.class);
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            RealmConfigs realmConfigs = mapper.readValue(response.getBody(), RealmConfigs.class);
+            JwtHelper.decodeAndVerify(jwtToken, new RsaVerifier(getRSAPublicKey(realmConfigs.getPublic_key())));
+        } catch (IOException e) {
+            logger.error("Error in extracting the data from Keycloak realm response{}", e);
+            throw new ServerException("Keycloak server error", e);
+        } catch (Exception e) {
+            logger.error("Error in verifying token{}", e);
+            return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * Generates the RSA Public key from Keycloak public key
+     * @param publicKey
+     * @return
+     * @throws Exception
+     */
+    private RSAPublicKey getRSAPublicKey(String publicKey) throws Exception {
+        if( StringUtils.isBlank(publicKey)) return null;
+        try {
+            KeyFactory keyFactory = java.security.KeyFactory.getInstance("RSA");
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(java.util.Base64.getDecoder().decode(publicKey));
+            return (RSAPublicKey) keyFactory.generatePublic(keySpec);
+        } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
+            logger.error("Error forming RSA key {}", e);
+            throw new Exception(e);
         }
     }
 

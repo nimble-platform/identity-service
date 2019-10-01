@@ -6,6 +6,8 @@ import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
+import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
+import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import org.slf4j.Logger;
@@ -56,12 +58,17 @@ public class AdminService {
     private UaaUserRepository uaaUserRepository;
 
     @Autowired
+    private PersonRepository personRepository;
+
+
+    @Autowired
     private IdentityService identityService;
+
 
     //    @Cacheable("unverifiedCompanies")
     public List<PartyType> queryCompanies(CompanyState companyState) {
         List<PartyType> resultingCompanies = new ArrayList<>();
-        Iterable<PartyType> allParties = partyRepository.findAll(new Sort(Sort.Direction.ASC, "hjid"));
+        Iterable<PartyType> allParties = partyRepository.findAllByDeletedIsFalse(new Sort(Sort.Direction.ASC, "hjid"));
         for (PartyType company : allParties) {
 
             // collect roles of company members
@@ -141,41 +148,90 @@ public class AdminService {
         return partyList;
     }
 
-    public long deleteCompany(Long companyId) throws ControllerUtils.CompanyNotFoundException {
+    public boolean deleteCompany(Long companyId, String bearer, Long userId) throws Exception {
 
         // query company
         PartyType company = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
-        // delete associated company members
+        boolean isUserInCompany = false;
+
         for (PersonType member : company.getPerson()) {
-            uaaUserRepository.deleteByUblPerson(member);
+            Long memberHjid = member.getHjid();
+            if(memberHjid.equals(userId)){
+                isUserInCompany = true;
+                break;
+            }
         }
 
-        // delete associated qualifying party
-        qualifyingPartyRepository.deleteByParty(company);
-
-        // delete negotiation settings
-        negotiationSettingsRepository.deleteByCompany(company);
-
-        // delete trading preferences
-        if (company.getPurchaseTerms() != null) {
-            deliveryTermsRepository.delete(company.getPurchaseTerms().getDeliveryTerms());
-            paymentMeansRepository.delete(company.getPurchaseTerms().getPaymentMeans());
-        }
-        if (company.getSalesTerms() != null) {
-            deliveryTermsRepository.delete(company.getSalesTerms().getDeliveryTerms());
-            paymentMeansRepository.delete(company.getSalesTerms().getPaymentMeans());
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == true){
+            isUserInCompany = true;
         }
 
-        try {
-            // delete for legacy schema
-            deliveryTermsRepository.deleteByPartyID(companyId);
-            paymentMeansRepository.deleteByPartyID(companyId);
-        } catch (InvalidDataAccessResourceUsageException ex) {
-            // ignored
+        if(isUserInCompany){
+            // delete associated company members
+            for (PersonType member : company.getPerson()) {
+                Long memberHjid = member.getHjid();
+                deletePerson(memberHjid,bearer,true);
+            }
+
+            //set deleted flag fr the party
+            company.setDeleted(true);
+
+            //update the party
+            partyRepository.save(company);
+            return true;
+        }else {
+            return false;
         }
 
-        return partyRepository.deleteByHjid(companyId);
+//        // delete negotiation settings
+//        negotiationSettingsRepository.deleteByCompany(company);
+//
+//        // delete trading preferences
+//        if (company.getPurchaseTerms() != null) {
+//            deliveryTermsRepository.delete(company.getPurchaseTerms().getDeliveryTerms());
+//            paymentMeansRepository.delete(company.getPurchaseTerms().getPaymentMeans());
+//        }
+//        if (company.getSalesTerms() != null) {
+//            deliveryTermsRepository.delete(company.getSalesTerms().getDeliveryTerms());
+//            paymentMeansRepository.delete(company.getSalesTerms().getPaymentMeans());
+//        }
+//
+//        try {
+//            // delete for legacy schema
+//            deliveryTermsRepository.deleteByPartyID(companyId);
+//            paymentMeansRepository.deleteByPartyID(companyId);
+//        } catch (InvalidDataAccessResourceUsageException ex) {
+//            // ignored
+//        }
+//
+//        return partyRepository.deleteByHjid(companyId);
+
+    }
+
+
+    public boolean deletePerson(Long personHjid, String bearer , boolean isCompanyDelete) throws Exception {
+
+        OpenIdConnectUserDetails oidUser = identityService.getUserDetails(bearer);
+        String keyCloackuid = oidUser.getUserId();
+
+        // query person
+        PersonType person = personRepository.findByHjid(personHjid).stream().findFirst().orElseThrow(ControllerUtils.PersonNotFoundException::new);
+        List<UaaUser> potentialUser = uaaUserRepository.findByUblPerson(person);
+        UaaUser uaaUser = potentialUser.stream().findFirst().orElseThrow(() -> new Exception("Invalid user mapping"));
+        String keyCloakId = uaaUser.getExternalID();
+
+        if(keyCloakId.equals(keyCloackuid) || identityService.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == true
+                || isCompanyDelete){
+            //set delete flag for the person
+            person.setDeleted(true);
+            keycloakAdmin.addRole(keyCloakId, KeycloakAdmin.NIMBLE_DELETED_USER);
+            //save deleted person
+            personRepository.save(person);
+            return true;
+        }else{
+            return false;
+        }
     }
 
     public enum CompanyState {
