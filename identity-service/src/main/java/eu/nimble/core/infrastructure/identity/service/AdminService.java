@@ -163,6 +163,10 @@ public class AdminService {
             }
         }
 
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == true){
+            isUserInCompany = true;
+        }
+
         if(isUserInCompany){
             // delete associated company members
             for (PersonType member : company.getPerson()) {
@@ -179,10 +183,6 @@ public class AdminService {
         }else {
             return false;
         }
-
-
-
-
 
 //        // delete negotiation settings
 //        negotiationSettingsRepository.deleteByCompany(company);
