@@ -25,9 +25,6 @@ public interface PartyRepository extends PagingAndSortingRepository<PartyType, L
     Iterable<PartyType> findAll(Sort sort);
 
     @Transactional
-    Iterable<PartyType> findAllByDeletedIsFalse(Sort sort);
-
-    @Transactional
     Page<PartyType> findAll(Pageable pageable);
 
     List<PartyType> findByHjid(Long hijd);

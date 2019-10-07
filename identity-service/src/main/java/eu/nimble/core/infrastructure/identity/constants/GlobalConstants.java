@@ -15,9 +15,4 @@ public class GlobalConstants {
     public static final String EMAIL_STRING = "email";
     public static final String USER_NAME_STRING = "username";
 
-    // OAUTH Related Constants
-    public static final String CLIENT_CREDENTIALS_FLOW = "client_credentials";
-    public static final String AUTHORIZATION_CODE_FLOW = "authorization_code";
-    public static final String REFRESH_TOKEN_FLOW = "refresh_token";
-
 }
