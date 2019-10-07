@@ -118,17 +118,15 @@ public class PartyController {
             Optional<PartyType> party = partyRepository.findByHjid(partyId).stream().findFirst();
 
             // check if party was found
-            if (party.isPresent() == true) {
-                parties.add(party.get());
-
+            if (party.isPresent() == false) {
+                String message = String.format("Requested party with Id %s not found", partyId);
+                logger.info(message);
+                return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
             }
+
+            parties.add(party.get());
         }
 
-        if(parties.size() == 0){
-            String message = String.format("Requested party with Id's not found");
-            logger.info(message);
-            return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
-        }
         if (includeRoles)
             // fetch and include roles
             parties.forEach(identityService::enrichWithRoles);
