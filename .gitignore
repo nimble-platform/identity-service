@@ -1,2 +1,15 @@
+
+# ------------------------------------------------------
+# directories excluded from version control
+# ------------------------------------------------------
+.idea/
+identity-service/target/
+
+
+# ------------------------------------------------------
+# fiels excluded from version control
+# ------------------------------------------------------
 kubernetes/keycloak-secret.yml
 *.versionsBackup
+*.class
+*.iml
