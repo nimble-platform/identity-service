@@ -119,11 +119,11 @@ public class IdentityController {
             @ApiResponse(code = 200, message = "Token Generated"),
             @ApiResponse(code = 400, message = "Invalid Token")})
     @RequestMapping(value = "/federation/exchangeToken", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<FederationResponse> exchangeToken(@RequestHeader(value = "ef_token") String efToken,
-                                        @RequestHeader(value = "ef_resource") String resource, HttpServletResponse response) throws ServerException {
+    ResponseEntity<FederationResponse> exchangeToken(@RequestHeader(value = "efToken") String efToken,
+                                        @RequestHeader(value = "efResource") String resource, HttpServletResponse response) throws ServerException {
 
         // TODO Remove hardcoded values and migrate to another service
-        logger.info("Request Received for Federation, ef_resource: " + resource + " ef_token: " + efToken);
+        logger.info("Request Received for Federation, efResource: " + resource + " efToken: " + efToken);
         HashMap<String, String> resourceMap = new HashMap<>();
         resourceMap.put("vfos/product", "https://nifi.smecluster.com/l33t/products/vfos");
         resourceMap.put("smecluster/product", "https://nifi.smecluster.com/l33t/products/smecluster");
@@ -134,20 +134,20 @@ public class IdentityController {
         if (null != resourceMap.get(resource)) {
 
             if (resource.equals("vfos/product")) {
-                response.addHeader("sso_token", "HoQkZDFbTyeEQtkOI1KD4XXra7DPc5VBK4wHaQDlY3Qz6U0FVQ");
-                federationResponse.setSso_token("HoQkZDFbTyeEQtkOI1KD4XXra7DPc5VBK4wHaQDlY3Qz6U0FVQ");
+                response.addHeader("ssoToken", "HoQkZDFbTyeEQtkOI1KD4XXra7DPc5VBK4wHaQDlY3Qz6U0FVQ");
+                federationResponse.setSsoToken("HoQkZDFbTyeEQtkOI1KD4XXra7DPc5VBK4wHaQDlY3Qz6U0FVQ");
 
             } else if (resource.equals("nimble/product")) {
 
                 Token token = federationService.exchangeToken(efToken);
-                response.addHeader("sso_token", token.getAccess_token());
-                federationResponse.setSso_token(token.getAccess_token());
+                response.addHeader("ssoToken", token.getAccess_token());
+                federationResponse.setSsoToken(token.getAccess_token());
             }
 
             response.addHeader("endpoint", resourceMap.get(resource));
             federationResponse.setEndpoint(resourceMap.get(resource));
-            if (null == federationResponse.getSso_token()) {
-                federationResponse.setSso_token("null");
+            if (null == federationResponse.getSsoToken()) {
+                federationResponse.setSsoToken("null");
             }
         }else {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
