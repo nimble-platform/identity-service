@@ -119,10 +119,11 @@ public class IdentityController {
             @ApiResponse(code = 200, message = "Token Generated"),
             @ApiResponse(code = 400, message = "Invalid Token")})
     @RequestMapping(value = "/federation/exchangeToken", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<FederationResponse> exchangeToken(@RequestHeader(value = "ef_token", required=false) String efToken,
-                                        @RequestHeader(value = "ef_resource", required=false) String resource, HttpServletResponse response) throws ServerException {
+    ResponseEntity<FederationResponse> exchangeToken(@RequestHeader(value = "ef_token") String efToken,
+                                        @RequestHeader(value = "ef_resource") String resource, HttpServletResponse response) throws ServerException {
 
         // TODO Remove hardcoded values and migrate to another service
+        logger.info("Request Received for Federation, ef_resource: " + resource + " ef_token: " + efToken);
         HashMap<String, String> resourceMap = new HashMap<>();
         resourceMap.put("vfos/product", "https://nifi.smecluster.com/l33t/products/vfos");
         resourceMap.put("smecluster/product", "https://nifi.smecluster.com/l33t/products/smecluster");
