@@ -118,8 +118,8 @@ public class IdentityController {
             @ApiResponse(code = 200, message = "Token Generated"),
             @ApiResponse(code = 400, message = "Invalid Token")})
     @RequestMapping(value = "/federation/exchangeToken", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<Token> exchangeToken(@RequestHeader(value = "Authorization") String efToken,
-                                        @RequestHeader(value = "Resource") String resource, HttpServletResponse response) throws ServerException {
+    ResponseEntity<Token> exchangeToken(@RequestHeader(value = "ef_token") String efToken,
+                                        @RequestHeader(value = "ef_resource") String resource, HttpServletResponse response) throws ServerException {
 
         // TODO Remove hardcoded values and migrate to another service
         HashMap<String, String> resourceMap = new HashMap<>();
@@ -128,13 +128,13 @@ public class IdentityController {
         resourceMap.put("nimble/product", "https://nifi.smecluster.com/l33t/products/nimble");
 
         if (null != resourceMap.get(resource)) {
-            response.addHeader("endpoint", resourceMap.get(resource));
+            response.addHeader("ef_endpoint", resourceMap.get(resource));
 
             if (resource.equals("vfos/product")) {
-                response.addHeader("ef_sso_token", "HoQkZDFbTyeEQtkOI1KD4XXra7DPc5VBK4wHaQDlY3Qz6U0FVQ");
+                response.addHeader("sso_token", "HoQkZDFbTyeEQtkOI1KD4XXra7DPc5VBK4wHaQDlY3Qz6U0FVQ");
             } else if (resource.equals("nimble/product")) {
                 Token nimbleToken = federationService.exchangeToken(efToken);
-                response.addHeader("ef_sso_token", nimbleToken.getAccess_token());
+                response.addHeader("sso_token", nimbleToken.getAccess_token());
             }
         }else {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
