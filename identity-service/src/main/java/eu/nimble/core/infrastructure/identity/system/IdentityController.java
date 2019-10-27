@@ -119,8 +119,8 @@ public class IdentityController {
             @ApiResponse(code = 200, message = "Token Generated"),
             @ApiResponse(code = 400, message = "Invalid Token")})
     @RequestMapping(value = "/federation/exchangeToken", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<FederationResponse> exchangeToken(@RequestHeader(value = "ef_token") String efToken,
-                                        @RequestHeader(value = "ef_resource") String resource, HttpServletResponse response) throws ServerException {
+    ResponseEntity<FederationResponse> exchangeToken(@RequestHeader(value = "ef_token", required=false) String efToken,
+                                        @RequestHeader(value = "ef_resource", required=false) String resource, HttpServletResponse response) throws ServerException {
 
         // TODO Remove hardcoded values and migrate to another service
         HashMap<String, String> resourceMap = new HashMap<>();
