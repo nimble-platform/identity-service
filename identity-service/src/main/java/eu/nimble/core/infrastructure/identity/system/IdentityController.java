@@ -14,7 +14,6 @@ import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.service.RocketChatService;
 import eu.nimble.core.infrastructure.identity.system.dto.CompanyRegistrationResponse;
 import eu.nimble.core.infrastructure.identity.system.dto.UserRegistration;
-import eu.nimble.core.infrastructure.identity.system.dto.oauth.AccessToken;
 import eu.nimble.core.infrastructure.identity.system.dto.oauth.Token;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.login.RocketChatLoginResponse;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.sso.RocketChatResponse;
@@ -118,16 +117,29 @@ public class IdentityController {
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Token Generated"),
             @ApiResponse(code = 400, message = "Invalid Token")})
-    @RequestMapping(value = "/federation/exchangeToken", produces = {"application/json"}, consumes = {"application/json"}, method = RequestMethod.POST)
-    ResponseEntity<Token> exchangeToken(@ApiParam(value = "Token provided by the Trusted IDP", required = true) @RequestBody AccessToken accessToken) throws ServerException {
+    @RequestMapping(value = "/federation/exchangeToken", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<Token> exchangeToken(@RequestHeader(value = "Authorization") String efToken,
+                                        @RequestHeader(value = "Resource") String resource, HttpServletResponse response) throws ServerException {
 
-        Token nimbleToken = federationService.exchangeToken(accessToken.getAccess_token());
+        // TODO Remove hardcoded values and migrate to another service
+        HashMap<String, String> resourceMap = new HashMap<>();
+        resourceMap.put("vfos/product", "https://nifi.smecluster.com/l33t/products/vfos");
+        resourceMap.put("smecluster/product", "https://nifi.smecluster.com/l33t/products/smecluster");
+        resourceMap.put("nimble/product", "https://nifi.smecluster.com/l33t/products/nimble");
 
-        if (null != nimbleToken.getAccess_token() && !nimbleToken.getAccess_token().isEmpty()) {
-            return new ResponseEntity<Token>(nimbleToken, HttpStatus.OK);
+        if (null != resourceMap.get(resource)) {
+            response.addHeader("endpoint", resourceMap.get(resource));
+
+            if (resource.equals("vfos/product")) {
+                response.addHeader("ef_sso_token", "HoQkZDFbTyeEQtkOI1KD4XXra7DPc5VBK4wHaQDlY3Qz6U0FVQ");
+            } else if (resource.equals("nimble/product")) {
+                Token nimbleToken = federationService.exchangeToken(efToken);
+                response.addHeader("ef_sso_token", nimbleToken.getAccess_token());
+            }
         }else {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @ApiOperation(value = "Verify a token.", tags = {})
