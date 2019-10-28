@@ -49,6 +49,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.WebApplicationException;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.rmi.ServerException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -120,29 +121,37 @@ public class IdentityController {
             @ApiResponse(code = 400, message = "Invalid Token")})
     @RequestMapping(value = "/federation/exchangeToken", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<FederationResponse> exchangeToken(@RequestHeader(value = "efToken") String efToken,
-                                        @RequestHeader(value = "efEndpoint") String efEndpoint, HttpServletResponse response) throws ServerException {
+                                        @RequestHeader(value = "efEndpoint") String efEndpoint, HttpServletResponse response) throws ServerException, URISyntaxException {
 
         // TODO Remove hardcoded values and migrate to another service
         logger.info("Request Received for Federation, efEndpoint: " + efEndpoint + " efToken: " + efToken);
 
         String vfosEndpoint = "https://nifi.smecluster.com/l33t/products/vfos";
         String nimbleEndpoint = "https://nifi.smecluster.com/l33t/products/nimble";
+        String nimbleImagesEndpoint = "https://nifi.smecluster.com/l33t/products/nimbleImages";
         String smeClusterEndpoint = "https://nifi.smecluster.com/l33t/products/smecluster";
 
         HashSet<String> authorizedResources = new HashSet<String>();
         authorizedResources.add(vfosEndpoint);
         authorizedResources.add(nimbleEndpoint);
         authorizedResources.add(smeClusterEndpoint);
+        authorizedResources.add(nimbleImagesEndpoint);
 
         FederationResponse federationResponse = new FederationResponse();
 
-        if (authorizedResources.contains(efEndpoint)) {
+        String rootURI = efEndpoint.split("\\?")[0];
+        if(rootURI.endsWith("/")){
+            rootURI = rootURI.substring(0, rootURI.length() - 1);
+        }
 
-            if (efEndpoint.equals(vfosEndpoint)) {
+
+        if (authorizedResources.contains(rootURI)) {
+
+            if (vfosEndpoint.equals(rootURI)) {
                 response.addHeader("ssoToken", "HoQkZDFbTyeEQtkOI1KD4XXra7DPc5VBK4wHaQDlY3Qz6U0FVQ");
                 federationResponse.setSsoToken("HoQkZDFbTyeEQtkOI1KD4XXra7DPc5VBK4wHaQDlY3Qz6U0FVQ");
 
-            } else if (efEndpoint.equals(nimbleEndpoint)) {
+            } else if (nimbleEndpoint.equals(rootURI)) {
 
                 Token token = federationService.exchangeToken(efToken);
                 response.addHeader("ssoToken", token.getAccess_token());
@@ -151,7 +160,7 @@ public class IdentityController {
 
             if (null == federationResponse.getSsoToken()) {
                 federationResponse.setSsoToken("null");
-                federationResponse.setSsoToken("null");
+                response.addHeader("ssoToken", "null");
             }
         }else {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
