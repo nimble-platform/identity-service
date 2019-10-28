@@ -120,33 +120,37 @@ public class IdentityController {
             @ApiResponse(code = 400, message = "Invalid Token")})
     @RequestMapping(value = "/federation/exchangeToken", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<FederationResponse> exchangeToken(@RequestHeader(value = "efToken") String efToken,
-                                        @RequestHeader(value = "efResource") String resource, HttpServletResponse response) throws ServerException {
+                                        @RequestHeader(value = "efEndpoint") String efEndpoint, HttpServletResponse response) throws ServerException {
 
         // TODO Remove hardcoded values and migrate to another service
-        logger.info("Request Received for Federation, efResource: " + resource + " efToken: " + efToken);
-        HashMap<String, String> resourceMap = new HashMap<>();
-        resourceMap.put("vfos/product", "https://nifi.smecluster.com/l33t/products/vfos");
-        resourceMap.put("smecluster/product", "https://nifi.smecluster.com/l33t/products/smecluster");
-        resourceMap.put("nimble/product", "https://nifi.smecluster.com/l33t/products/nimble");
+        logger.info("Request Received for Federation, efEndpoint: " + efEndpoint + " efToken: " + efToken);
+
+        String vfosEndpoint = "https://nifi.smecluster.com/l33t/products/vfos";
+        String nimbleEndpoint = "https://nifi.smecluster.com/l33t/products/nimble";
+        String smeClusterEndpoint = "https://nifi.smecluster.com/l33t/products/smecluster";
+
+        HashSet<String> authorizedResources = new HashSet<String>();
+        authorizedResources.add(vfosEndpoint);
+        authorizedResources.add(nimbleEndpoint);
+        authorizedResources.add(smeClusterEndpoint);
 
         FederationResponse federationResponse = new FederationResponse();
 
-        if (null != resourceMap.get(resource)) {
+        if (authorizedResources.contains(efEndpoint)) {
 
-            if (resource.equals("vfos/product")) {
+            if (efEndpoint.equals(vfosEndpoint)) {
                 response.addHeader("ssoToken", "HoQkZDFbTyeEQtkOI1KD4XXra7DPc5VBK4wHaQDlY3Qz6U0FVQ");
                 federationResponse.setSsoToken("HoQkZDFbTyeEQtkOI1KD4XXra7DPc5VBK4wHaQDlY3Qz6U0FVQ");
 
-            } else if (resource.equals("nimble/product")) {
+            } else if (efEndpoint.equals(nimbleEndpoint)) {
 
                 Token token = federationService.exchangeToken(efToken);
                 response.addHeader("ssoToken", token.getAccess_token());
                 federationResponse.setSsoToken(token.getAccess_token());
             }
 
-            response.addHeader("endpoint", resourceMap.get(resource));
-            federationResponse.setEndpoint(resourceMap.get(resource));
             if (null == federationResponse.getSsoToken()) {
+                federationResponse.setSsoToken("null");
                 federationResponse.setSsoToken("null");
             }
         }else {
