@@ -126,8 +126,8 @@ public class IdentityController {
         // TODO Remove hardcoded values and migrate to another service
         logger.info("Request Received for Federation, efEndpoint: " + efEndpoint + " efToken: " + efToken);
 
-        if (federationService.verifyToken(efToken)) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        if (!federationService.verifyToken(efToken)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
 
         String vfosEndpoint = "https://nifi.smecluster.com/l33t/products/vfos";
