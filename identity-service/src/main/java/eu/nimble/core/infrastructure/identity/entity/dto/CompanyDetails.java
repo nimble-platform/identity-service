@@ -3,7 +3,9 @@ package eu.nimble.core.infrastructure.identity.entity.dto;
 import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties.LanguageID;
 import io.swagger.annotations.ApiModelProperty;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -38,12 +40,15 @@ public class CompanyDetails {
     @ApiModelProperty(value = "List of industry sectors in which company is active in.")
     private Map<LanguageID, String> industrySectors = new HashMap<>();
 
+    @ApiModelProperty(value = "List of process instance ids which are included in the workflow of company")
+    private List<String> processIds = new ArrayList<>();
+
     public CompanyDetails() {
     }
 
     public CompanyDetails(Map<LanguageID, String> brandName, Map<LanguageID, String> legalName, String vatNumber,
                           String verificationInformation, Address address, String businessType, Map<LanguageID, String> businessKeywords,
-                          Integer yearOfCompanyRegistration, Map<LanguageID, String> industrySectors) {
+                          Integer yearOfCompanyRegistration, Map<LanguageID, String> industrySectors, List<String> processIds) {
         this.brandName = brandName;
         this.legalName = legalName;
         this.vatNumber = vatNumber;
@@ -53,6 +58,7 @@ public class CompanyDetails {
         this.businessKeywords = businessKeywords;
         this.yearOfCompanyRegistration = yearOfCompanyRegistration;
         this.industrySectors = industrySectors;
+        this.processIds = processIds;
     }
 
     public Map<LanguageID, String> getBrandName() {
@@ -125,5 +131,13 @@ public class CompanyDetails {
 
     public void setIndustrySectors(Map<LanguageID, String> industrySectors) {
         this.industrySectors = industrySectors;
+    }
+
+    public List<String> getProcessIds() {
+        return processIds;
+    }
+
+    public void setProcessIds(List<String> processIds) {
+        this.processIds = processIds;
     }
 }

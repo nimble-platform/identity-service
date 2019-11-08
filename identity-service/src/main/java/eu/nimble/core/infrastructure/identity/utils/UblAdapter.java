@@ -130,6 +130,7 @@ public class UblAdapter {
                 .map(scheme -> scheme.getTaxScheme().getTaxTypeCode().getValue())
                 .findFirst().orElse(null));
         companyDetails.setAddress(adaptAddress(party.getPostalAddress()));
+        companyDetails.setProcessIds(new ArrayList<>(party.getProcessID()));
         if (party.getIndustryClassificationCode() != null)
             companyDetails.setBusinessType(party.getIndustryClassificationCode().getValue());
 
@@ -330,6 +331,11 @@ public class UblAdapter {
         List<PartyNameType> legalNames = UblAdapter.adaptPartyNames(settings.getDetails().getLegalName());
         companyToChange.getPartyName().clear();
         companyToChange.getPartyName().addAll(legalNames);
+
+        // process ids
+        List<String> processIds = new ArrayList<>(settings.getDetails().getProcessIds());
+        companyToChange.getProcessID().clear();
+        companyToChange.getProcessID().addAll(processIds);
 
         // VAT number
         if (settings.getDetails().getVatNumber() != null) {
