@@ -4,6 +4,7 @@ import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperti
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 
@@ -27,7 +28,7 @@ public class TestUtils {
         CompanyDetails companyDetails = new CompanyDetails(Collections.singletonMap(ENGLISH, "brand name"),
                 Collections.singletonMap(ENGLISH, legalName), "vat number", "verification info",
                 new Address(), "business type", Collections.singletonMap(ENGLISH, "business type"), 1970,
-                industrySectors);
+                industrySectors,new ArrayList<>());
         CompanyDescription companyDescription = new CompanyDescription(companyStatement, "website",
                 Collections.singletonList("photos"), "imageId", Collections.singletonList("social media"),
                 Collections.singletonList(new CompanyEvent()), Collections.singletonList("test"));
