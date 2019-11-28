@@ -14,7 +14,7 @@ import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.service.RocketChatService;
 import eu.nimble.core.infrastructure.identity.system.dto.CompanyRegistrationResponse;
 import eu.nimble.core.infrastructure.identity.system.dto.UserRegistration;
-import eu.nimble.core.infrastructure.identity.system.dto.oauth.AccessToken;
+import eu.nimble.core.infrastructure.identity.system.dto.federation.FederationResponse;
 import eu.nimble.core.infrastructure.identity.system.dto.oauth.Token;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.login.RocketChatLoginResponse;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.sso.RocketChatResponse;
@@ -49,6 +49,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.WebApplicationException;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.rmi.ServerException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -118,16 +119,57 @@ public class IdentityController {
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Token Generated"),
             @ApiResponse(code = 400, message = "Invalid Token")})
-    @RequestMapping(value = "/federation/exchangeToken", produces = {"application/json"}, consumes = {"application/json"}, method = RequestMethod.POST)
-    ResponseEntity<Token> exchangeToken(@ApiParam(value = "Token provided by the Trusted IDP", required = true) @RequestBody AccessToken accessToken) throws ServerException {
+    @RequestMapping(value = "/federation/exchangeToken", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<FederationResponse> exchangeToken(@RequestHeader(value = "efToken") String efToken,
+                                        @RequestHeader(value = "efEndpoint") String efEndpoint, HttpServletResponse response) throws ServerException, URISyntaxException {
 
-        Token nimbleToken = federationService.exchangeToken(accessToken.getAccess_token());
+        // TODO Remove hardcoded values and migrate to another service
+        logger.info("Request Received for Federation, efEndpoint: " + efEndpoint + " efToken: " + efToken);
 
-        if (null != nimbleToken.getAccess_token() && !nimbleToken.getAccess_token().isEmpty()) {
-            return new ResponseEntity<Token>(nimbleToken, HttpStatus.OK);
-        }else {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        if (!federationService.verifyToken(efToken)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
+
+        String vfosEndpoint = "https://nifi.smecluster.com/l33t/products/vfos";
+        String nimbleEndpoint = "https://nifi.smecluster.com/l33t/products/nimble";
+        String nimbleImagesEndpoint = "https://nifi.smecluster.com/l33t/products/nimbleImages";
+        String smeClusterEndpoint = "https://nifi.smecluster.com/l33t/products/smecluster";
+
+        HashSet<String> authorizedResources = new HashSet<String>();
+        authorizedResources.add(vfosEndpoint);
+        authorizedResources.add(nimbleEndpoint);
+        authorizedResources.add(smeClusterEndpoint);
+        authorizedResources.add(nimbleImagesEndpoint);
+
+        FederationResponse federationResponse = new FederationResponse();
+
+        String rootURI = efEndpoint.split("\\?")[0];
+        if(rootURI.endsWith("/")){
+            rootURI = rootURI.substring(0, rootURI.length() - 1);
+        }
+
+
+        if (authorizedResources.contains(rootURI)) {
+
+            if (vfosEndpoint.equals(rootURI)) {
+                response.addHeader("ssoToken", "HoQkZDFbTyeEQtkOI1KD4XXra7DPc5VBK4wHaQDlY3Qz6U0FVQ");
+                federationResponse.setSsoToken("HoQkZDFbTyeEQtkOI1KD4XXra7DPc5VBK4wHaQDlY3Qz6U0FVQ");
+
+            } else if (nimbleEndpoint.equals(rootURI)) {
+
+                Token token = federationService.exchangeToken(efToken);
+                response.addHeader("ssoToken", token.getAccess_token());
+                federationResponse.setSsoToken(token.getAccess_token());
+            }
+
+            if (null == federationResponse.getSsoToken()) {
+                federationResponse.setSsoToken("null");
+                response.addHeader("ssoToken", "null");
+            }
+        }else {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        return new ResponseEntity<>(federationResponse, HttpStatus.OK);
     }
 
     @ApiOperation(value = "Verify a token.", tags = {})

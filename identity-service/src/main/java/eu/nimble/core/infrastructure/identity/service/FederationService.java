@@ -37,6 +37,16 @@ public class FederationService {
         return getAccessToken(null, GlobalConstants.CLIENT_CREDENTIALS_FLOW, null);
     }
 
+    public boolean verifyToken(String accessTokenUri) {
+        try {
+            long exp = JWT.decode(accessTokenUri).getClaim(GlobalConstants.JWT_EXPIRY_ATTRIBUTE_STRING).asLong();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
     public Token getAccessToken(String code, String grantType, String refreshToken) {
         Token token = new Token();
         String url = accessTokenUri;
