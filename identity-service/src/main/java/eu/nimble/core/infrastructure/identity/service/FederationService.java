@@ -34,7 +34,7 @@ public class FederationService {
         // TODO verify the signature
         long exp = JWT.decode(trustedToken).getClaim(GlobalConstants.JWT_EXPIRY_ATTRIBUTE_STRING).asLong();
 
-        return getAccessToken(null, GlobalConstants.CLIENT_CREDENTIALS_FLOW, null);
+        return getAccessToken(null, GlobalConstants.CLIENT_CREDENTIALS_FLOW, null, redirectUri);
     }
 
     public boolean verifyToken(String accessTokenUri) {
@@ -47,7 +47,7 @@ public class FederationService {
         return true;
     }
 
-    public Token getAccessToken(String code, String grantType, String refreshToken) {
+    public Token getAccessToken(String code, String grantType, String refreshToken, String redirectURL) {
         Token token = new Token();
         String url = accessTokenUri;
         RestTemplate restTemplate = new RestTemplate();
@@ -59,7 +59,11 @@ public class FederationService {
         if (GlobalConstants.AUTHORIZATION_CODE_FLOW.equals(grantType)) {
             map.add("grant_type", GlobalConstants.AUTHORIZATION_CODE_FLOW);
             map.add("code", code);
-            map.add("redirect_uri", redirectUri);
+            if (redirectURL == null) {
+                map.add("redirect_uri", redirectUri);
+            }else {
+                map.add("redirect_uri", redirectURL);
+            }
         } else if (GlobalConstants.CLIENT_CREDENTIALS_FLOW.equals(grantType)) {
             map.add("grant_type", GlobalConstants.CLIENT_CREDENTIALS_FLOW);
         } else if (GlobalConstants.REFRESH_TOKEN_FLOW.equals(grantType)) {

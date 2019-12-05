@@ -200,7 +200,7 @@ public class IdentityController {
             return new ResponseEntity<>(frontEndUser, HttpStatus.BAD_REQUEST);
         }
 
-        token = federationService.getAccessToken(token.getCode(), GlobalConstants.AUTHORIZATION_CODE_FLOW, null);
+        token = federationService.getAccessToken(token.getCode(), GlobalConstants.AUTHORIZATION_CODE_FLOW, null, token.getRedirect_URL());
 
         if (null == token.getAccess_token()) {
             return new ResponseEntity<>(frontEndUser, HttpStatus.BAD_REQUEST);
@@ -441,7 +441,7 @@ public class IdentityController {
 
         // refresh tokens
         if (identityService.hasAnyRole(bearer, EFACTORY_USER) && httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY) != null) {
-            Token token = federationService.getAccessToken(null, GlobalConstants.REFRESH_TOKEN_FLOW, httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString());
+            Token token = federationService.getAccessToken(null, GlobalConstants.REFRESH_TOKEN_FLOW, httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString(), null);
             companyRegistration.setAccessToken(token.getAccess_token());
         }else if(httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY) != null) {
             OAuth2AccessToken tokenResponse = oAuthClient.refreshToken(httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString());

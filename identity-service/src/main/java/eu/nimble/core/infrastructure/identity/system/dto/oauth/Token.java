@@ -14,6 +14,7 @@ public class Token {
     private String session_state = null;
     private String scope = null;
     private String code = null;
+    private String redirect_URL = null;
 
     public String getAccess_token() {
         return access_token;
@@ -85,5 +86,13 @@ public class Token {
 
     public void setCode(String code) {
         this.code = code;
+    }
+
+    public String getRedirect_URL() {
+        return redirect_URL;
+    }
+
+    public void setRedirect_URL(String redirect_URL) {
+        this.redirect_URL = redirect_URL;
     }
 }
