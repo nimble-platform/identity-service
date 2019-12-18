@@ -148,6 +148,32 @@ public class AdminService {
         return partyList;
     }
 
+    public boolean revertCompany(Long companyId, String bearer) throws Exception {
+
+        // query company
+        PartyType company = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == true){
+            // revert associated company members
+            for (PersonType member : company.getPerson()) {
+                Long memberHjid = member.getHjid();
+                revertPerson(memberHjid,bearer,true);
+            }
+
+            //set deleted flag fr the party
+            company.setDeleted(false);
+
+            //update the party
+            partyRepository.save(company);
+            return true;
+        }
+
+        else {
+            return false;
+        }
+
+    }
+
     public boolean deleteCompany(Long companyId, String bearer, Long userId) throws Exception {
 
         // query company
@@ -227,6 +253,30 @@ public class AdminService {
             person.setDeleted(true);
             keycloakAdmin.addRole(keyCloakId, KeycloakAdmin.NIMBLE_DELETED_USER);
             //save deleted person
+            personRepository.save(person);
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    public boolean revertPerson(Long personHjid, String bearer , boolean isCompanyReverted) throws Exception {
+
+        OpenIdConnectUserDetails oidUser = identityService.getUserDetails(bearer);
+        String keyCloackuid = oidUser.getUserId();
+
+        // query person
+        PersonType person = personRepository.findByHjid(personHjid).stream().findFirst().orElseThrow(ControllerUtils.PersonNotFoundException::new);
+        List<UaaUser> potentialUser = uaaUserRepository.findByUblPerson(person);
+        UaaUser uaaUser = potentialUser.stream().findFirst().orElseThrow(() -> new Exception("Invalid user mapping"));
+        String keyCloakId = uaaUser.getExternalID();
+
+        if(keyCloakId.equals(keyCloackuid) || identityService.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == true
+                || isCompanyReverted){
+            //set delete flag for the person
+            person.setDeleted(false);
+            keycloakAdmin.removeRole(keyCloakId, KeycloakAdmin.NIMBLE_DELETED_USER);
+            //save person
             personRepository.save(person);
             return true;
         }else{

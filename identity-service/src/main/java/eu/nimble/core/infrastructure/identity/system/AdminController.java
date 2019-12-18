@@ -1,12 +1,15 @@
 package eu.nimble.core.infrastructure.identity.system;
 
 import com.thoughtworks.xstream.core.util.Fields;
+import eu.nimble.core.infrastructure.identity.clients.CatalogueServiceClient;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
+import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
+import eu.nimble.core.infrastructure.identity.utils.DataModelUtils;
 import eu.nimble.core.infrastructure.identity.utils.LogEvent;
 import eu.nimble.service.model.solr.Search;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
@@ -53,6 +56,10 @@ public class AdminController {
 
     @Autowired
     private IndexingClient indexingClient;
+    @Autowired
+    private CatalogueServiceClient catalogueServiceClient;
+    @Autowired
+    private PartyRepository partyRepository;
 
     @ApiOperation(value = "Retrieve unverified companies", response = Page.class)
     @RequestMapping(value = "/unverified_companies", produces = {"application/json"}, method = RequestMethod.GET)
@@ -106,6 +113,38 @@ public class AdminController {
         adminService.verifyCompany(companyId);
 
         return ResponseEntity.ok().build();
+    }
+
+    @ApiOperation(value = "Revert a deleted company back")
+    @RequestMapping(value = "/revert_company/{companyId}", method = RequestMethod.POST)
+    ResponseEntity<?> revertCompany(@PathVariable(value = "companyId") long companyId,
+                                    @RequestHeader(value = "Authorization") String bearer) throws Exception {
+
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER,OAuthClient.Role.COMPANY_ADMIN,
+                OAuthClient.Role.INITIAL_REPRESENTATIVE,OAuthClient.Role.LEGAL_REPRESENTATIVE,OAuthClient.Role.EXTERNAL_REPRESENTATIVE) == false)
+            return new ResponseEntity<>("Only platform managers,company_admin, external_representative, "
+                    + "initial_representative, legal_representative are allowed to revert companies back", HttpStatus.UNAUTHORIZED);
+        Map<String,String> paramMap = new HashMap<String, String>();
+        paramMap.put("activity", LogEvent.REVERT_COMPANY.getActivity());
+        paramMap.put("companyId", String.valueOf(companyId));
+        LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "Reverting company with id {}", companyId);
+        boolean isCompanyReverted = adminService.revertCompany(companyId,bearer);
+        if(isCompanyReverted){
+            //index catalogues
+            catalogueServiceClient.indexAllCatalogues(Long.toString(companyId),bearer);
+
+            //index party
+            PartyType company = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(company);
+            indexingClient.setParty(newParty,bearer);
+            return ResponseEntity.ok().build();
+        }else{
+            return new ResponseEntity<>("Only company_admin, external_representative, "
+                    + "initial_representative, legal_representative of company are allowed to revert companies back",
+                    HttpStatus.UNAUTHORIZED);
+        }
+
+
     }
 
     @ApiOperation(value = "Delete company")
