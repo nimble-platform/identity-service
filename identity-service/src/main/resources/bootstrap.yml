@@ -122,6 +122,8 @@ nimble:
     url: ${CATALOGUE_SERVICE_URL:http://localhost:8095}
   platformName : ${PLATFORM_NAME:Staging}
   platformHost : ${IDENTITY_SERVICE_URL:http://localhost:9096}
+  delegate-service:
+    url: ${DELEGATE_SERVICE_URL:}
 
 management:
   health:

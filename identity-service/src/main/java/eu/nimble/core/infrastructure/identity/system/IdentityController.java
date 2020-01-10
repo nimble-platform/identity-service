@@ -1,6 +1,7 @@
 package eu.nimble.core.infrastructure.identity.system;
 
 import com.auth0.jwt.JWT;
+import eu.nimble.core.infrastructure.identity.clients.DelegateServiceClient;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
@@ -69,6 +70,9 @@ public class IdentityController {
 
     @Autowired
     private PartyRepository partyRepository;
+
+    @Autowired
+    private DelegateServiceClient delegateServiceClient;
 
     @Autowired
     private QualifyingPartyRepository qualifyingPartyRepository;
@@ -413,6 +417,8 @@ public class IdentityController {
 
         // update id of company
         UblUtils.setID(newCompany, newCompany.getHjid().toString());
+        // set federation id of company
+        newCompany.setFederationInstanceID(delegateServiceClient.getFederationId());
         partyRepository.save(newCompany);
 
         // create qualifying party
