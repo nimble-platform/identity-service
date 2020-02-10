@@ -152,8 +152,7 @@ public class InvitationController {
             @RequestHeader(value = "Authorization") String bearer,
             @ApiParam(value = "Id of company to change settings from.", required = true) @PathVariable Long companyID) throws IOException {
 
-        if (identityService.hasAnyRole(bearer,COMPANY_ADMIN,LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false
-                || identityService.hasAnyRole(bearer,NIMBLE_DELETED_USER) == true)
+        if (identityService.hasAnyRole(bearer,NIMBLE_DELETED_USER) == true)
             return new ResponseEntity<>("Only legal representatives, company admin, not deleted users or platform managers are allowed to retrieve company members", HttpStatus.FORBIDDEN);
 
         if (identityService.hasAnyRole(bearer,PLATFORM_MANAGER) == false){

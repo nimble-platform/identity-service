@@ -70,6 +70,7 @@ public class OAuthClient {
         PUBLISHER("publisher"),
         NIMBLE_DELETED_USER("nimble_deleted_user"),
         EXTERNAL_REPRESENTATIVE("external_representative"),
+        MONITOR("monitor"),
         EFACTORY_USER("eFactoryUser");
 
         private final String role;

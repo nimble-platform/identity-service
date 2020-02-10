@@ -1,6 +1,7 @@
 package eu.nimble.core.infrastructure.identity.system;
 
 import com.auth0.jwt.JWT;
+import eu.nimble.core.infrastructure.identity.clients.DelegateServiceClient;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
@@ -69,6 +70,9 @@ public class IdentityController {
 
     @Autowired
     private PartyRepository partyRepository;
+
+    @Autowired
+    private DelegateServiceClient delegateServiceClient;
 
     @Autowired
     private QualifyingPartyRepository qualifyingPartyRepository;
@@ -200,7 +204,7 @@ public class IdentityController {
             return new ResponseEntity<>(frontEndUser, HttpStatus.BAD_REQUEST);
         }
 
-        token = federationService.getAccessToken(token.getCode(), GlobalConstants.AUTHORIZATION_CODE_FLOW, null);
+        token = federationService.getAccessToken(token.getCode(), GlobalConstants.AUTHORIZATION_CODE_FLOW, null, token.getRedirect_URL());
 
         if (null == token.getAccess_token()) {
             return new ResponseEntity<>(frontEndUser, HttpStatus.BAD_REQUEST);
@@ -413,6 +417,8 @@ public class IdentityController {
 
         // update id of company
         UblUtils.setID(newCompany, newCompany.getHjid().toString());
+        // set federation id of company
+        newCompany.setFederationInstanceID(delegateServiceClient.getFederationId());
         partyRepository.save(newCompany);
 
         // create qualifying party
@@ -441,7 +447,7 @@ public class IdentityController {
 
         // refresh tokens
         if (identityService.hasAnyRole(bearer, EFACTORY_USER) && httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY) != null) {
-            Token token = federationService.getAccessToken(null, GlobalConstants.REFRESH_TOKEN_FLOW, httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString());
+            Token token = federationService.getAccessToken(null, GlobalConstants.REFRESH_TOKEN_FLOW, httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString(), null);
             companyRegistration.setAccessToken(token.getAccess_token());
         }else if(httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY) != null) {
             OAuth2AccessToken tokenResponse = oAuthClient.refreshToken(httpSession.getAttribute(REFRESH_TOKEN_SESSION_KEY).toString());
