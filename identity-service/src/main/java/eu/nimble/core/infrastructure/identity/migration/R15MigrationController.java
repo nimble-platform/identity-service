@@ -1,6 +1,7 @@
 package eu.nimble.core.infrastructure.identity.migration;
 
 import eu.nimble.core.infrastructure.identity.clients.DelegateServiceClient;
+import eu.nimble.core.infrastructure.identity.config.FederationConfig;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
@@ -35,6 +36,8 @@ public class R15MigrationController {
     private IdentityService identityService;
     @Autowired
     private DelegateServiceClient delegateServiceClient;
+    @Autowired
+    private FederationConfig federationConfig;
 
     @ApiOperation(value = "", notes = "Sets the federation id of parties")
     @ApiResponses(value = {
@@ -54,7 +57,7 @@ public class R15MigrationController {
             return new ResponseEntity<>("Only legal representatives, company admin or platform managers are allowed to run this migration script", HttpStatus.FORBIDDEN);
 
         // federation id
-        String federationId = delegateServiceClient.getFederationId();
+        String federationId = federationConfig.getFederationInstanceId();
         if(federationId == null){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("This instance does not have a federation id");
         }
