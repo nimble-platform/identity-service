@@ -503,9 +503,11 @@ public class CompanySettingsController {
         logger.debug("indexing all companies. ");
         Iterable<PartyType> allParties = partyRepository.findAll(new Sort(Sort.Direction.ASC, "hjid"));
         for(PartyType party : allParties) {
+            if (!party.isDeleted()) {
                 eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
-                logger.info("Indexing party from database to index : " + newParty.getId() + " legalName : " +  newParty.getLegalName());
-                indexingClient.setParty(newParty,bearer);
+                logger.info("Indexing party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
+                indexingClient.setParty(newParty, bearer);
+            }
         }
         return new ResponseEntity<>(HttpStatus.OK);
     }
