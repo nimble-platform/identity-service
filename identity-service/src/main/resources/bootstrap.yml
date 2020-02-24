@@ -41,7 +41,7 @@ spring:
     remove-abandoned: true
     log-abandoned: true
     initial-size: 3
-    max-active: 50
+    max-active: 55
     max-idle: 3
     min-idle: 3
     max-wait: 90000
@@ -125,6 +125,18 @@ nimble:
   federation-instance-id: ${FEDERATION_INSTANCE_ID}
   delegate-service:
     url: ${DELEGATE_SERVICE_URL:}
+
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 300000
+  threadpool:
+    default:
+      coreSize: 300
+      maxQueueSize: -1
 
 management:
   health:
