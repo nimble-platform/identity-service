@@ -10,6 +10,7 @@ import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.repository.*;
+import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.utils.DataModelUtils;
@@ -87,6 +88,9 @@ public class CompanySettingsController {
 
     @Autowired
     private IndexingClient indexingClient;
+
+    @Autowired
+    private AdminService adminService;
 
     @ApiOperation(value = "Retrieve company settings", response = CompanySettings.class)
     @RequestMapping(value = "/{companyID}", produces = {"application/json"}, method = RequestMethod.GET)
@@ -494,20 +498,25 @@ public class CompanySettingsController {
     }
 
     /**
-     * admin endpoint to reindex all parties in indexing service (for admin purposes only)
+     * admin endpoint to reindex all valid parties in indexing service (for admin purposes only)
      * @return 200 OK
      * @throws UnirestException
      */
     @RequestMapping(value = "/reindexParties", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<?> reindexAllCompanies(@RequestHeader(value = "Authorization") String bearer) {
         logger.debug("indexing all companies. ");
-        Iterable<PartyType> allParties = partyRepository.findAll(new Sort(Sort.Direction.ASC, "hjid"));
-        for(PartyType party : allParties) {
-            if (!party.isDeleted()) {
+        //adding verified and unverified companies with valid userRoles
+        List<PartyType> verifiedCompanies = adminService.queryCompanies(AdminService.CompanyState.VERIFIED);
+        List<PartyType> unVerifiedCompanies = adminService.queryCompanies(AdminService.CompanyState.UNVERIFIED);
+        List<PartyType> resultingCompanies = new ArrayList<>();
+
+        resultingCompanies.addAll(verifiedCompanies);
+        resultingCompanies.addAll(unVerifiedCompanies);
+
+        for(PartyType party : resultingCompanies) {
                 eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
                 logger.info("Indexing party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
                 indexingClient.setParty(newParty, bearer);
-            }
         }
         return new ResponseEntity<>(HttpStatus.OK);
     }
