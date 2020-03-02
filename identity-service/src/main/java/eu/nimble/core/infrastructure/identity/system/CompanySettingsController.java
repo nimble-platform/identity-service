@@ -498,12 +498,14 @@ public class CompanySettingsController {
     }
 
     /**
-     * admin endpoint to reindex all valid parties in indexing service (for admin purposes only)
+     * admin endpoint to reindex all valid parties in indexing service (for platform manager/admin purposes only)
      * @return 200 OK
      * @throws UnirestException
      */
     @RequestMapping(value = "/reindexParties", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<?> reindexAllCompanies(@RequestHeader(value = "Authorization") String bearer) {
+    ResponseEntity<?> reindexAllCompanies(@RequestHeader(value = "Authorization") String bearer) throws IOException{
+        if (identityService.hasAnyRole(bearer, PLATFORM_MANAGER) == false)
+            return new ResponseEntity<>("Only platform managers are allowed to reindex all companies", HttpStatus.FORBIDDEN);
         logger.debug("indexing all companies. ");
         //adding verified and unverified companies with valid userRoles
         List<PartyType> verifiedCompanies = adminService.queryCompanies(AdminService.CompanyState.VERIFIED);
@@ -518,7 +520,7 @@ public class CompanySettingsController {
                 logger.info("Indexing party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
                 indexingClient.setParty(newParty, bearer);
         }
-        return new ResponseEntity<>(HttpStatus.OK);
+        return new ResponseEntity<>("Completed indexing all companies", HttpStatus.OK);
     }
 
 
