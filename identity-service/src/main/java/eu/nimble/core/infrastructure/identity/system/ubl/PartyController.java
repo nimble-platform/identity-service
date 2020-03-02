@@ -3,6 +3,7 @@ package eu.nimble.core.infrastructure.identity.system.ubl;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
+import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.system.ControllerUtils;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
@@ -40,6 +41,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static eu.nimble.core.infrastructure.identity.uaa.OAuthClient.Role.*;
+
 /**
  * Created by Johannes Innerbichler on 26/04/17.
  * Controller for retrieving party data.
@@ -61,6 +64,9 @@ public class PartyController {
 
     @Autowired
     private IdentityService identityService;
+
+    @Autowired
+    private AdminService adminService;
 
     @SuppressWarnings("PointlessBooleanExpression")
     @ApiOperation(value = "", notes = "Get Party for Id.", response = PartyType.class, tags = {})
@@ -219,6 +225,20 @@ public class PartyController {
         if (exclude != null)
             partyIds = partyIds.stream().filter(p -> !exclude.contains(p.getCompanyID())).collect(Collectors.toList());
 
+        return ResponseEntity.ok(partyIds);
+    }
+
+    //new method to retrieve verified company Ids
+    @ApiOperation(value = "Get verified party ids. Returns id list.",
+            response = String.class, responseContainer = "List")
+    @RequestMapping(value = "/party/verified", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<?> getVerifiedPartyIds( @RequestHeader(value = "Authorization") String bearer) throws IOException {
+        if (identityService.hasAnyRole(bearer, PLATFORM_MANAGER) == false)
+            return new ResponseEntity<>("Only platform managers are allowed to retrieve all verified companies", HttpStatus.FORBIDDEN);
+
+        List<String> partyIds = StreamSupport.stream(adminService.queryCompanies(AdminService.CompanyState.VERIFIED).spliterator(), false)
+                .map(p -> UblAdapter.adaptPartyIdentifier(p))
+                .collect(Collectors.toList());
         return ResponseEntity.ok(partyIds);
     }
 
