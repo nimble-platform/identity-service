@@ -146,7 +146,7 @@ public class CompanySettingsController {
         eu.nimble.service.model.solr.party.PartyType indexedParty =  indexingClient.getParty(existingCompany.getHjid().toString(),bearer);
         //indexing the new company in the indexing service
         eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(existingCompany);
-        if (indexedParty.getVerified()) {
+        if (indexedParty != null && indexedParty.getVerified()) {
             party.setVerified(true);
         }
         indexingClient.setParty(party,bearer);
