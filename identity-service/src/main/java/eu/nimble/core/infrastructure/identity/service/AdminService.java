@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.service;
 
+import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
 import eu.nimble.core.infrastructure.identity.system.ControllerUtils;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
@@ -64,6 +65,8 @@ public class AdminService {
     @Autowired
     private IdentityService identityService;
 
+    @Autowired
+    private IndexingClient indexingClient;
 
     //    @Cacheable("unverifiedCompanies")
     public List<PartyType> queryCompanies(CompanyState companyState) {
@@ -110,7 +113,7 @@ public class AdminService {
         return resultingCompanies;
     }
 
-    public boolean verifyCompany(Long companyId) {
+    public boolean verifyCompany(Long companyId, String bearer) {
         PartyType company = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         List<PersonType> companyMembers = company.getPerson();
@@ -125,6 +128,10 @@ public class AdminService {
                 String email = companyMember.getContact().getElectronicMail();
                 emailService.notifyVerifiedCompany(email, companyMember, company);
 
+                //indexing the verified status of the company
+                eu.nimble.service.model.solr.party.PartyType party =  indexingClient.getParty(company.getHjid().toString(),bearer);
+                party.setVerified(true);
+                indexingClient.setParty(party,bearer);
                 return true;
             }
         }

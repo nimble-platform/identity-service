@@ -87,6 +87,11 @@ public class DataModelUtils {
                 }
             }
         }
+
+        if(party.getWebsiteURI() != null) {
+            indexParty.setWebsite(party.getWebsiteURI());
+        }
+        indexParty.setVerified(false);
         return indexParty;
     }
 

@@ -143,8 +143,12 @@ public class CompanySettingsController {
 
         partyRepository.save(existingCompany);
 
+        eu.nimble.service.model.solr.party.PartyType indexedParty =  indexingClient.getParty(existingCompany.getHjid().toString(),bearer);
         //indexing the new company in the indexing service
         eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(existingCompany);
+        if (indexedParty.getVerified()) {
+            party.setVerified(true);
+        }
         indexingClient.setParty(party,bearer);
 
         newSettings = adaptCompanySettings(existingCompany, qualifyingParty);
@@ -515,8 +519,9 @@ public class CompanySettingsController {
         resultingCompanies.addAll(verifiedCompanies);
         resultingCompanies.addAll(unVerifiedCompanies);
 
-        for(PartyType party : resultingCompanies) {
+        for(PartyType party : verifiedCompanies) {
                 eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
+                
                 logger.info("Indexing party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
                 indexingClient.setParty(newParty, bearer);
         }
