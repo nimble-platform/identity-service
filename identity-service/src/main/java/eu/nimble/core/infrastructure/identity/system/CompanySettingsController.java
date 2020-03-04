@@ -514,17 +514,19 @@ public class CompanySettingsController {
         //adding verified and unverified companies with valid userRoles
         List<PartyType> verifiedCompanies = adminService.queryCompanies(AdminService.CompanyState.VERIFIED);
         List<PartyType> unVerifiedCompanies = adminService.queryCompanies(AdminService.CompanyState.UNVERIFIED);
-        List<PartyType> resultingCompanies = new ArrayList<>();
 
-        resultingCompanies.addAll(verifiedCompanies);
-        resultingCompanies.addAll(unVerifiedCompanies);
-
-        for(PartyType party : verifiedCompanies) {
-                eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
-                
-                logger.info("Indexing party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
-                indexingClient.setParty(newParty, bearer);
+        for (PartyType party : verifiedCompanies) {
+            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
+            newParty.setVerified(true);
+            logger.info("Indexing verified party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
+            indexingClient.setParty(newParty, bearer);
         }
+        for (PartyType party : unVerifiedCompanies) {
+            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
+            logger.info("Indexing unverified party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
+            indexingClient.setParty(newParty, bearer);
+        }
+
         return new ResponseEntity<>("Completed indexing all companies", HttpStatus.OK);
     }
 
