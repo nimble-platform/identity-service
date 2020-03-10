@@ -10,6 +10,7 @@ import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
 import eu.nimble.core.infrastructure.identity.repository.*;
+import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.utils.DataModelUtils;
@@ -88,6 +89,9 @@ public class CompanySettingsController {
     @Autowired
     private IndexingClient indexingClient;
 
+    @Autowired
+    private AdminService adminService;
+
     @ApiOperation(value = "Retrieve company settings", response = CompanySettings.class)
     @RequestMapping(value = "/{companyID}", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<CompanySettings> getSettings(
@@ -139,8 +143,12 @@ public class CompanySettingsController {
 
         partyRepository.save(existingCompany);
 
+        eu.nimble.service.model.solr.party.PartyType indexedParty =  indexingClient.getParty(existingCompany.getHjid().toString(),bearer);
         //indexing the new company in the indexing service
         eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(existingCompany);
+        if (indexedParty != null && indexedParty.getVerified()) {
+            party.setVerified(true);
+        }
         indexingClient.setParty(party,bearer);
 
         newSettings = adaptCompanySettings(existingCompany, qualifyingParty);
@@ -494,20 +502,32 @@ public class CompanySettingsController {
     }
 
     /**
-     * admin endpoint to reindex all parties in indexing service (for admin purposes only)
+     * admin endpoint to reindex all valid parties in indexing service (for platform manager/admin purposes only)
      * @return 200 OK
      * @throws UnirestException
      */
     @RequestMapping(value = "/reindexParties", produces = {"application/json"}, method = RequestMethod.GET)
-    ResponseEntity<?> reindexAllCompanies(@RequestHeader(value = "Authorization") String bearer) {
+    ResponseEntity<?> reindexAllCompanies(@RequestHeader(value = "Authorization") String bearer) throws IOException{
+        if (identityService.hasAnyRole(bearer, PLATFORM_MANAGER) == false)
+            return new ResponseEntity<>("Only platform managers are allowed to reindex all companies", HttpStatus.FORBIDDEN);
         logger.debug("indexing all companies. ");
-        Iterable<PartyType> allParties = partyRepository.findAll(new Sort(Sort.Direction.ASC, "hjid"));
-        for(PartyType party : allParties) {
-                eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
-                logger.info("Indexing party from database to index : " + newParty.getId() + " legalName : " +  newParty.getLegalName());
-                indexingClient.setParty(newParty,bearer);
+        //adding verified and unverified companies with valid userRoles
+        List<PartyType> verifiedCompanies = adminService.queryCompanies(AdminService.CompanyState.VERIFIED);
+        List<PartyType> unVerifiedCompanies = adminService.queryCompanies(AdminService.CompanyState.UNVERIFIED);
+
+        for (PartyType party : verifiedCompanies) {
+            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
+            newParty.setVerified(true);
+            logger.info("Indexing verified party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
+            indexingClient.setParty(newParty, bearer);
         }
-        return new ResponseEntity<>(HttpStatus.OK);
+        for (PartyType party : unVerifiedCompanies) {
+            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
+            logger.info("Indexing unverified party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
+            indexingClient.setParty(newParty, bearer);
+        }
+
+        return new ResponseEntity<>("Completed indexing all companies", HttpStatus.OK);
     }
 
 

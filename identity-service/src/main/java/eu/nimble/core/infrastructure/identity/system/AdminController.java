@@ -110,7 +110,7 @@ public class AdminController {
         paramMap.put("activity", LogEvent.VERIFY_COMPANY.getActivity());
         paramMap.put("companyId", String.valueOf(companyId));
         LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "Verifying company with id {}", companyId);
-        adminService.verifyCompany(companyId);
+        adminService.verifyCompany(companyId, bearer);
 
         return ResponseEntity.ok().build();
     }
