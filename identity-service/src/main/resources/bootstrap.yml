@@ -87,6 +87,7 @@ nimble:
   keycloak:
     serverUrl: ${KEYCLOAK_URL:http://localhost:10096/auth}
     realm: ${KEYCLOAK_REALM:master}
+    public-key: ${KEYCLOAK_PUBLIC_KEY}
     admin:
       username: ${KEYCLOAK_ADMIN_USERNAME:admin}
       password: ${KEYCLOAK_ADMIN_PASSWORD:password}
