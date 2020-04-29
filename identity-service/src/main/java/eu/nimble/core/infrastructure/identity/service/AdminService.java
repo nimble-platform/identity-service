@@ -2,6 +2,7 @@ package eu.nimble.core.infrastructure.identity.service;
 
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
+import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.system.ControllerUtils;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
@@ -9,8 +10,8 @@ import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
+import eu.nimble.utility.persistence.binary.BinaryContentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +43,8 @@ public class AdminService {
 
     @Autowired
     private NegotiationSettingsRepository negotiationSettingsRepository;
+    @Autowired
+    private UserInvitationRepository userInvitationRepository;
 
     @Autowired
     private PaymentMeansRepository paymentMeansRepository;
@@ -49,6 +52,11 @@ public class AdminService {
     @Autowired
     private DeliveryTermsRepository deliveryTermsRepository;
 
+    @Autowired
+    private DocumentReferenceRepository documentReferenceRepository;
+    @Autowired
+    private CertificateRepository certificateRepository;
+    private BinaryContentService binaryContentService = new BinaryContentService();
     @Autowired
     private KeycloakAdmin keycloakAdmin;
 
@@ -247,6 +255,59 @@ public class AdminService {
 
     }
 
+    // this method deletes the party represented by the given id
+    public void deleteCompanyPermanently(Long companyId) {
+        // query company
+        PartyType company = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+        // retrieve qualifying party
+        QualifyingPartyType qualifyingParty = qualifyingPartyRepository.findByParty(company).stream().findFirst().get();
+        // retrieve negotiation settings
+        NegotiationSettings negotiationSettings = negotiationSettingsRepository.findOneByCompany(company);
+        // delete negotiation settings
+        negotiationSettingsRepository.delete(negotiationSettings);
+
+        // delete qualifying party
+        qualifyingPartyRepository.delete(qualifyingParty);
+
+        // delete trading preferences
+        if (company.getPurchaseTerms() != null) {
+            deliveryTermsRepository.delete(company.getPurchaseTerms().getDeliveryTerms());
+            paymentMeansRepository.delete(company.getPurchaseTerms().getPaymentMeans());
+        }
+        if (company.getSalesTerms() != null) {
+            deliveryTermsRepository.delete(company.getSalesTerms().getDeliveryTerms());
+            paymentMeansRepository.delete(company.getSalesTerms().getPaymentMeans());
+        }
+
+        // delete document references
+        if(company.getDocumentReference() != null){
+            for (DocumentReferenceType documentReference : company.getDocumentReference()) {
+                if(documentReference.getAttachment() != null && documentReference.getAttachment().getEmbeddedDocumentBinaryObject() != null && documentReference.getAttachment().getEmbeddedDocumentBinaryObject().getUri() != null){
+                    String uri = documentReference.getAttachment().getEmbeddedDocumentBinaryObject().getUri();
+                    binaryContentService.deleteContentIdentity(uri);
+                }
+
+                documentReferenceRepository.delete(documentReference);
+            }
+        }
+
+        // delete company certificates
+        if(company.getCertificate() != null){
+            for (CertificateType certificate : company.getCertificate()) {
+
+                if(certificate.getDocumentReference() != null && certificate.getDocumentReference().get(0).getAttachment() != null && certificate.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject() != null && certificate.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getUri() != null){
+                    String uri = certificate.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getUri();
+                    binaryContentService.deleteContentIdentity(uri);
+                }
+
+                certificateRepository.delete(certificate);
+            }
+
+        }
+
+        // delete party
+        partyRepository.delete(company);
+    }
 
     public boolean deletePerson(Long personHjid, String bearer , boolean isCompanyDelete) throws Exception {
 

@@ -13,6 +13,7 @@ import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.list.ChatUse
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.list.UserEmail;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.login.RocketChatLoginResponse;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.register.RockerChatRegisterResponse;
+import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.register.RocketChatDeleteResponse;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,9 @@ public class RocketChatService {
 
     @Value("${nimble.rocketChat.chatServiceURL}")
     private String chatServiceURL;
+
+    @Value("${nimble.rocketChat.isEnabled}")
+    private boolean isChatEnabled;
 
     public CreateChannelRequest createChannel(CreateChannelRequest createChannelRequest, List<String> members) {
 
@@ -306,6 +310,65 @@ public class RocketChatService {
     }
 
     /**
+     * The following method deletes a user from Rocket.Chat
+     *
+     * @param userEmailAddress
+     * @return
+     */
+    public void deleteUser(String userEmailAddress) {
+        // find the user for the given email address and delete it from Rocket.Chat
+        ChatUsers chatUsers = listUsers();
+        for (ChatUser user : chatUsers.getUsers()) {
+            if(user.getEmails() != null){
+                for (UserEmail userEmail : user.getEmails()) {
+                    if(userEmail.getAddress().contentEquals(userEmailAddress)){
+                        // delete the user from Rocket.Chat
+                        Credentials credentials = new Credentials();
+                        credentials.setUsername(rocketChatUser);
+                        credentials.setPassword(rocketChatPassword);
+                        RocketChatLoginResponse rocketChatLoginResponse = loginOrCreateUser(new FrontEndUser(), credentials, false, false);
+
+                        RestTemplate rs = new RestTemplate();
+                        String uri = rocketChatURL + "/api/v1/users.delete";
+
+                        HttpHeaders headers = new HttpHeaders();
+                        headers.setContentType(MediaType.APPLICATION_JSON);
+                        headers.set("X-User-Id", rocketChatLoginResponse.getData().getUserId());
+                        headers.set("X-Auth-Token", rocketChatLoginResponse.getData().getAuthToken());
+
+                        JSONObject request = new JSONObject();
+                        request.put(GlobalConstants.USER_NAME_STRING, user.getUsername());
+
+                        HttpEntity<String> entity = new HttpEntity<String>(request.toString(), headers);
+
+                        ResponseEntity<String> registerResponse = rs.exchange(uri, HttpMethod.POST, entity, String.class);
+                        ObjectMapper mapper = new ObjectMapper();
+                        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+                        try{
+                            RocketChatDeleteResponse rocketChatDeleteResponse = mapper.readValue(registerResponse.getBody(), RocketChatDeleteResponse.class);
+
+                            if (rocketChatDeleteResponse.isSuccess() && null == rocketChatDeleteResponse.getError()) {
+                                logger.info("The user with username {} is deleted from Rocket.Chat", user.getUsername());
+                            }
+
+                            if (!rocketChatDeleteResponse.isSuccess()) {
+                                String error = rocketChatDeleteResponse.getError() != null ? rocketChatDeleteResponse.getError(): "";
+                                logger.error("Failed to delete the user with username {} from Rocket.Chat {}", user.getUsername(),error);
+                            }
+
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * This function tries to login a user to Rocket.Chat, if the user is not present in Rocket.Chat then it will create
      * a new user in Rocket.Chat. This behaviour has been added to support existing users in the platform
      *
@@ -350,5 +413,9 @@ public class RocketChatService {
             e.printStackTrace();
         }
         return rocketChatLoginResponse;
+    }
+
+    public boolean isChatEnabled() {
+        return isChatEnabled;
     }
 }
