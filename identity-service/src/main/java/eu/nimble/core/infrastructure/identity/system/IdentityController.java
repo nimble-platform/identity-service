@@ -120,9 +120,6 @@ public class IdentityController {
     @Autowired
     private IndexingClient indexingClient;
 
-    @Value("${nimble.rocketChat.isEnabled}")
-    private boolean isChatEnabled;
-
     @ApiOperation(value = "Provide Nimble Token for a trusted identity provider token.", tags = {})
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Token Generated"),
@@ -363,7 +360,7 @@ public class IdentityController {
         }
 
         // Create a user in rocket isChatEnabled
-        if (isChatEnabled) {
+        if (chatService.isChatEnabled()) {
             chatService.registerUser(frontEndUser, credentials, false, 0);
         }
         logger.info("Registering a new user with email {} and id {}", frontEndUser.getEmail(), frontEndUser.getUserID());
@@ -565,7 +562,7 @@ public class IdentityController {
         frontEndUser.setAccessToken(accessToken.getValue());
         httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, accessToken.getRefreshToken().getValue());
 
-        if(isChatEnabled){
+        if(chatService.isChatEnabled()){
             RocketChatLoginResponse rocketChatToken = chatService.loginOrCreateUser(frontEndUser, credentials, true, true);
             frontEndUser.setRocketChatToken(rocketChatToken.getData().getAuthToken());
             frontEndUser.setRocketChatUsername(rocketChatToken.getData().getMe().getUsername());

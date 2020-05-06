@@ -4,15 +4,21 @@ import com.thoughtworks.xstream.core.util.Fields;
 import eu.nimble.core.infrastructure.identity.clients.CatalogueServiceClient;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
+import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
+import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
+import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
 import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
+import eu.nimble.core.infrastructure.identity.service.RocketChatService;
+import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.core.infrastructure.identity.utils.DataModelUtils;
 import eu.nimble.core.infrastructure.identity.utils.LogEvent;
 import eu.nimble.service.model.solr.Search;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import eu.nimble.utility.LoggerUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -52,6 +58,12 @@ public class AdminController {
     private AdminService adminService;
 
     @Autowired
+    private KeycloakAdmin keycloakAdmin;
+    @Autowired
+    private PersonRepository personRepository;
+    @Autowired
+    private UaaUserRepository uaaUserRepository;
+    @Autowired
     private IdentityService identityService;
 
     @Autowired
@@ -60,6 +72,8 @@ public class AdminController {
     private CatalogueServiceClient catalogueServiceClient;
     @Autowired
     private PartyRepository partyRepository;
+    @Autowired
+    private RocketChatService chatService;
 
     @ApiOperation(value = "Retrieve unverified companies", response = Page.class)
     @RequestMapping(value = "/unverified_companies", produces = {"application/json"}, method = RequestMethod.GET)
@@ -145,6 +159,44 @@ public class AdminController {
         }
 
 
+    }
+
+    @ApiOperation(value = "Reject company")
+    @RequestMapping(value = "/reject_company/{companyId}", method = RequestMethod.DELETE)
+    ResponseEntity<?> rejectCompany(@PathVariable(value = "companyId") long companyId,
+                                    @RequestHeader(value = "Authorization") String bearer) throws Exception {
+
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER,OAuthClient.Role.COMPANY_ADMIN,
+                OAuthClient.Role.INITIAL_REPRESENTATIVE,OAuthClient.Role.LEGAL_REPRESENTATIVE,OAuthClient.Role.EXTERNAL_REPRESENTATIVE) == false)
+            return new ResponseEntity<>("Only platform managers,company_admin, external_representative, "
+                    + "initial_representative, legal_representative are allowed to reject companies", HttpStatus.UNAUTHORIZED);
+        Map<String,String> paramMap = new HashMap<String, String>();
+        paramMap.put("activity", LogEvent.REJECT_COMPANY.getActivity());
+        paramMap.put("companyId", String.valueOf(companyId));
+        LoggerUtils.logWithMDC(logger, paramMap, LoggerUtils.LogLevel.INFO, "Rejecting company with id {}", companyId);
+
+        // retrieve party
+        PartyType company = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+        // retrieve person
+        PersonType person = company.getPerson().get(0);
+        String emailAddress = person.getContact().getElectronicMail();
+        // retrieve uaa user
+        UaaUser uaaUser = uaaUserRepository.findByUblPerson(person).stream().findFirst().orElseThrow(ControllerUtils.PersonNotFoundException::new);
+        // delete the user from keycloak
+        keycloakAdmin.deleteUser(uaaUser.getExternalID());
+        // delete the user from UaaUser
+        uaaUserRepository.deleteByUblPerson(person);
+        // delete person
+        personRepository.delete(person);
+        // delete company permanently
+        adminService.deleteCompanyPermanently(companyId);
+        // remove party from the solr
+        indexingClient.deleteParty(String.valueOf(companyId),bearer);
+        // remove the user from RocketChat if enabled
+        if(chatService.isChatEnabled()){
+            chatService.deleteUser(emailAddress);
+        }
+        return ResponseEntity.ok().build();
     }
 
     @ApiOperation(value = "Delete company")
