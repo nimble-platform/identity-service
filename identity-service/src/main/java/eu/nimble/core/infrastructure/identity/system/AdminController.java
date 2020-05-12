@@ -177,25 +177,33 @@ public class AdminController {
 
         // retrieve party
         PartyType company = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
-        // retrieve person
-        PersonType person = company.getPerson().get(0);
-        String emailAddress = person.getContact().getElectronicMail();
-        // retrieve uaa user
-        UaaUser uaaUser = uaaUserRepository.findByUblPerson(person).stream().findFirst().orElseThrow(ControllerUtils.PersonNotFoundException::new);
-        // delete the user from keycloak
-        keycloakAdmin.deleteUser(uaaUser.getExternalID());
-        // delete the user from UaaUser
-        uaaUserRepository.deleteByUblPerson(person);
-        // delete person
-        personRepository.delete(person);
+        // some companies might not have any associated person
+        if(company.getPerson() != null && !company.getPerson().isEmpty()){
+            // retrieve person
+            PersonType person = company.getPerson().get(0);
+            String emailAddress = person.getContact().getElectronicMail();
+            // retrieve uaa user and delete the user from keycloak
+            try{
+                // retrieve uaa user
+                UaaUser uaaUser = uaaUserRepository.findByUblPerson(person).stream().findFirst().orElseThrow(ControllerUtils.PersonNotFoundException::new);
+                // delete the user from keycloak
+                keycloakAdmin.deleteUser(uaaUser.getExternalID());
+            }catch (ControllerUtils.PersonNotFoundException exception){
+                logger.error("No UaaUser is found for person with id: {}",person.getID(),exception);
+            }
+            // delete the user from UaaUser
+            uaaUserRepository.deleteByUblPerson(person);
+            // delete person
+            personRepository.delete(person);
+            // remove the user from RocketChat if enabled
+            if(chatService.isChatEnabled()){
+                chatService.deleteUser(emailAddress);
+            }
+        }
         // delete company permanently
         adminService.deleteCompanyPermanently(companyId);
         // remove party from the solr
         indexingClient.deleteParty(String.valueOf(companyId),bearer);
-        // remove the user from RocketChat if enabled
-        if(chatService.isChatEnabled()){
-            chatService.deleteUser(emailAddress);
-        }
         return ResponseEntity.ok().build();
     }
 

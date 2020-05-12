@@ -263,8 +263,10 @@ public class AdminService {
         QualifyingPartyType qualifyingParty = qualifyingPartyRepository.findByParty(company).stream().findFirst().get();
         // retrieve negotiation settings
         NegotiationSettings negotiationSettings = negotiationSettingsRepository.findOneByCompany(company);
-        // delete negotiation settings
-        negotiationSettingsRepository.delete(negotiationSettings);
+        if(negotiationSettings != null){
+            // delete negotiation settings
+            negotiationSettingsRepository.delete(negotiationSettings);
+        }
 
         // delete qualifying party
         qualifyingPartyRepository.delete(qualifyingParty);
