@@ -33,7 +33,17 @@ public class UblUtils {
     }
 
     public static String getText(Collection<TextType> textType, NimbleConfigurationProperties.LanguageID languageID) {
-        return textType.stream().filter(tt -> tt.getLanguageID().equals(languageID.toString())).map(TextType::getValue).findFirst().orElse(null);
+        // get text for the given language id
+        String text = textType.stream().filter(tt -> tt.getLanguageID().equals(languageID.toString())).map(TextType::getValue).findFirst().orElse(null);
+        // if it's not available, then get the text for English
+        if(text == null){
+            text = textType.stream().filter(tt -> tt.getLanguageID().equals(NimbleConfigurationProperties.LanguageID.ENGLISH.toString())).map(TextType::getValue).findFirst().orElse(null);
+            // if a text is not available for english as well, simply return the first one
+            if(text == null){
+                return getText(textType);
+            }
+        }
+        return text;
     }
 
     public static String getText(Collection<TextType> textType) {
