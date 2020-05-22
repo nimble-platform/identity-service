@@ -180,8 +180,6 @@ public class AdminService {
 
             //update the party
             partyRepository.save(company);
-            //update the index by removing the company
-            indexingClient.deleteParty(company.getHjid().toString(), bearer);
             return true;
         }
 
