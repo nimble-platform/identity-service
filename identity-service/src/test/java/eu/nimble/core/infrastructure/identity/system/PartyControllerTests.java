@@ -29,6 +29,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
 import static eu.nimble.core.infrastructure.identity.TestUtils.JSON_DATE_FORMAT;
 import static eu.nimble.core.infrastructure.identity.TestUtils.createCompanyRegistration;
 import static org.hamcrest.Matchers.is;
@@ -107,10 +110,14 @@ public class PartyControllerTests {
         CompanyRegistration companyRegistration = createCompanyRegistration(legalName, person);
 
         // GIVEN: existing company on platform
-        Gson gson = new GsonBuilder().setDateFormat(JSON_DATE_FORMAT).create();
+        //Gson gson = new GsonBuilder().setDateFormat(JSON_DATE_FORMAT).create();
+        ObjectMapper mapper = new ObjectMapper();
+        DateFormat df = new SimpleDateFormat(JSON_DATE_FORMAT);
+        mapper.setDateFormat(df);
+        //JacksonEncoder encoder = new JacksonEncoder();
         String responseAsString = this.mockMvc.perform(post("/register/company").contentType(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer DUMMY_TOKEN")
-                .content(gson.toJson(companyRegistration)))
+                .content(mapper.writeValueAsString(companyRegistration)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         companyRegistration = objectMapper.readValue(responseAsString, CompanyRegistration.class);
