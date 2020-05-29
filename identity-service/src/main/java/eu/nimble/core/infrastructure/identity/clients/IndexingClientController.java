@@ -1,8 +1,9 @@
 package eu.nimble.core.infrastructure.identity.clients;
 
-import feign.Feign;
+import feign.hystrix.HystrixFeign;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.netflix.feign.support.SpringMvcContract;
 import org.springframework.context.annotation.PropertySource;
@@ -29,6 +30,10 @@ public class IndexingClientController {
 
     @Value("${nimble.indexing.federated-index-url}")
     private String federatedIndexUrl;
+
+
+    @Autowired
+    IndexingClientFallback indexingFallback;
 
     public IndexingClientController() {
 
@@ -61,10 +66,10 @@ public class IndexingClientController {
     }
 
     private IndexingClient createIndexingClient(String url) {
-        return Feign.builder().contract(new SpringMvcContract())
+        return HystrixFeign.builder().contract(new SpringMvcContract())
                 .encoder(new JacksonEncoder())
                 .decoder(new JacksonDecoder())
-                .target(IndexingClient.class, url);
+                .target(IndexingClient.class, url, indexingFallback);
     }
 
 }
