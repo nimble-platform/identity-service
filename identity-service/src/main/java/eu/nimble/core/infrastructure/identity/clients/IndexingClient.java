@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
  *
  * @author Dileepa Jayakody
  */
-@FeignClient(name = "indexing-service", url = "${nimble.indexing.url}", fallback = IndexingClientFallback.class)
+@FeignClient(name = "indexing-service", fallback = IndexingClientFallback.class)
 public interface IndexingClient {
     @RequestMapping(method = RequestMethod.PUT, value = "/party", consumes = "application/json")
     @Headers("Content-Type: application/json")

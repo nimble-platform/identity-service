@@ -3,6 +3,7 @@ package eu.nimble.core.infrastructure.identity.system;
 import com.auth0.jwt.JWT;
 import eu.nimble.core.infrastructure.identity.clients.DelegateServiceClient;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
+import eu.nimble.core.infrastructure.identity.clients.IndexingClientController;
 import eu.nimble.core.infrastructure.identity.config.FederationConfig;
 import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
@@ -23,10 +24,7 @@ import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.sso.RocketCh
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
-import eu.nimble.core.infrastructure.identity.utils.DataModelUtils;
-import eu.nimble.core.infrastructure.identity.utils.LogEvent;
-import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
-import eu.nimble.core.infrastructure.identity.utils.UblUtils;
+import eu.nimble.core.infrastructure.identity.utils.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import eu.nimble.utility.LoggerUtils;
@@ -38,7 +36,6 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
@@ -118,7 +115,8 @@ public class IdentityController {
     private FederationService federationService;
 
     @Autowired
-    private IndexingClient indexingClient;
+    private IndexingClientController indexingController;
+
 
     @ApiOperation(value = "Provide Nimble Token for a trusted identity provider token.", tags = {})
     @ApiResponses(value = {
@@ -474,7 +472,11 @@ public class IdentityController {
                 }
             }
         }
-        indexingClient.setParty(newParty,bearer);
+
+        List<IndexingClient> indexingClients = indexingController.getClients();
+        for (IndexingClient indexingClient : indexingClients) {
+            indexingClient.setParty(newParty, bearer);
+        }
 
         String companyName = ublUtils.getName(newCompany);
         String companyId = String.valueOf(companyRegistration.getCompanyID());

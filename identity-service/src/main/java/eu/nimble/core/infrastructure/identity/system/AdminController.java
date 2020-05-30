@@ -1,6 +1,5 @@
 package eu.nimble.core.infrastructure.identity.system;
 
-import com.thoughtworks.xstream.core.util.Fields;
 import eu.nimble.core.infrastructure.identity.clients.CatalogueServiceClient;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
@@ -13,8 +12,8 @@ import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.service.RocketChatService;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
-import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.core.infrastructure.identity.utils.DataModelUtils;
+import eu.nimble.core.infrastructure.identity.clients.IndexingClientController;
 import eu.nimble.core.infrastructure.identity.utils.LogEvent;
 import eu.nimble.service.model.solr.Search;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
@@ -22,7 +21,6 @@ import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import eu.nimble.utility.LoggerUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.bouncycastle.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,7 +65,8 @@ public class AdminController {
     private IdentityService identityService;
 
     @Autowired
-    private IndexingClient indexingClient;
+    private IndexingClientController indexingController;
+
     @Autowired
     private CatalogueServiceClient catalogueServiceClient;
     @Autowired
@@ -150,7 +149,10 @@ public class AdminController {
             //index party
             PartyType company = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
             eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(company);
-            indexingClient.setParty(newParty,bearer);
+            List<IndexingClient> indexingClients = indexingController.getClients();
+            for (IndexingClient indexingClient : indexingClients) {
+                indexingClient.setParty(newParty, bearer);
+            }
             return ResponseEntity.ok().build();
         }else{
             return new ResponseEntity<>("Only company_admin, external_representative, "
@@ -202,8 +204,10 @@ public class AdminController {
         }
         // delete company permanently
         adminService.deleteCompanyPermanently(companyId);
-        // remove party from the solr
-        indexingClient.deleteParty(String.valueOf(companyId),bearer);
+        // remove party from the solr indexes
+        for (IndexingClient indexingClient : indexingController.getClients()) {
+            indexingClient.deleteParty(String.valueOf(companyId), bearer);
+        }
         return ResponseEntity.ok().build();
     }
 
@@ -226,7 +230,7 @@ public class AdminController {
                     //find items idexed by the manufaturer
                     eu.nimble.service.model.solr.Search search = new Search();
                     search.setQuery("manufacturerId:"+companyId);
-                    eu.nimble.service.model.solr.SearchResult sr = indexingClient.searchItem(search,bearer);
+            eu.nimble.service.model.solr.SearchResult sr = indexingController.getNimbleIndexClient().searchItem(search, bearer);
 
                     List<Object> result  = sr.getResult();
                     Set<String> catIds = new HashSet<String>();
@@ -238,17 +242,23 @@ public class AdminController {
                             catIds.add(catalogueId);
                         }
                         //remove items from indexing
-                        indexingClient.removeItem(catLineId,bearer);
+                        for (IndexingClient indexingClient : indexingController.getClients()) {
+                            indexingClient.removeItem(catLineId, bearer);
+                        }
                     }
 
                     Iterator iterate = catIds.iterator();
 
                     while (iterate.hasNext()){
                         //remove catalogue from the index
-                        indexingClient.deleteCatalogue(iterate.next().toString(),bearer);
+                        for (IndexingClient indexingClient : indexingController.getClients()) {
+                            indexingClient.deleteCatalogue(iterate.next().toString(), bearer);
+                        }
                     }
-                    //unindex party from the solr
-                    indexingClient.deleteParty(String.valueOf(companyId),bearer);
+            //delete party from the indexes
+            for (IndexingClient indexingClient : indexingController.getClients()) {
+                indexingClient.deleteParty(String.valueOf(companyId), bearer);
+            }
             return ResponseEntity.ok().build();
         }else{
             return new ResponseEntity<>("Only company_admin, external_representative, "
