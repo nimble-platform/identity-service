@@ -47,14 +47,18 @@ public class EmailService {
     private String supportEmail;
 
     @Value("${nimble.platformName}")
+    private String platformVersion;
+
+    @Value("${spring.mail.platformName}")
     private String platformName;
 
     public void sendResetCredentialsLink(String toEmail, String credentials) throws UnsupportedEncodingException{
         String resetCredentialsURL = frontendUrl + "/#/user-mgmt/forgot/?key=" + URLEncoder.encode(credentials, "UTF-8");
         Context context = new Context();
         context.setVariable("resetPasswordURL", resetCredentialsURL);
+        context.setVariable("platformName",platformName);
 
-        String subject = "Reset Password to the NIMBLE (" + platformName +  ") platform";
+        String subject = String.format("Reset Password to the %s (%s) platform",platformName,platformVersion);
 
         this.send(new String[]{toEmail}, subject, "password-reset", context, new String[]{});
     }
@@ -67,8 +71,9 @@ public class EmailService {
         context.setVariable("companyName", companyName);
         context.setVariable("invitationUrl", invitationUrl);
         context.setVariable("roles", roles);
+        context.setVariable("platformName",platformName);
 
-        String subject = "Invitation to the NIMBLE (" + platformName +  ") platform";
+        String subject = String.format("Invitation to the %s (%s) platform",platformName,platformVersion);
 
         this.send(new String[]{toEmail}, subject, "invitation", context, new String[]{supportEmail});
     }
@@ -79,8 +84,9 @@ public class EmailService {
         context.setVariable("companyName", companyName);
         context.setVariable("nimbleUrl", frontendUrl);
         context.setVariable("roles", roles);
+        context.setVariable("platformName",platformName);
 
-        String subject = "Invitation to " + companyName + " from Nimble (" + platformName +  ")";
+        String subject = String.format("Invitation to %s from %s (%s)",companyName,platformName,platformVersion);
 
         this.send(new String[]{toEmail}, subject, "invitation_existing_company", context, new String[]{});
     }
@@ -101,6 +107,7 @@ public class EmailService {
         // collect info of user
         context.setVariable("companyName", ublUtils.getName(company));
         context.setVariable("companyID", company.getHjid());
+        context.setVariable("platformName",platformName);
 
         // collect info of company
         if (company.getPostalAddress() != null) {
@@ -113,7 +120,7 @@ public class EmailService {
             context.setVariable("companypostalCode", address.getPostalZone());
         }
 
-        String subject = "NIMBLE (" + platformName +  ") : New company registered";
+        String subject = String.format("%s (%s) : New company registered",platformName,platformVersion);
 
         this.send(emails.toArray(new String[]{}), subject, "new_company", context, new String[]{});
     }
@@ -126,8 +133,9 @@ public class EmailService {
         context.setVariable("companyName", ublUtils.getName(company));
         context.setVariable("supportEmail", supportEmail);
         context.setVariable("nimbleUrl", frontendUrl);
+        context.setVariable("platformName",platformName);
 
-        String subject = "Your company has been verified on NIMBLE (" + platformName +  ")";
+        String subject = String.format("Your company has been verified on %s (%s)",platformName,platformVersion);
 
         this.send(new String[]{email}, subject, "company_verified", context, new String[]{});
     }

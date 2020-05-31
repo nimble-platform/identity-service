@@ -2,7 +2,7 @@ Hello,
 
 you have been invited to [(${companyName})] by [(${senderName})].
 
-Please follow the link in order to login to NIMBLE.
+Please follow the link in order to login to [(${platformName})].
 [(${nimbleUrl})]
 
 You have the following roles:
@@ -10,4 +10,4 @@ You have the following roles:
  - [( ${role} )]
 [/]
 Sincerely,
-    your NIMBLE platform manager
+    your [(${platformName})] platform manager

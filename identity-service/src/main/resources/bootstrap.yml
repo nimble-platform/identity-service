@@ -59,6 +59,7 @@ spring:
     password: ${SMTP_PASSWORD:}
     smtp.auth: ${SMTP_AUTH:true}
     properties.mail.smtp.starttls.enable: ${SMTP_STARTTLS:true}
+    platformName : ${MAIL_PLATFORM_NAME:NIMBLE}
   jackson:
     default-property-inclusion: NON_NULL
   kafka:

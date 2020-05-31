@@ -1,6 +1,6 @@
 Dear platform manager,
 
-a new company registered on NIMBLE: [(${companyName})]
+a new company registered on [(${platformName})]: [(${companyName})]
 
 [(${username})] ([(${userEmail})]) is the current initial representative.
 
