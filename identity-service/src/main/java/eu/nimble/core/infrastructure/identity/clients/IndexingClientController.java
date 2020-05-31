@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.clients;
 
+import feign.Retryer;
 import feign.hystrix.HystrixFeign;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
@@ -69,6 +70,7 @@ public class IndexingClientController {
         return HystrixFeign.builder().contract(new SpringMvcContract())
                 .encoder(new JacksonEncoder())
                 .decoder(new JacksonDecoder())
+                .retryer(new Retryer.Default(1,100,3))
                 .target(IndexingClient.class, url, indexingFallback);
     }
 
