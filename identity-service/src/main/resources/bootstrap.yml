@@ -106,6 +106,8 @@ nimble:
       redirectUri: ${OAUTH_FEDERATION_CLIENT_REDIRECT_URI:http://localhost:9092/}
   frontend:
     url: ${FRONTEND_URL:http://localhost:9092}
+    registration:
+      url: ${FRONTEND_REGISTRATION_URL:#/user-mgmt/registration}
   kafka:
     topics:
       companyUpdates: ${KAFKA_TOPIC_COMPANY_UPDATES:company-updates}

@@ -52,6 +52,9 @@ public class EmailService {
     @Value("${spring.mail.platformName}")
     private String platformName;
 
+    @Value("${nimble.frontend.registration.url}")
+    private String frontendRegistrationUrl;
+
     public void sendResetCredentialsLink(String toEmail, String credentials) throws UnsupportedEncodingException{
         String resetCredentialsURL = frontendUrl + "/#/user-mgmt/forgot/?key=" + URLEncoder.encode(credentials, "UTF-8");
         Context context = new Context();
@@ -64,7 +67,7 @@ public class EmailService {
     }
 
     public void sendInvite(String toEmail, String senderName, String companyName, Collection<String> roles) throws UnsupportedEncodingException {
-        String invitationUrl = frontendUrl + "/#/user-mgmt/registration/?email=" + URLEncoder.encode(toEmail, "UTF-8");
+        String invitationUrl = String.format("%s/%s/?email=%s",frontendUrl,frontendRegistrationUrl,URLEncoder.encode(toEmail, "UTF-8"));
 
         Context context = new Context();
         context.setVariable("senderName", senderName);
