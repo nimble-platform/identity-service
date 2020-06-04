@@ -140,6 +140,26 @@ public class EmailService {
         this.send(new String[]{email}, subject, "company_verified", context, new String[]{});
     }
 
+    public void notifyDeletedCompany(List<PersonType> legalRepresentatives, PartyType company) {
+
+        String companyName = ublUtils.getName(company);
+        for (PersonType legalRepresentative : legalRepresentatives) {
+            Context context = new Context();
+            context.setVariable("firstName", legalRepresentative.getFirstName());
+            context.setVariable("familyName", legalRepresentative.getFamilyName());
+            context.setVariable("companyName", companyName);
+            context.setVariable("platformName",platformName);
+
+            String subject = String.format("Your company has been deleted from %s (%s)",platformName,platformVersion);
+
+            try {
+                this.send(new String[]{legalRepresentative.getContact().getElectronicMail()}, subject, "company_deleted", context, new String[]{});
+            }catch (Exception e){
+                logger.error("Failed to send email:",e);
+            }
+        }
+    }
+
     private void send(String[] to, String subject, String template, Context context, String[] cc) {
 
         SimpleMailMessage mailMessage = new SimpleMailMessage();

@@ -4,6 +4,7 @@ import eu.nimble.core.infrastructure.identity.clients.CatalogueServiceClient;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
+import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
@@ -39,6 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by Johannes Innerbichler on 12.09.18.
@@ -73,6 +75,8 @@ public class AdminController {
     private PartyRepository partyRepository;
     @Autowired
     private RocketChatService chatService;
+    @Autowired
+    private EmailService emailService;
 
     @ApiOperation(value = "Retrieve unverified companies", response = Page.class)
     @RequestMapping(value = "/unverified_companies", produces = {"application/json"}, method = RequestMethod.GET)
@@ -259,6 +263,14 @@ public class AdminController {
             for (IndexingClient indexingClient : indexingController.getClients()) {
                 indexingClient.deleteParty(String.valueOf(companyId), bearer);
             }
+
+            // send email to Legal Representatives of the company
+            PartyType party = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+            // enrich persons with roles
+            identityService.enrichWithRoles(party);
+            List<PersonType> legalRepresentatives = party.getPerson().stream().filter(personType -> personType.getRole().contains(OAuthClient.Role.LEGAL_REPRESENTATIVE.toString())).collect(Collectors.toList());
+            emailService.notifyDeletedCompany(legalRepresentatives,party);
+
             return ResponseEntity.ok().build();
         }else{
             return new ResponseEntity<>("Only company_admin, external_representative, "

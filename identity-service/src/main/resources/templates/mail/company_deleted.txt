@@ -1,0 +1,6 @@
+Dear [(${firstName})] [(${familyName})],
+
+your company [(${companyName})] has been deleted from [(${platformName})] platform.
+
+Best regards,
+  your [(${platformName})] Platform Manager
