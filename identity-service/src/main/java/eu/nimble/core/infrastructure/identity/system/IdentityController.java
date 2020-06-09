@@ -27,6 +27,7 @@ import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.core.infrastructure.identity.utils.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
+import eu.nimble.utility.ExecutionContext;
 import eu.nimble.utility.LoggerUtils;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -71,6 +72,9 @@ public class IdentityController {
 
     @Autowired
     private DelegateServiceClient delegateServiceClient;
+
+    @Autowired
+    private ExecutionContext executionContext;
 
     @Autowired
     private FederationConfig federationConfig;
@@ -612,7 +616,7 @@ public class IdentityController {
     ResponseEntity<?> passwordRecovery(@ApiParam(value = "Email Account", required = true) @RequestBody ResetCredentials resetCredentials) throws IOException {
         logger.info("Password recovery request received for : {}", resetCredentials.getUsername());
         String token = keycloakAdmin.initiatePasswordRecoveryProcess(resetCredentials.getUsername());
-        emailService.sendResetCredentialsLink(resetCredentials.getUsername(), token);
+        emailService.sendResetCredentialsLink(resetCredentials.getUsername(), token,executionContext.getLanguageId());
         return ResponseEntity.ok().build();
     }
 
@@ -682,7 +686,7 @@ public class IdentityController {
         List<UserRepresentation> managers = keycloakAdmin.getPlatformManagers();
         List<String> emails = managers.stream().map(UserRepresentation::getEmail).collect(Collectors.toList());
 
-        emailService.notifyPlatformManagersNewCompany(emails, representative, company);
+        emailService.notifyPlatformManagersNewCompany(emails, representative, company,executionContext.getLanguageId());
     }
 
     @ApiOperation(value = "Update user's favourite list of id's", response = String.class)

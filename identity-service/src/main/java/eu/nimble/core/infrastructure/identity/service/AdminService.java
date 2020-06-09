@@ -11,6 +11,7 @@ import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
+import eu.nimble.utility.ExecutionContext;
 import eu.nimble.utility.persistence.binary.BinaryContentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +49,9 @@ public class AdminService {
 
     @Autowired
     private PaymentMeansRepository paymentMeansRepository;
+
+    @Autowired
+    private ExecutionContext executionContext;
 
     @Autowired
     private DeliveryTermsRepository deliveryTermsRepository;
@@ -134,7 +138,7 @@ public class AdminService {
 
                 // send email notification
                 String email = companyMember.getContact().getElectronicMail();
-                emailService.notifyVerifiedCompany(email, companyMember, company);
+                emailService.notifyVerifiedCompany(email, companyMember, company,executionContext.getLanguageId());
 
                 //indexing the verified status of the company
                 eu.nimble.service.model.solr.party.PartyType party =  indexingClient.getParty(company.getHjid().toString(),bearer);

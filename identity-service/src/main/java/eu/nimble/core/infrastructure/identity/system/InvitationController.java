@@ -13,6 +13,7 @@ import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
+import eu.nimble.utility.ExecutionContext;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -50,6 +51,9 @@ public class InvitationController {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private ExecutionContext executionContext;
 
     @Autowired
     private IdentityService identityService;
@@ -115,7 +119,7 @@ public class InvitationController {
 
             // send information
             String companyName = UblUtils.getName(company.getPartyName(), NimbleConfigurationProperties.LanguageID.ENGLISH);
-            emailService.informInviteExistingCompany(emailInvitee, senderName, companyName, prettifedRoles);
+            emailService.informInviteExistingCompany(emailInvitee, senderName, companyName, prettifedRoles,executionContext.getLanguageId());
             logger.info("Invitation: User {} is already on the platform (without company). Invite from {} ({}) sent.",
                     emailInvitee, sender.getUsername(), companyName);
 
@@ -139,7 +143,7 @@ public class InvitationController {
 
         // send invitation
         String companyName = UblUtils.getName(company.getPartyName(), NimbleConfigurationProperties.LanguageID.ENGLISH);
-        emailService.sendInvite(emailInvitee, senderName, companyName, prettifedRoles);
+        emailService.sendInvite(emailInvitee, senderName, companyName, prettifedRoles,executionContext.getLanguageId());
 
         logger.info("Invitation sent FROM {} ({}, {}) TO {}", senderName, companyName, companyId, emailInvitee);
 

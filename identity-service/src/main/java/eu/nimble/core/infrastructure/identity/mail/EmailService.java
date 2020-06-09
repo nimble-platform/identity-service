@@ -16,6 +16,7 @@ import org.thymeleaf.context.Context;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -55,7 +56,10 @@ public class EmailService {
     @Value("${nimble.frontend.registration.url}")
     private String frontendRegistrationUrl;
 
-    public void sendResetCredentialsLink(String toEmail, String credentials) throws UnsupportedEncodingException{
+    @Value("${spring.mail.languages}")
+    private String mailTemplateLanguages;
+
+    public void sendResetCredentialsLink(String toEmail, String credentials, String language) throws UnsupportedEncodingException{
         String resetCredentialsURL = frontendUrl + "/#/user-mgmt/forgot/?key=" + URLEncoder.encode(credentials, "UTF-8");
         Context context = new Context();
         context.setVariable("resetPasswordURL", resetCredentialsURL);
@@ -63,10 +67,10 @@ public class EmailService {
 
         String subject = String.format("Reset Password to the %s (%s) platform",platformName,platformVersion);
 
-        this.send(new String[]{toEmail}, subject, "password-reset", context, new String[]{});
+        this.send(new String[]{toEmail}, subject, getTemplateName("password-reset",language), context, new String[]{});
     }
 
-    public void sendInvite(String toEmail, String senderName, String companyName, Collection<String> roles) throws UnsupportedEncodingException {
+    public void sendInvite(String toEmail, String senderName, String companyName, Collection<String> roles, String language) throws UnsupportedEncodingException {
         String invitationUrl = String.format("%s/%s/?email=%s",frontendUrl,frontendRegistrationUrl,URLEncoder.encode(toEmail, "UTF-8"));
 
         Context context = new Context();
@@ -78,10 +82,10 @@ public class EmailService {
 
         String subject = String.format("Invitation to the %s (%s) platform",platformName,platformVersion);
 
-        this.send(new String[]{toEmail}, subject, "invitation", context, new String[]{supportEmail});
+        this.send(new String[]{toEmail}, subject, getTemplateName("invitation",language), context, new String[]{supportEmail});
     }
 
-    public void informInviteExistingCompany(String toEmail, String senderName, String companyName, Collection<String> roles) {
+    public void informInviteExistingCompany(String toEmail, String senderName, String companyName, Collection<String> roles, String language) {
         Context context = new Context();
         context.setVariable("senderName", senderName);
         context.setVariable("companyName", companyName);
@@ -91,10 +95,10 @@ public class EmailService {
 
         String subject = String.format("Invitation to %s from %s (%s)",companyName,platformName,platformVersion);
 
-        this.send(new String[]{toEmail}, subject, "invitation_existing_company", context, new String[]{});
+        this.send(new String[]{toEmail}, subject, getTemplateName("invitation_existing_company",language), context, new String[]{});
     }
 
-    public void notifyPlatformManagersNewCompany(List<String> emails, PersonType representative, PartyType company) {
+    public void notifyPlatformManagersNewCompany(List<String> emails, PersonType representative, PartyType company, String language) {
 
         Context context = new Context();
 
@@ -125,10 +129,10 @@ public class EmailService {
 
         String subject = String.format("%s (%s) : New company registered",platformName,platformVersion);
 
-        this.send(emails.toArray(new String[]{}), subject, "new_company", context, new String[]{});
+        this.send(emails.toArray(new String[]{}), subject, getTemplateName("new_company",language), context, new String[]{});
     }
 
-    public void notifyVerifiedCompany(String email, PersonType legalRepresentative, PartyType company) {
+    public void notifyVerifiedCompany(String email, PersonType legalRepresentative, PartyType company, String language) {
 
         Context context = new Context();
         context.setVariable("firstName", legalRepresentative.getFirstName());
@@ -140,10 +144,10 @@ public class EmailService {
 
         String subject = String.format("Your company has been verified on %s (%s)",platformName,platformVersion);
 
-        this.send(new String[]{email}, subject, "company_verified", context, new String[]{});
+        this.send(new String[]{email}, subject, getTemplateName("company_verified",language), context, new String[]{});
     }
 
-    public void notifyDeletedCompany(List<PersonType> legalRepresentatives, PartyType company) {
+    public void notifyDeletedCompany(List<PersonType> legalRepresentatives, PartyType company, String language) {
 
         String companyName = ublUtils.getName(company);
         for (PersonType legalRepresentative : legalRepresentatives) {
@@ -156,7 +160,7 @@ public class EmailService {
             String subject = String.format("Your company has been deleted from %s (%s)",platformName,platformVersion);
 
             try {
-                this.send(new String[]{legalRepresentative.getContact().getElectronicMail()}, subject, "company_deleted", context, new String[]{});
+                this.send(new String[]{legalRepresentative.getContact().getElectronicMail()}, subject, getTemplateName("company_deleted",language), context, new String[]{});
             }catch (Exception e){
                 logger.error("Failed to send email:",e);
             }
@@ -183,5 +187,13 @@ public class EmailService {
         }
 
         this.emailSender.send(mailMessage);
+    }
+
+    private String getTemplateName(String templateName,String language){
+        List<String> languages = Arrays.asList(mailTemplateLanguages.split(","));
+        if(languages.contains(language)){
+            return String.format("%s_%s",templateName,language);
+        }
+        return String.format("%s_%s",templateName,languages.get(0));
     }
 }

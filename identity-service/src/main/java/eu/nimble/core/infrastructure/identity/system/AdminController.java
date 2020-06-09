@@ -19,6 +19,7 @@ import eu.nimble.core.infrastructure.identity.utils.LogEvent;
 import eu.nimble.service.model.solr.Search;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
+import eu.nimble.utility.ExecutionContext;
 import eu.nimble.utility.LoggerUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -65,6 +66,9 @@ public class AdminController {
     private UaaUserRepository uaaUserRepository;
     @Autowired
     private IdentityService identityService;
+
+    @Autowired
+    private ExecutionContext executionContext;
 
     @Autowired
     private IndexingClientController indexingController;
@@ -269,7 +273,7 @@ public class AdminController {
             // enrich persons with roles
             identityService.enrichWithRoles(party);
             List<PersonType> legalRepresentatives = party.getPerson().stream().filter(personType -> personType.getRole().contains(OAuthClient.Role.LEGAL_REPRESENTATIVE.toString())).collect(Collectors.toList());
-            emailService.notifyDeletedCompany(legalRepresentatives,party);
+            emailService.notifyDeletedCompany(legalRepresentatives,party,executionContext.getLanguageId());
 
             return ResponseEntity.ok().build();
         }else{
