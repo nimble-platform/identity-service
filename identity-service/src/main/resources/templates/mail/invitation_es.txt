@@ -1,0 +1,13 @@
+Hola,
+
+usted ha sido invitado a la plataforma [(${companyName})] por [(${senderName})].
+
+Por favor siga el enlace para iniciar sesión en [(${platformName})].
+[(${invitationUrl})]
+
+Usted tiene asignados los siguientes roles:
+[# th:each="role : ${roles}"]
+ - [( ${role} )]
+[/]
+Atentamente,
+  Gerente de la plataforma [(${platformName})].
