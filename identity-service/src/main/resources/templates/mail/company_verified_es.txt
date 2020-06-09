@@ -1,0 +1,15 @@
+Estimado [(${firstName})] [(${familyName})],
+
+su empresa [(${companyName})] ha sido aprobada para hacer negocios en la plataforma [(${platformName})].
+
+Por favor siga el enlace para iniciar sesión en [(${platformName})].
+[(${nimbleUrl})]
+
+Esta plataforma se encuentra en una etapa temprana de acceso / prueba.
+
+Puede experimentar errores y tiempos de espera inusuales.
+
+Agradecemos comentarios y comentarios, cualquier sugerencia o comentario puede enviarse al emal: [(${supportEmail})]
+
+Atentamente,
+  Gerente de la plataforma [(${platformName})].

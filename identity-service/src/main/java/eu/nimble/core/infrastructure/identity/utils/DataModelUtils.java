@@ -67,6 +67,8 @@ public class DataModelUtils {
                     if (sector.getValue().contains(newLineChar)) {
                         String[] sectors = sector.getValue().split(newLineChar);
                         for (String sectorString : sectors) {
+                            // remove carriage return
+                            sectorString = sectorString.replace("\r","");
                             indexParty.addActivitySector(sector.getLanguageID(), sectorString);
                         }
                     } else {

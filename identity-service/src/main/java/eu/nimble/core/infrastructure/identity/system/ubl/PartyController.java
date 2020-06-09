@@ -215,13 +215,22 @@ public class PartyController {
             response = PartyTuple.class, responseContainer = "List")
     @RequestMapping(value = "/party/all", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<List<PartyTuple>> getAllPartyIds(
-            @ApiParam(value = "Excluded ids") @RequestParam(value = "exclude", required = false) List<String> exclude) {
+            @ApiParam(value = "Excluded ids") @RequestParam(value = "exclude", required = false) List<String> exclude,
+            @ApiParam(value = "Whether the company is deleted or not ") @RequestParam(value = "deleted", required = false) Boolean deleted) {
 
-        List<PartyTuple> partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
-                .filter(p -> p.getPerson().isEmpty() == false) // exclude parties with no members (might be deleted)
-                .map(p -> new PartyTuple(UblAdapter.adaptPartyIdentifier(p), UblAdapter.adaptPartyNames(p.getPartyName())))
-                .collect(Collectors.toList());
+        List<PartyTuple> partyIds;
 
+        if(deleted != null){
+            partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
+                    .filter(p -> deleted == p.isDeleted())
+                    .map(p -> new PartyTuple(UblAdapter.adaptPartyIdentifier(p), UblAdapter.adaptPartyNames(p.getPartyName())))
+                    .collect(Collectors.toList());
+        } else{
+            partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
+                    .filter(p -> p.getPerson().isEmpty() == false) // exclude parties with no members (might be deleted)
+                    .map(p -> new PartyTuple(UblAdapter.adaptPartyIdentifier(p), UblAdapter.adaptPartyNames(p.getPartyName())))
+                    .collect(Collectors.toList());
+        }
         if (exclude != null)
             partyIds = partyIds.stream().filter(p -> !exclude.contains(p.getCompanyID())).collect(Collectors.toList());
 

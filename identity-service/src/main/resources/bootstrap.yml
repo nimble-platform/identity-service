@@ -59,6 +59,8 @@ spring:
     password: ${SMTP_PASSWORD:}
     smtp.auth: ${SMTP_AUTH:true}
     properties.mail.smtp.starttls.enable: ${SMTP_STARTTLS:true}
+    platformName : ${MAIL_PLATFORM_NAME:NIMBLE}
+    languages: ${MAIL_TEMPLATE_LANGUAGES:en,es}
   jackson:
     default-property-inclusion: NON_NULL
   kafka:
@@ -105,6 +107,8 @@ nimble:
       redirectUri: ${OAUTH_FEDERATION_CLIENT_REDIRECT_URI:http://localhost:9092/}
   frontend:
     url: ${FRONTEND_URL:http://localhost:9092}
+    registration:
+      url: ${FRONTEND_REGISTRATION_URL:#/user-mgmt/registration}
   kafka:
     topics:
       companyUpdates: ${KAFKA_TOPIC_COMPANY_UPDATES:company-updates}
@@ -119,6 +123,8 @@ nimble:
     password: ${ROCKET_CHAT_PASSWORD:123456}
   indexing:
     url: ${INDEXING_SERVICE_URL:http://localhost:8090}
+    federated-index-enabled: ${FEDERATED_INDEX_ENABLED:false}
+    federated-index-url: ${FEDERATED_INDEXING_SERVICE_URL:}
   catalogue-service:
     url: ${CATALOGUE_SERVICE_URL:http://localhost:8095}
   platformName : ${PLATFORM_NAME:Staging}

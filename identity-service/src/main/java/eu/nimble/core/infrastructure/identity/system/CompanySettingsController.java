@@ -6,6 +6,7 @@ import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
+import eu.nimble.core.infrastructure.identity.clients.IndexingClientController;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
@@ -13,10 +14,7 @@ import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
-import eu.nimble.core.infrastructure.identity.utils.DataModelUtils;
-import eu.nimble.core.infrastructure.identity.utils.ImageUtils;
-import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
-import eu.nimble.core.infrastructure.identity.utils.UblUtils;
+import eu.nimble.core.infrastructure.identity.utils.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
@@ -30,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -87,7 +84,7 @@ public class CompanySettingsController {
     private BinaryContentService binaryContentService = new BinaryContentService();
 
     @Autowired
-    private IndexingClient indexingClient;
+    private IndexingClientController indexingController;
 
     @Autowired
     private AdminService adminService;
@@ -143,13 +140,17 @@ public class CompanySettingsController {
 
         partyRepository.save(existingCompany);
 
-        eu.nimble.service.model.solr.party.PartyType indexedParty =  indexingClient.getParty(existingCompany.getHjid().toString(),bearer);
+        eu.nimble.service.model.solr.party.PartyType indexedParty =  indexingController.getNimbleIndexClient().getParty(existingCompany.getHjid().toString(),bearer);
         //indexing the new company in the indexing service
         eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(existingCompany);
         if (indexedParty != null && indexedParty.getVerified()) {
             party.setVerified(true);
         }
-        indexingClient.setParty(party,bearer);
+
+        List<IndexingClient> indexingClients = indexingController.getClients();
+        for(IndexingClient indexingClient : indexingClients){
+            indexingClient.setParty(party,bearer);
+        }
 
         newSettings = adaptCompanySettings(existingCompany, qualifyingParty);
         return new ResponseEntity<>(newSettings, HttpStatus.ACCEPTED);
@@ -196,9 +197,13 @@ public class CompanySettingsController {
         imageDocument.getAttachment().getEmbeddedDocumentBinaryObject().setUri(null); // reset uri (images are handled differently)
 
         //indexing logo image uri for the existing party
-        eu.nimble.service.model.solr.party.PartyType indexParty =  indexingClient.getParty(company.getHjid().toString(),bearer);
+        eu.nimble.service.model.solr.party.PartyType indexParty =  indexingController.getNimbleIndexClient().getParty(company.getHjid().toString(),bearer);
         indexParty.setLogoId(imageDocument.getID());
-        indexingClient.setParty(indexParty,bearer);
+
+        List<IndexingClient> indexingClients = indexingController.getClients();
+        for(IndexingClient indexingClient : indexingClients){
+            indexingClient.setParty(indexParty,bearer);
+        }
 
         return ResponseEntity.ok(imageDocument);
     }
@@ -262,9 +267,12 @@ public class CompanySettingsController {
         }
 
         //removing logo image id from the indexed the party
-        eu.nimble.service.model.solr.party.PartyType indexParty =  indexingClient.getParty(company.getHjid().toString(),bearer);
+        eu.nimble.service.model.solr.party.PartyType indexParty =  indexingController.getNimbleIndexClient().getParty(company.getHjid().toString(),bearer);
         indexParty.setLogoId("");
-        indexingClient.setParty(indexParty,bearer);
+        List<IndexingClient> indexingClients = indexingController.getClients();
+        for(IndexingClient indexingClient : indexingClients){
+            indexingClient.setParty(indexParty,bearer);
+        }
 
         return ResponseEntity.ok().build();
     }
@@ -519,12 +527,18 @@ public class CompanySettingsController {
             eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
             newParty.setVerified(true);
             logger.info("Indexing verified party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
-            indexingClient.setParty(newParty, bearer);
+            List<IndexingClient> indexingClients = indexingController.getClients();
+            for(IndexingClient indexingClient : indexingClients) {
+                indexingClient.setParty(newParty,bearer);
+            }
         }
         for (PartyType party : unVerifiedCompanies) {
             eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
             logger.info("Indexing unverified party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
-            indexingClient.setParty(newParty, bearer);
+            List<IndexingClient> indexingClients = indexingController.getClients();
+            for (IndexingClient indexingClient : indexingClients) {
+                indexingClient.setParty(newParty, bearer);
+            }
         }
 
         return new ResponseEntity<>("Completed indexing all companies", HttpStatus.OK);

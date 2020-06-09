@@ -1,0 +1,15 @@
+Dear [(${firstName})] [(${familyName})],
+
+your company [(${companyName})] has been approved for doing business on the [(${platformName})] platform.
+
+Please follow the link in order to login to [(${platformName})].
+[(${nimbleUrl})]
+
+This platform is in an early access / testing stage.
+
+Downtimes and bugs have to be expected.
+
+We welcome comments and feedback, any suggestion or comment can be submitted to the email: [(${supportEmail})]
+
+Best regards,
+  your [(${platformName})] Platform Manager

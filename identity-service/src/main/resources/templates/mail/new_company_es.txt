@@ -1,0 +1,18 @@
+Estimado gerente de plataforma,
+
+una nueva compañía se ha registrado en la plataforma [(${platformName})]: [(${companyName})]
+
+[(${username})] ([(${userEmail})]) es el representante actual.
+
+Detalles de la compañía:
+    ID: [(${companyID})]
+    Nombre: [(${companyName})]
+    Dirección:
+        País: [(${companyCountry})]
+        Calle: [(${companyStreet})]
+        Número de edificio: [(${companyBuildingNumber})]
+        Ciudad: [(${companyCity})]
+        Código postal: [(${companypostalCode})]
+
+Atentamente,
+  su plataforma.
