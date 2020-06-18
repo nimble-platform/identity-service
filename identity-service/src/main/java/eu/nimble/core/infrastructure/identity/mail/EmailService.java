@@ -167,7 +167,7 @@ public class EmailService {
         }
     }
 
-    private void send(String[] to, String subject, String template, Context context, String[] cc) {
+    private void send(String[] to, String subject, String template, Context context, String[] bcc) {
 
         SimpleMailMessage mailMessage = new SimpleMailMessage();
         String message = this.textMailTemplateEngine.process(template, context);
@@ -182,8 +182,8 @@ public class EmailService {
         mailMessage.setSubject(subject);
         mailMessage.setText(message);
 
-        if (cc.length != 0) {
-            mailMessage.setCc(cc);
+        if (bcc.length != 0) {
+            mailMessage.setBcc(bcc);
         }
 
         this.emailSender.send(mailMessage);
