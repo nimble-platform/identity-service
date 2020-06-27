@@ -7,6 +7,7 @@ import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
+import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
 import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
@@ -19,6 +20,7 @@ import eu.nimble.core.infrastructure.identity.utils.LogEvent;
 import eu.nimble.service.model.solr.Search;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.QualifyingPartyType;
 import eu.nimble.utility.ExecutionContext;
 import eu.nimble.utility.LoggerUtils;
 import io.swagger.annotations.Api;
@@ -77,6 +79,8 @@ public class AdminController {
     private CatalogueServiceClient catalogueServiceClient;
     @Autowired
     private PartyRepository partyRepository;
+    @Autowired
+    private QualifyingPartyRepository qualifyingPartyRepository;
     @Autowired
     private RocketChatService chatService;
     @Autowired
@@ -156,7 +160,9 @@ public class AdminController {
 
             //index party
             PartyType company = partyRepository.findByHjid(companyId).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
-            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(company);
+            // retrieve qualifying party
+            QualifyingPartyType qualifyingParty = qualifyingPartyRepository.findByParty(company).stream().findFirst().get();
+            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(company,qualifyingParty);
             List<IndexingClient> indexingClients = indexingController.getClients();
             for (IndexingClient indexingClient : indexingClients) {
                 indexingClient.setParty(newParty, bearer);

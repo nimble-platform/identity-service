@@ -2,6 +2,7 @@ package eu.nimble.core.infrastructure.identity.utils;
 
 import eu.nimble.service.model.solr.party.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.DocumentReferenceType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.QualifyingPartyType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import eu.nimble.service.model.ubl.extension.QualityIndicatorParameter;
 
@@ -17,7 +18,7 @@ public class DataModelUtils {
      * UBL data model to Solr model converter
      */
 
-    public static eu.nimble.service.model.solr.party.PartyType toIndexParty(eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType party) {
+    public static eu.nimble.service.model.solr.party.PartyType toIndexParty(eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType party, QualifyingPartyType qualifyingParty) {
         PartyType indexParty = new PartyType();
         party.getBrandName().forEach(name -> indexParty.addBrandName(name.getLanguageID(), name.getValue()));
         if(party.getPartyName() != null && party.getPartyName().size() > 0){
@@ -90,6 +91,21 @@ public class DataModelUtils {
             }
         }
 
+        // business keywords
+        for (TextType keyword : qualifyingParty.getBusinessClassificationScheme().getDescription()) {
+            //check for line separators in the string
+            String newLineChar = "\n";
+            if (keyword.getValue() != null) {
+                if (keyword.getValue().contains(newLineChar)) {
+                    String[] keywords = keyword.getValue().split(newLineChar);
+                    for (String keywordString : keywords) {
+                        indexParty.addBusinessKeyword(keyword.getLanguageID(), keywordString);
+                    }
+                } else {
+                    indexParty.addBusinessKeyword(keyword.getLanguageID(), keyword.getValue());
+                }
+            }
+        }
         if(party.getWebsiteURI() != null) {
             indexParty.setWebsite(party.getWebsiteURI());
         }

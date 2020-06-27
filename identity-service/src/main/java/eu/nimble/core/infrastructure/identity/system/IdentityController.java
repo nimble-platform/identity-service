@@ -459,24 +459,7 @@ public class IdentityController {
         }
 
         //indexing the new company in the indexing service
-        eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(newCompany);
-        Map<NimbleConfigurationProperties.LanguageID, String> businessKeywords = companyRegistration.getSettings().getDetails().getBusinessKeywords();
-        List<TextType> keywordsList = UblAdapter.adaptLanguageMapToTextType(businessKeywords);
-        for (TextType keyword : keywordsList) {
-            //check for line separators in the string
-            String newLineChar = "\n";
-            if (keyword.getValue() != null) {
-                if (keyword.getValue().contains(newLineChar)) {
-                    String[] keywords = keyword.getValue().split(newLineChar);
-                    for (String keywordString : keywords) {
-                        newParty.addBusinessKeyword(keyword.getLanguageID(), keywordString);
-                    }
-                } else {
-                    newParty.addBusinessKeyword(keyword.getLanguageID(), keyword.getValue());
-                }
-            }
-        }
-
+        eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(newCompany,qualifyingParty);
         List<IndexingClient> indexingClients = indexingController.getClients();
         for (IndexingClient indexingClient : indexingClients) {
             indexingClient.setParty(newParty, bearer);
