@@ -142,7 +142,7 @@ public class CompanySettingsController {
 
         eu.nimble.service.model.solr.party.PartyType indexedParty =  indexingController.getNimbleIndexClient().getParty(existingCompany.getHjid().toString(),bearer);
         //indexing the new company in the indexing service
-        eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(existingCompany);
+        eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(existingCompany,qualifyingParty);
         if (indexedParty != null && indexedParty.getVerified()) {
             party.setVerified(true);
         }
@@ -524,7 +524,8 @@ public class CompanySettingsController {
         List<PartyType> unVerifiedCompanies = adminService.queryCompanies(AdminService.CompanyState.UNVERIFIED);
 
         for (PartyType party : verifiedCompanies) {
-            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
+            QualifyingPartyType qualifyingPartyType = qualifyingPartyRepository.findByParty(party).stream().findFirst().get();
+            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party,qualifyingPartyType);
             newParty.setVerified(true);
             logger.info("Indexing verified party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
             List<IndexingClient> indexingClients = indexingController.getClients();
@@ -533,7 +534,8 @@ public class CompanySettingsController {
             }
         }
         for (PartyType party : unVerifiedCompanies) {
-            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party);
+            QualifyingPartyType qualifyingPartyType = qualifyingPartyRepository.findByParty(party).stream().findFirst().get();
+            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party,qualifyingPartyType);
             logger.info("Indexing unverified party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
             List<IndexingClient> indexingClients = indexingController.getClients();
             for (IndexingClient indexingClient : indexingClients) {

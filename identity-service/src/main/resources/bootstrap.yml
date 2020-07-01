@@ -50,6 +50,8 @@ spring:
     validation-query: "SELECT 1;" # Validation query must be set in order to test connections
     dbcp:
       default-auto-commit: false
+  messages:
+    encoding: ISO-8859-1
   mail:
     debug: ${MAIL_DEBUG:false}  # disable printing email to log output
     host: ${SMTP_HOST:localhost}

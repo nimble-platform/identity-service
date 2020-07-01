@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.mail;
 
+import eu.nimble.core.infrastructure.identity.config.message.NimbleMessageCode;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.AddressType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
@@ -8,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @SuppressWarnings("Duplicates")
@@ -31,6 +34,9 @@ public class EmailService {
 
     @Autowired
     private UblUtils ublUtils;
+
+    @Autowired
+    private MessageSource messageSource;
 
     @Autowired
     private TemplateEngine textMailTemplateEngine;
@@ -65,7 +71,7 @@ public class EmailService {
         context.setVariable("resetPasswordURL", resetCredentialsURL);
         context.setVariable("platformName",platformName);
 
-        String subject = String.format("Reset Password to the %s (%s) platform",platformName,platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_RESET_CREDENTIALS_LINK,language,Arrays.asList(platformName,platformVersion));
 
         this.send(new String[]{toEmail}, subject, getTemplateName("password-reset",language), context, new String[]{});
     }
@@ -80,7 +86,7 @@ public class EmailService {
         context.setVariable("roles", roles);
         context.setVariable("platformName",platformName);
 
-        String subject = String.format("Invitation to the %s (%s) platform",platformName,platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_INVITATION,language,Arrays.asList(platformName,platformVersion));
 
         this.send(new String[]{toEmail}, subject, getTemplateName("invitation",language), context, new String[]{supportEmail});
     }
@@ -93,7 +99,7 @@ public class EmailService {
         context.setVariable("roles", roles);
         context.setVariable("platformName",platformName);
 
-        String subject = String.format("Invitation to %s from %s (%s)",companyName,platformName,platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_INVITATION_EXISTING_COMPANY, language, Arrays.asList(companyName,platformName,platformVersion));
 
         this.send(new String[]{toEmail}, subject, getTemplateName("invitation_existing_company",language), context, new String[]{});
     }
@@ -127,7 +133,7 @@ public class EmailService {
             context.setVariable("companypostalCode", address.getPostalZone());
         }
 
-        String subject = String.format("%s (%s) : New company registered",platformName,platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_REGISTERED, language, Arrays.asList(platformName,platformVersion));
 
         this.send(emails.toArray(new String[]{}), subject, getTemplateName("new_company",language), context, new String[]{});
     }
@@ -142,7 +148,7 @@ public class EmailService {
         context.setVariable("nimbleUrl", frontendUrl);
         context.setVariable("platformName",platformName);
 
-        String subject = String.format("Your company has been verified on %s (%s)",platformName,platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_VERIFIED,language,Arrays.asList(platformName,platformVersion));
 
         this.send(new String[]{email}, subject, getTemplateName("company_verified",language), context, new String[]{});
     }
@@ -157,7 +163,7 @@ public class EmailService {
             context.setVariable("companyName", companyName);
             context.setVariable("platformName",platformName);
 
-            String subject = String.format("Your company has been deleted from %s (%s)",platformName,platformVersion);
+            String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_DELETED,language,Arrays.asList(platformName,platformVersion));
 
             try {
                 this.send(new String[]{legalRepresentative.getContact().getElectronicMail()}, subject, getTemplateName("company_deleted",language), context, new String[]{});
@@ -167,7 +173,7 @@ public class EmailService {
         }
     }
 
-    private void send(String[] to, String subject, String template, Context context, String[] cc) {
+    private void send(String[] to, String subject, String template, Context context, String[] bcc) {
 
         SimpleMailMessage mailMessage = new SimpleMailMessage();
         String message = this.textMailTemplateEngine.process(template, context);
@@ -182,8 +188,8 @@ public class EmailService {
         mailMessage.setSubject(subject);
         mailMessage.setText(message);
 
-        if (cc.length != 0) {
-            mailMessage.setCc(cc);
+        if (bcc.length != 0) {
+            mailMessage.setBcc(bcc);
         }
 
         this.emailSender.send(mailMessage);
@@ -195,5 +201,12 @@ public class EmailService {
             return String.format("%s_%s",templateName,language);
         }
         return String.format("%s_%s",templateName,languages.get(0));
+    }
+
+    private String getMailSubject(NimbleMessageCode messageCode, String language, List<String> parameters){
+        List<String> languages = Arrays.asList(mailTemplateLanguages.split(","));
+        String mailSubjectLanguage = languages.contains(language) ? language :languages.get(0) ;
+        Locale locale = new Locale(mailSubjectLanguage);
+        return this.messageSource.getMessage(messageCode.toString(), parameters.toArray(), locale);
     }
 }
