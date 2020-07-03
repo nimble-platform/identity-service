@@ -36,6 +36,8 @@ public class FrontEndUser {
 
     private Boolean showWelcomeInfo = false;
 
+    private String vat = null;
+
     public Map<NimbleConfigurationProperties.LanguageID, String> getCompanyName() {
         return companyName;
     }
@@ -156,6 +158,14 @@ public class FrontEndUser {
         this.rocketChatUserID = rocketChatUserID;
     }
 
+    public String getVat() {
+        return vat;
+    }
+
+    public void setVat(String vat) {
+        this.vat = vat;
+    }
+
     @Override
     public String toString() {
         return "FrontEndUser{" +
@@ -170,6 +180,7 @@ public class FrontEndUser {
                 ", companyID='" + companyID + '\'' +
                 ", companyName='" + companyName + '\'' +
                 ", showWelcomeInfo=" + showWelcomeInfo +
+                ", vat='" + vat + '\'' +
                 '}';
     }
 }

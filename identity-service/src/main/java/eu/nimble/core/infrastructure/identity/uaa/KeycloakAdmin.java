@@ -19,13 +19,11 @@ import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
-import org.keycloak.representations.idm.CredentialRepresentation;
-import org.keycloak.representations.idm.GroupRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.idm.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.http.*;
 import org.springframework.security.jwt.JwtHelper;
@@ -72,6 +70,9 @@ public class KeycloakAdmin {
             "create-realm", "nimble_user", "initial_representative");
 
     public static final List<String> NON_NIMBLE_ROLES = Arrays.asList("uma_authorization", "offline_access", "admin", "create-realm", "create-realm");
+
+    @Value("${nimble.oauth.identityProvider.eFactory}")
+    private String eFactoryIdentityProvider;
 
     @Autowired
     private KeycloakConfig keycloakConfig;
@@ -266,6 +267,18 @@ public class KeycloakAdmin {
                 .collect(Collectors.toSet());
     }
 
+    public UserResource getUserResource(String userId) {
+        return fetchUserResource(userId);
+    }
+
+    public String getEFactoryUserId(UserResource userResource){
+        for (FederatedIdentityRepresentation federatedIdentityRepresentation : userResource.getFederatedIdentity()) {
+            if(federatedIdentityRepresentation.getIdentityProvider().contentEquals(eFactoryIdentityProvider)){
+                    return federatedIdentityRepresentation.getUserId();
+            }
+        }
+        return null;
+    }
     public void addRole(String userId, String role) {
         UserResource userResource = fetchUserResource(userId);
 
