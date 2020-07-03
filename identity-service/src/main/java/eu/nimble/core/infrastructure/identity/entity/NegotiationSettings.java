@@ -191,6 +191,9 @@ public class NegotiationSettings implements Serializable {
             this.company.setSalesTerms(newSettings.company.getSalesTerms());
             this.company.getProcessIDItems().clear();
             this.company.setProcessID(newSettings.company.getProcessID());
+
+            this.company.getNetwork().clear();
+            this.company.getNetwork().addAll(newSettings.company.getNetwork());
         }
     }
 
