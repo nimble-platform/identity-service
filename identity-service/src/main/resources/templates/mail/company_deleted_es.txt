@@ -3,4 +3,4 @@ Estimado [(${firstName})] [(${familyName})],
 su empresa [(${companyName})] ha sido borrada de la plataforma [(${platformName})].
 
 Atentamente,
-  Gerente de la plataforma [(${platformName})].
+  El equipo de [(${platformName})].

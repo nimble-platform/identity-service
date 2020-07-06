@@ -9,7 +9,7 @@ This platform is in an early access / testing stage.
 
 Downtimes and bugs have to be expected.
 
-We welcome comments and feedback, any suggestion or comment can be submitted to the email: [(${supportEmail})]
+We welcome comments and feedback, any suggestion or comment can be submitted to the email: [(${supportEmail})].
 
 Best regards,
-  your [(${platformName})] Platform Manager
+  your [(${platformName})] Platform Manager.
