@@ -103,9 +103,9 @@ public class RoleController {
             @ApiResponse(code = 401, message = "Not authorized"),
             @ApiResponse(code = 404, message = "User not found"),
             @ApiResponse(code = 400, message = "Error while applying roles")})
-    @RequestMapping(value = "/user", consumes = {"application/json"}, produces = {"application/text"}, method = RequestMethod.POST)
+    @RequestMapping(value = "/user", consumes = {"application/json"}, produces = {"application/json"}, method = RequestMethod.POST)
     ResponseEntity<String> setUserRoles(
-            @ApiParam(value = "Username", required = true) @RequestParam String username,
+            @ApiParam(value = "username", required = true) @RequestParam String username,
             @ApiParam(value = "Set of roles to apply.", required = true) @RequestBody Set<String> rolesToApply,
             @RequestHeader(value = "Authorization") String bearer,
             HttpServletResponse response) throws IOException {
