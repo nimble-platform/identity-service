@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.mail;
 
+import com.google.common.base.Strings;
 import eu.nimble.core.infrastructure.identity.config.message.NimbleMessageCode;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.AddressType;
@@ -71,7 +72,8 @@ public class EmailService {
         context.setVariable("resetPasswordURL", resetCredentialsURL);
         context.setVariable("platformName",platformName);
 
-        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_RESET_CREDENTIALS_LINK,language,Arrays.asList(platformName,platformVersion));
+        String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_RESET_CREDENTIALS_LINK,language,Arrays.asList(platformName,version));
 
         this.send(new String[]{toEmail}, subject, getTemplateName("password-reset",language), context, new String[]{});
     }
@@ -86,7 +88,8 @@ public class EmailService {
         context.setVariable("roles", roles);
         context.setVariable("platformName",platformName);
 
-        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_INVITATION,language,Arrays.asList(platformName,platformVersion));
+        String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_INVITATION,language,Arrays.asList(platformName,version));
 
         this.send(new String[]{toEmail}, subject, getTemplateName("invitation",language), context, new String[]{supportEmail});
     }
@@ -99,7 +102,8 @@ public class EmailService {
         context.setVariable("roles", roles);
         context.setVariable("platformName",platformName);
 
-        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_INVITATION_EXISTING_COMPANY, language, Arrays.asList(companyName,platformName,platformVersion));
+        String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_INVITATION_EXISTING_COMPANY, language, Arrays.asList(companyName,platformName,version));
 
         this.send(new String[]{toEmail}, subject, getTemplateName("invitation_existing_company",language), context, new String[]{});
     }
@@ -133,7 +137,8 @@ public class EmailService {
             context.setVariable("companypostalCode", address.getPostalZone());
         }
 
-        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_REGISTERED, language, Arrays.asList(platformName,platformVersion));
+        String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_REGISTERED, language, Arrays.asList(platformName,version));
 
         this.send(emails.toArray(new String[]{}), subject, getTemplateName("new_company",language), context, new String[]{});
     }
@@ -148,7 +153,8 @@ public class EmailService {
         context.setVariable("nimbleUrl", frontendUrl);
         context.setVariable("platformName",platformName);
 
-        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_VERIFIED,language,Arrays.asList(platformName,platformVersion));
+        String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_VERIFIED,language,Arrays.asList(platformName,version));
 
         this.send(new String[]{email}, subject, getTemplateName("company_verified",language), context, new String[]{});
     }
@@ -163,7 +169,8 @@ public class EmailService {
             context.setVariable("companyName", companyName);
             context.setVariable("platformName",platformName);
 
-            String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_DELETED,language,Arrays.asList(platformName,platformVersion));
+            String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
+            String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_DELETED,language,Arrays.asList(platformName,version));
 
             try {
                 this.send(new String[]{legalRepresentative.getContact().getElectronicMail()}, subject, getTemplateName("company_deleted",language), context, new String[]{});
