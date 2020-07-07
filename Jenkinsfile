@@ -120,10 +120,6 @@ node('nimble-jenkins-slave') {
             sh 'ssh nimble "cd /data/deployment_setup/prod/ && sudo ./run-prod.sh restart-single identity-service"'
         }
 
-        stage('Deploy FMP') {
-            sh 'ssh fmp-prod "cd /srv/nimble-fmp/ && ./run-fmp-prod.sh restart-single identity-service"'
-        }
-
         stage('Deploy Efactory') {
             sh 'ssh efac-prod "cd /srv/nimble-efac/ && ./run-efac-prod.sh restart-single identity-service"'
         }
