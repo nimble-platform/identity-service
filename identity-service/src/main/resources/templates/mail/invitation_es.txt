@@ -1,6 +1,6 @@
 Hola,
 
-usted ha sido invitado a la plataforma [(${companyName})] por [(${senderName})].
+usted ha sido invitado a la plataforma [(${platformName})] por [(${senderName})] de [(${companyName})] .
 
 Por favor siga el enlace para iniciar sesión en [(${platformName})].
 [(${invitationUrl})]
@@ -10,4 +10,4 @@ Usted tiene asignados los siguientes roles:
  - [( ${role} )]
 [/]
 Atentamente,
-  Gerente de la plataforma [(${platformName})].
+  El equipo de [(${platformName})].

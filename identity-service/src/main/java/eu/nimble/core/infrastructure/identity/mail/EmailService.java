@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.mail;
 
+import com.google.common.base.Strings;
 import eu.nimble.core.infrastructure.identity.config.message.NimbleMessageCode;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.AddressType;
@@ -71,9 +72,10 @@ public class EmailService {
         context.setVariable("resetPasswordURL", resetCredentialsURL);
         context.setVariable("platformName",platformName);
 
-        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_RESET_CREDENTIALS_LINK,language,Arrays.asList(platformName,platformVersion));
+        String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_RESET_CREDENTIALS_LINK,language,Arrays.asList(platformName,version));
 
-        this.send(new String[]{toEmail}, subject, getTemplateName("password-reset",language), context, new String[]{});
+        this.send(new String[]{toEmail}, subject, getTemplateName("password-reset",language), context);
     }
 
     public void sendInvite(String toEmail, String senderName, String companyName, Collection<String> roles, String language) throws UnsupportedEncodingException {
@@ -86,9 +88,10 @@ public class EmailService {
         context.setVariable("roles", roles);
         context.setVariable("platformName",platformName);
 
-        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_INVITATION,language,Arrays.asList(platformName,platformVersion));
+        String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_INVITATION,language,Arrays.asList(platformName,version));
 
-        this.send(new String[]{toEmail}, subject, getTemplateName("invitation",language), context, new String[]{supportEmail});
+        this.send(new String[]{toEmail}, subject, getTemplateName("invitation",language), context);
     }
 
     public void informInviteExistingCompany(String toEmail, String senderName, String companyName, Collection<String> roles, String language) {
@@ -99,9 +102,10 @@ public class EmailService {
         context.setVariable("roles", roles);
         context.setVariable("platformName",platformName);
 
-        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_INVITATION_EXISTING_COMPANY, language, Arrays.asList(companyName,platformName,platformVersion));
+        String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_INVITATION_EXISTING_COMPANY, language, Arrays.asList(companyName,platformName,version));
 
-        this.send(new String[]{toEmail}, subject, getTemplateName("invitation_existing_company",language), context, new String[]{});
+        this.send(new String[]{toEmail}, subject, getTemplateName("invitation_existing_company",language), context);
     }
 
     public void notifyPlatformManagersNewCompany(List<String> emails, PersonType representative, PartyType company, String language) {
@@ -133,9 +137,10 @@ public class EmailService {
             context.setVariable("companypostalCode", address.getPostalZone());
         }
 
-        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_REGISTERED, language, Arrays.asList(platformName,platformVersion));
+        String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_REGISTERED, language, Arrays.asList(platformName,version));
 
-        this.send(emails.toArray(new String[]{}), subject, getTemplateName("new_company",language), context, new String[]{});
+        this.send(emails.toArray(new String[]{}), subject, getTemplateName("new_company",language), context);
     }
 
     public void notifyVerifiedCompany(String email, PersonType legalRepresentative, PartyType company, String language) {
@@ -148,9 +153,10 @@ public class EmailService {
         context.setVariable("nimbleUrl", frontendUrl);
         context.setVariable("platformName",platformName);
 
-        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_VERIFIED,language,Arrays.asList(platformName,platformVersion));
+        String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_VERIFIED,language,Arrays.asList(platformName,version));
 
-        this.send(new String[]{email}, subject, getTemplateName("company_verified",language), context, new String[]{});
+        this.send(new String[]{email}, subject, getTemplateName("company_verified",language), context);
     }
 
     public void notifyDeletedCompany(List<PersonType> legalRepresentatives, PartyType company, String language) {
@@ -163,17 +169,18 @@ public class EmailService {
             context.setVariable("companyName", companyName);
             context.setVariable("platformName",platformName);
 
-            String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_DELETED,language,Arrays.asList(platformName,platformVersion));
+            String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
+            String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_DELETED,language,Arrays.asList(platformName,version));
 
             try {
-                this.send(new String[]{legalRepresentative.getContact().getElectronicMail()}, subject, getTemplateName("company_deleted",language), context, new String[]{});
+                this.send(new String[]{legalRepresentative.getContact().getElectronicMail()}, subject, getTemplateName("company_deleted",language), context);
             }catch (Exception e){
                 logger.error("Failed to send email:",e);
             }
         }
     }
 
-    private void send(String[] to, String subject, String template, Context context, String[] bcc) {
+    private void send(String[] to, String subject, String template, Context context) {
 
         SimpleMailMessage mailMessage = new SimpleMailMessage();
         String message = this.textMailTemplateEngine.process(template, context);
@@ -187,10 +194,6 @@ public class EmailService {
         mailMessage.setTo(to);
         mailMessage.setSubject(subject);
         mailMessage.setText(message);
-
-        if (bcc.length != 0) {
-            mailMessage.setBcc(bcc);
-        }
 
         this.emailSender.send(mailMessage);
     }

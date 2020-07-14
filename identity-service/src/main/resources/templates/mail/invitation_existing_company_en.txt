@@ -1,6 +1,6 @@
 Hello,
 
-you have been invited to [(${companyName})] by [(${senderName})].
+you have been invited by [(${senderName})] to [(${companyName})].
 
 Please follow the link in order to login to [(${platformName})].
 [(${nimbleUrl})]

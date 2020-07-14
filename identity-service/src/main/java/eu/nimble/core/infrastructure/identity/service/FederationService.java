@@ -3,8 +3,11 @@ package eu.nimble.core.infrastructure.identity.service;
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.Unirest;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
 import eu.nimble.core.infrastructure.identity.system.dto.oauth.Token;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -15,6 +18,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
 @Service
 public class FederationService {
 
@@ -29,6 +33,18 @@ public class FederationService {
 
     @Value("${nimble.oauth.federationClient.redirectUri}")
     private String redirectUri;
+
+    @Value("${nimble.oauth.eFactoryClient.clientId}")
+    private String eFactoryClientId;
+
+    @Value("${nimble.oauth.eFactoryClient.clientSecret}")
+    private String eFactoryClientSecret;
+
+    @Value("${nimble.oauth.eFactoryClient.accessTokenUri}")
+    private String eFactoryAccessTokenUri;
+
+    @Value("${nimble.oauth.eFactoryClient.userDetailsUri}")
+    private String eFactoryUserDetailsUri;
 
     public Token exchangeToken(String trustedToken) {
         // TODO verify the signature
@@ -86,5 +102,43 @@ public class FederationService {
         }
 
         return token;
+    }
+
+
+    public String getEFactoryUserVatAttribute(String eFactoryUserId){
+        Token token = new Token();
+        String url = eFactoryAccessTokenUri;
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> map= new LinkedMultiValueMap<String, String>();
+
+        map.add("grant_type", GlobalConstants.CLIENT_CREDENTIALS_FLOW);
+        map.add("client_id", eFactoryClientId);
+        map.add("client_secret", eFactoryClientSecret);
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
+
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            token = mapper.readValue(response.getBody(), Token.class);
+
+            HttpResponse<String> httpResponse = Unirest.get(eFactoryUserDetailsUri + "/"+eFactoryUserId)
+                    .header("Authorization","Bearer "+token.getAccess_token()).asString();
+            UserRepresentation userRepresentation  = mapper.readValue(httpResponse.getBody(), UserRepresentation.class);
+            List<String> vatNumbers = userRepresentation.getAttributes().get("vatin");
+
+            if(vatNumbers != null && vatNumbers.size() > 0){
+                return vatNumbers.get(0);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 }

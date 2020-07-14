@@ -1,6 +1,7 @@
 package eu.nimble.core.infrastructure.identity.system;
 
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.Claim;
 import eu.nimble.core.infrastructure.identity.clients.DelegateServiceClient;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClientController;
@@ -26,13 +27,13 @@ import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.core.infrastructure.identity.utils.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
-import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import eu.nimble.utility.ExecutionContext;
 import eu.nimble.utility.LoggerUtils;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -199,7 +200,7 @@ public class IdentityController {
             @ApiResponse(code = 400, message = "Invalid Token", response = FrontEndUser.class)})
     @RequestMapping(value = "/federation/login", produces = {"application/json"}, consumes = {"application/json"}, method = RequestMethod.POST)
     ResponseEntity<FrontEndUser> loginFederatedUser(
-            @ApiParam(value = "Access token provided by the IDP", required = true) @RequestBody Token token) {
+            @ApiParam(value = "Access token provided by the IDP", required = true) @RequestBody Token token) throws IOException {
 
         FrontEndUser frontEndUser = new FrontEndUser();
 
@@ -217,6 +218,50 @@ public class IdentityController {
         String audience = JWT.decode(accessToken).getClaim("aud").asString();
         String keycloakUserID = JWT.decode(accessToken).getClaim("sub").asString();
         String email = JWT.decode(accessToken).getClaim("email").asString();
+        // get user resource
+        UserResource userResource = keycloakAdmin.getUserResource(keycloakUserID);
+        if(userResource != null){
+            // check whether the user is an eFactory user
+            String eFactoryUserId = keycloakAdmin.getEFactoryUserId(userResource);
+            if(eFactoryUserId != null){
+                boolean refreshToken = false;
+                // the user is an eFactory user but the token does not have eFactoryUser role
+                // add this role to the user and refresh the token
+                if(!identityService.hasAnyRole(accessToken, EFACTORY_USER)){
+                    // add eFactoryUser role
+                    keycloakAdmin.addRole(keycloakUserID,EFACTORY_USER.toString());
+                    refreshToken = true;
+                }
+                // the user does not have VAT number
+                Map<String,List<String>> attributes = userResource.toRepresentation().getAttributes();
+                if(attributes == null || !attributes.containsKey("vatin")){
+                    // retrieve VAT number from EFactory Keycloak
+                    String vat = federationService.getEFactoryUserVatAttribute(eFactoryUserId);
+                    // add it to the user
+                    if(vat != null){
+                        UserRepresentation userRepresentation = userResource.toRepresentation();
+                        if(userRepresentation.getAttributes() == null){
+                            userRepresentation.setAttributes(new HashMap<>());
+                        }
+                        userRepresentation.getAttributes().put("vatin", Collections.singletonList(vat));
+                        userResource.update(userRepresentation);
+                        refreshToken = true;
+                    }
+                }
+
+                if(refreshToken){
+                    // get token
+                    token = federationService.getAccessToken(null,GlobalConstants.REFRESH_TOKEN_FLOW,token.getRefresh_token(),null);
+                    accessToken = token.getAccess_token();
+                }
+            }
+        }
+
+        Claim companyClaim = JWT.decode(accessToken).getClaim("company");
+        if(!companyClaim.isNull()){
+            String vatin = companyClaim.asMap().get("vatin").toString();
+            frontEndUser.setVat(vatin);
+        }
 
         // check identity database
         UaaUser potentialUser = uaaUserRepository.findByExternalID(keycloakUserID);
@@ -551,6 +596,11 @@ public class IdentityController {
         frontEndUser.setAccessToken(accessToken.getValue());
         httpSession.setAttribute(REFRESH_TOKEN_SESSION_KEY, accessToken.getRefreshToken().getValue());
 
+        // add vat number to frontEndUser
+        Claim companyClaim = JWT.decode(accessToken.getValue()).getClaim("company");
+        if(!companyClaim.isNull()){
+            frontEndUser.setVat(companyClaim.asMap().get("vatin").toString());
+        }
         if(chatService.isChatEnabled()){
             RocketChatLoginResponse rocketChatToken = chatService.loginOrCreateUser(frontEndUser, credentials, true, true);
             frontEndUser.setRocketChatToken(rocketChatToken.getData().getAuthToken());

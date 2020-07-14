@@ -9,7 +9,7 @@ Esta plataforma se encuentra en una etapa temprana de acceso / prueba.
 
 Puede experimentar errores y tiempos de espera inusuales.
 
-Agradecemos comentarios y comentarios, cualquier sugerencia o comentario puede enviarse al emal: [(${supportEmail})]
+Agradecemos comentarios, cualquier sugerencia o comentario puede enviarse al email: [(${supportEmail})]
 
 Atentamente,
-  Gerente de la plataforma [(${platformName})].
+  El equipo de [(${platformName})].

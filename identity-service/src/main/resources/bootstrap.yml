@@ -107,6 +107,13 @@ nimble:
       clientSecret: ${OAUTH_FEDERATION_CLIENT_SECRET:1234}
       accessTokenUri: ${OAUTH_FEDERATION_CLIENT_ACCESSTOKEN_URI:http://nimble-staging.salzburgresearch.at:8080/auth/realms/master/protocol/openid-connect/token}
       redirectUri: ${OAUTH_FEDERATION_CLIENT_REDIRECT_URI:http://localhost:9092/}
+    eFactoryClient:
+      clientId: ${OAUTH_EFACTORY_CLIENT_ID:}
+      clientSecret: ${OAUTH_EFACTORY_CLIENT_SECRET:}
+      accessTokenUri: ${OAUTH_EFACTORY_CLIENT_ACCESSTOKEN_URI:}
+      userDetailsUri: ${OAUTH_EFACTORY_USER_DETAILS_URI:}
+    identityProvider:
+      eFactory: ${OAUTH_IDENTITY_PROVIDER_EFACTORY:EFS}
   frontend:
     url: ${FRONTEND_URL:http://localhost:9092}
     registration:
