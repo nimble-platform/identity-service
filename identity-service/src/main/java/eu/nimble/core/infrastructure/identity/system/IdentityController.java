@@ -340,6 +340,13 @@ public class IdentityController {
             throw ex;
         }
 
+        // check whether the user is already registered
+        UaaUser uaaUser = uaaUserRepository.findOneByUsername(frontEndUser.getEmail());
+        if(uaaUser != null){
+            logger.error("The user {} is already registered",userRegistration.toString());
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
         // create UBL party of user
         PersonType newUser = UblAdapter.adaptPerson(frontEndUser);
         personRepository.save(newUser);
@@ -349,7 +356,7 @@ public class IdentityController {
         personRepository.save(newUser);
 
         // create entry in identity DB
-        UaaUser uaaUser = new UaaUser(credentials.getUsername(), newUser, keycloakID);
+        uaaUser = new UaaUser(credentials.getUsername(), newUser, keycloakID);
         uaaUserRepository.save(uaaUser);
 
         Map<String,String> paramMapReg = new HashMap<String, String>();
