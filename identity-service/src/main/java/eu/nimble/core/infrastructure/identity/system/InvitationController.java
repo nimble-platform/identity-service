@@ -214,9 +214,9 @@ public class InvitationController {
                                        @RequestHeader(value = "Authorization") String bearer) throws IOException {
 
         // check if authorized
-        if (identityService.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE) == false  ||
-                identityService.hasAnyRole(bearer,NIMBLE_DELETED_USER) == true)
-            return new ResponseEntity<>("Only not deleted legal representatives are allowed to invite users", HttpStatus.UNAUTHORIZED);
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.LEGAL_REPRESENTATIVE, OAuthClient.Role.PLATFORM_MANAGER) ==
+                false || identityService.hasAnyRole(bearer,NIMBLE_DELETED_USER) == true)
+            return new ResponseEntity<>("Only not deleted legal representatives and platform managers are allowed to invite users", HttpStatus.UNAUTHORIZED);
 
         logger.info("Requesting removal of company membership of user {}.", username);
 

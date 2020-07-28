@@ -4,11 +4,9 @@ import eu.nimble.core.infrastructure.identity.clients.CatalogueServiceClient;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
+import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
-import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
-import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
-import eu.nimble.core.infrastructure.identity.repository.QualifyingPartyRepository;
-import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
+import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.service.RocketChatService;
@@ -45,6 +43,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static eu.nimble.core.infrastructure.identity.uaa.OAuthClient.Role.PLATFORM_MANAGER;
+
 /**
  * Created by Johannes Innerbichler on 12.09.18.
  */
@@ -68,6 +68,8 @@ public class AdminController {
     private UaaUserRepository uaaUserRepository;
     @Autowired
     private IdentityService identityService;
+    @Autowired
+    private UserInvitationRepository userInvitationRepository;
 
     @Autowired
     private ExecutionContext executionContext;
@@ -291,7 +293,7 @@ public class AdminController {
 
     }
 
-    @ApiOperation(value = "Delete user")
+    @ApiOperation(value = "Delete user (marks user as deleted)")
     @RequestMapping(value = "/delete_user/{userId}", method = RequestMethod.DELETE)
     ResponseEntity<?> deleteUser(@PathVariable(value = "userId") long userId,
             @RequestHeader(value = "Authorization") String bearer) throws Exception {
@@ -309,6 +311,35 @@ public class AdminController {
             return new ResponseEntity<>("Only platform managers and users by them are allowed to delete users", HttpStatus.UNAUTHORIZED);
         }
 
+    }
+
+    @ApiOperation(value = "Delete user from the platform permanently")
+    @RequestMapping(value = "/user", method = RequestMethod.DELETE)
+    ResponseEntity<?> deleteUserPermanently(@RequestParam(value = "username") String username,
+                                 @RequestHeader(value = "Authorization") String bearer) throws Exception {
+        // validate role
+        if (!identityService.hasAnyRole(bearer, PLATFORM_MANAGER))
+            return new ResponseEntity<>("Only platform managers are allowed to delete a user from the platform permanently", HttpStatus.FORBIDDEN);
+        // delete the user from keycloak
+        keycloakAdmin.deleteUserByUsername(username);
+        // retrieve uaa user
+        UaaUser uaaUser = uaaUserRepository.findOneByUsername(username);
+        if(uaaUser != null){
+            // retrieve person
+            PersonType person = uaaUser.getUBLPerson();
+            // delete the user from UaaUser
+            uaaUserRepository.deleteByUblPerson(person);
+            // delete person
+            personRepository.delete(person);
+            // delete user invitations
+            List<UserInvitation> userInvitations = userInvitationRepository.findByEmail(person.getContact().getElectronicMail());
+            userInvitations.forEach(userInvitation -> userInvitationRepository.delete(userInvitation));
+            // remove the user from RocketChat if enabled
+            if(chatService.isChatEnabled()){
+                chatService.deleteUser(person.getContact().getElectronicMail());
+            }
+        }
+        return ResponseEntity.ok().build();
     }
 
     private ResponseEntity<Page<PartyType>> makePage(@RequestParam(value = "page", required = false, defaultValue = "1") int pageNumber, @RequestParam(value = "size", required = false, defaultValue = DEFAULT_PAGE_SIZE) int pageSize, List<PartyType> unverifiedCompanies) {

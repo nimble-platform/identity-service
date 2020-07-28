@@ -245,6 +245,14 @@ public class KeycloakAdmin {
         userResource.delete(externalId);
     }
 
+    public void deleteUserByUsername(String username) {
+        RealmResource realmResource = this.keycloak.realm(keycloakConfig.getRealm());
+        UsersResource userResource = realmResource.users();
+
+        List<UserRepresentation> userRepresentations = userResource.search(username);
+        userRepresentations.forEach(userRepresentation -> userResource.delete(userRepresentation.getId()));
+    }
+
     public Map<String, String> getAssignableRoles() {
         RealmResource realmResource = this.keycloak.realm(keycloakConfig.getRealm());
 
