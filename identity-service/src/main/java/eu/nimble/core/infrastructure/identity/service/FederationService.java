@@ -129,10 +129,11 @@ public class FederationService {
             HttpResponse<String> httpResponse = Unirest.get(eFactoryUserDetailsUri + "/"+eFactoryUserId)
                     .header("Authorization","Bearer "+token.getAccess_token()).asString();
             UserRepresentation userRepresentation  = mapper.readValue(httpResponse.getBody(), UserRepresentation.class);
-            List<String> vatNumbers = userRepresentation.getAttributes().get("vatin");
-
-            if(vatNumbers != null && vatNumbers.size() > 0){
-                return vatNumbers.get(0);
+            if(userRepresentation.getAttributes() != null) {
+                List<String> vatNumbers = userRepresentation.getAttributes().get("vatin");
+                if(vatNumbers != null && vatNumbers.size() > 0){
+                    return vatNumbers.get(0);
+                }
             }
 
         } catch (Exception e) {
