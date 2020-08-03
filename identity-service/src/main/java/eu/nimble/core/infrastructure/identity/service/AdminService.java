@@ -1,6 +1,7 @@
 package eu.nimble.core.infrastructure.identity.service;
 
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
+import eu.nimble.core.infrastructure.identity.clients.IndexingClientController;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.system.ControllerUtils;
@@ -78,7 +79,7 @@ public class AdminService {
     private IdentityService identityService;
 
     @Autowired
-    private IndexingClient indexingClient;
+    private IndexingClientController indexingController;
 
     //    @Cacheable("unverifiedCompanies")
     public List<PartyType> queryCompanies(CompanyState companyState) {
@@ -138,12 +139,21 @@ public class AdminService {
 
                 // send email notification
                 String email = companyMember.getContact().getElectronicMail();
-                emailService.notifyVerifiedCompany(email, companyMember, company,executionContext.getLanguageId());
+                //temp. fix for verifying companies created by efactory federated users
+                if(email != null && !email.equals("")){
+                    emailService.notifyVerifiedCompany(email, companyMember, company,executionContext.getLanguageId());
+
+                }
 
                 //indexing the verified status of the company
-                eu.nimble.service.model.solr.party.PartyType party =  indexingClient.getParty(company.getHjid().toString(),bearer);
-                party.setVerified(true);
-                indexingClient.setParty(party,bearer);
+                eu.nimble.service.model.solr.party.PartyType party =  indexingController.getNimbleIndexClient().getParty(company.getHjid().toString(),bearer);
+                if(party != null) {
+                    party.setVerified(true);
+                    List<IndexingClient> indexingClients = indexingController.getClients();
+                    for (IndexingClient indexingClient : indexingClients) {
+                        indexingClient.setParty(party, bearer);
+                    }
+                }
                 return true;
             }
         }
@@ -226,7 +236,10 @@ public class AdminService {
             partyRepository.save(company);
 
             //update the index by removing the company
-            indexingClient.deleteParty(company.getHjid().toString(), bearer);
+            List<IndexingClient> indexingClients = indexingController.getClients();
+            for (IndexingClient indexingClient : indexingClients) {
+                indexingClient.deleteParty(company.getHjid().toString(), bearer);
+            }
             return true;
         }else {
             return false;
