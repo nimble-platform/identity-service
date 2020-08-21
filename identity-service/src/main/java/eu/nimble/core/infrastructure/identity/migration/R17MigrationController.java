@@ -1,7 +1,9 @@
 package eu.nimble.core.infrastructure.identity.migration;
 
+import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
+import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
 import eu.nimble.core.infrastructure.identity.repository.UserInvitationRepository;
@@ -11,7 +13,11 @@ import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.list.ChatUse
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.list.ChatUsers;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.list.UserEmail;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.ClauseType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.TradingTermType;
+import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -28,7 +34,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static eu.nimble.core.infrastructure.identity.uaa.OAuthClient.Role.PLATFORM_MANAGER;
 
@@ -49,6 +57,11 @@ public class R17MigrationController {
     private UserInvitationRepository userInvitationRepository;
     @Autowired
     private RocketChatService chatService;
+    @Autowired
+    private NegotiationSettingsRepository negotiationSettingsRepository;
+
+    private final String oldIncoterm = "DAT (Delivered at Terminal)";
+    private final String newIncoterm = "DPU (Delivery at Place Unloaded)";
 
     @ApiOperation(value = "", notes = "Validates the data of users")
     @ApiResponses(value = {
@@ -127,6 +140,55 @@ public class R17MigrationController {
         }
 
         logger.info("Completed request to validate data");
+        return ResponseEntity.ok(null);
+    }
+
+    @ApiOperation(value = "", notes = "Updates incoterms")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Updated the incoterms successfully"),
+            @ApiResponse(code = 401, message = "Invalid role")
+    })
+    @RequestMapping(value = "/r17/migration/incoterms",
+            produces = {"application/json"},
+            method = RequestMethod.PATCH)
+    public ResponseEntity updateIncoterms(@ApiParam(value = "The Bearer token provided by the identity service", required = true) @RequestHeader(value = "Authorization") String bearerToken
+    ) throws IOException {
+        logger.info("Incoming request to update incoterms");
+
+        // validate role
+        if (!identityService.hasAnyRole(bearerToken, PLATFORM_MANAGER))
+            return new ResponseEntity<>("Only platform managers are allowed to run this migration script", HttpStatus.FORBIDDEN);
+
+        List<NegotiationSettings> negotiationSettingsList = (List<NegotiationSettings>) negotiationSettingsRepository.findAll();
+        for (NegotiationSettings negotiationSettings : negotiationSettingsList) {
+            boolean saveNegotiationSettings = false;
+            if(negotiationSettings.getIncoterms().contains(oldIncoterm)){
+                Collections.replaceAll(negotiationSettings.getIncoterms(),oldIncoterm,newIncoterm);
+                saveNegotiationSettings = true;
+            }
+
+            PartyType partyType = negotiationSettings.getCompany();
+            if(partyType.getSalesTerms() != null){
+                List<ClauseType> clauseTypes = negotiationSettings.getCompany().getSalesTerms().getTermOrCondition();
+                for (ClauseType clauseType : clauseTypes) {
+                    List<TradingTermType> tradingTermTypesIncludingIncoterms = clauseType.getTradingTerms().stream().filter(tradingTermType -> tradingTermType.getValue().getValueQualifier().contentEquals("CODE") && tradingTermType.getValue().getValueCode().get(0).getListID().contentEquals("INCOTERMS_LIST")).collect(Collectors.toList());
+                    for (TradingTermType tradingTerm : tradingTermTypesIncludingIncoterms) {
+                        for (CodeType codeType : tradingTerm.getValue().getValueCode()) {
+                            if(codeType.getValue().contentEquals(oldIncoterm)){
+                                codeType.setValue(newIncoterm);
+                                saveNegotiationSettings = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if(saveNegotiationSettings){
+                negotiationSettingsRepository.save(negotiationSettings);
+            }
+        }
+
+        logger.info("Completed request to update incoterms");
         return ResponseEntity.ok(null);
     }
 
