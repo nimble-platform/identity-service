@@ -1,7 +1,9 @@
 package eu.nimble.core.infrastructure.identity.migration;
 
+import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
+import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
 import eu.nimble.core.infrastructure.identity.repository.UserInvitationRepository;
@@ -11,7 +13,9 @@ import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.list.ChatUse
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.list.ChatUsers;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.list.UserEmail;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.ClauseType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
+import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -49,6 +53,8 @@ public class R17MigrationController {
     private UserInvitationRepository userInvitationRepository;
     @Autowired
     private RocketChatService chatService;
+    @Autowired
+    private NegotiationSettingsRepository negotiationSettingsRepository;
 
     @ApiOperation(value = "", notes = "Validates the data of users")
     @ApiResponses(value = {
@@ -127,6 +133,43 @@ public class R17MigrationController {
         }
 
         logger.info("Completed request to validate data");
+        return ResponseEntity.ok(null);
+    }
+
+    @ApiOperation(value = "", notes = "Add titles to each clause")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Add titles to each clause successfully"),
+            @ApiResponse(code = 401, message = "Invalid role"),
+            @ApiResponse(code = 500, message = "Unexpected error while adding title to the clause")
+    })
+    @RequestMapping(value = "/r17/migration/clause-title",
+            produces = {"application/json"},
+            method = RequestMethod.PATCH)
+    public ResponseEntity addClauseTitles(@ApiParam(value = "The Bearer token provided by the identity service", required = true) @RequestHeader(value = "Authorization", required = true) String bearerToken
+    ) throws IOException {
+        logger.info("Incoming request to add clause titles");
+
+        // validate role
+        if (!identityService.hasAnyRole(bearerToken, PLATFORM_MANAGER))
+            return new ResponseEntity<>("Only platform managers are allowed to run this migration script", HttpStatus.FORBIDDEN);
+
+        List<NegotiationSettings> negotiationSettings = (List<NegotiationSettings>) negotiationSettingsRepository.findAll();
+        for (NegotiationSettings negotiationSetting : negotiationSettings) {
+            if(negotiationSetting.getCompany().getSalesTerms() != null){
+                List<ClauseType> clauseTypes = negotiationSetting.getCompany().getSalesTerms().getTermOrCondition();
+                for (ClauseType clause : clauseTypes) {
+                    String clauseId = clause.getID();
+                    String clauseTitle = clauseId.substring(clauseId.indexOf("_")+1);
+                    TextType title = new TextType();
+                    title.setLanguageID("en");
+                    title.setValue(clauseTitle);
+                    clause.getClauseTitle().add(title);
+                }
+            negotiationSettingsRepository.save(negotiationSetting);
+            }
+        }
+
+        logger.info("Completed request to add clause titles");
         return ResponseEntity.ok(null);
     }
 
