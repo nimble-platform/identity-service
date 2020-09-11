@@ -13,11 +13,9 @@ import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.list.ChatUse
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.list.ChatUsers;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.list.UserEmail;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.ClauseType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
-import eu.nimble.service.model.ubl.commonaggregatecomponents.TradingTermType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
+import eu.nimble.service.model.ubl.commonbasiccomponents.QuantityType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -230,4 +228,55 @@ public class R17MigrationController {
         return ResponseEntity.ok(null);
     }
 
+    @ApiOperation(value = "", notes = "Replaces 'day(s)' unit with 'calendar day(s)' unit for time quantities")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Updated the time quantity units successfully"),
+            @ApiResponse(code = 401, message = "Invalid role")
+    })
+    @RequestMapping(value = "/r17/migration/time-units",
+            produces = {"application/json"},
+            method = RequestMethod.PATCH)
+    public ResponseEntity updateTimeQuantityUnits(@ApiParam(value = "The Bearer token provided by the identity service", required = true) @RequestHeader(value = "Authorization") String bearerToken
+    ) throws IOException {
+        logger.info("Incoming request to update time quantity units");
+
+        // validate role
+        if (!identityService.hasAnyRole(bearerToken, PLATFORM_MANAGER))
+            return new ResponseEntity<>("Only platform managers are allowed to run this migration script", HttpStatus.FORBIDDEN);
+
+
+        List<NegotiationSettings> negotiationSettingsList = (List<NegotiationSettings>) negotiationSettingsRepository.findAll();
+        for (NegotiationSettings negotiationSettings : negotiationSettingsList) {
+            boolean saveNegotiationSettings = false;
+
+            if(negotiationSettings.getDeliveryPeriodUnits().contains("day(s)")){
+                Collections.replaceAll(negotiationSettings.getDeliveryPeriodUnits(),"day(s)","calendar day(s)");
+                saveNegotiationSettings = true;
+            }
+
+            PartyType partyType = negotiationSettings.getCompany();
+            if(partyType.getSalesTerms() != null){
+                List<ClauseType> clauseTypes = negotiationSettings.getCompany().getSalesTerms().getTermOrCondition();
+                for (ClauseType clauseType : clauseTypes) {
+                    for (TradingTermType tradingTerm : clauseType.getTradingTerms()) {
+                        if(tradingTerm.getValue().getValueQualifier().contentEquals("QUANTITY")){
+                            for (QuantityType quantityType : tradingTerm.getValue().getValueQuantity()) {
+                                if(quantityType.getUnitCode() != null && quantityType.getUnitCode().contentEquals("day(s)")){
+                                    quantityType.setUnitCode("calendar day(s)");
+                                    saveNegotiationSettings = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if(saveNegotiationSettings){
+                negotiationSettingsRepository.save(negotiationSettings);
+            }
+        }
+
+        logger.info("Completed request to update time quantity units");
+        return ResponseEntity.ok(null);
+    }
 }
