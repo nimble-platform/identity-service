@@ -18,6 +18,7 @@ import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.TradingTermType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
+import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -140,6 +141,43 @@ public class R17MigrationController {
         }
 
         logger.info("Completed request to validate data");
+        return ResponseEntity.ok(null);
+    }
+
+    @ApiOperation(value = "", notes = "Add titles to each clause")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Add titles to each clause successfully"),
+            @ApiResponse(code = 401, message = "Invalid role"),
+            @ApiResponse(code = 500, message = "Unexpected error while adding title to the clause")
+    })
+    @RequestMapping(value = "/r17/migration/clause-title",
+            produces = {"application/json"},
+            method = RequestMethod.PATCH)
+    public ResponseEntity addClauseTitles(@ApiParam(value = "The Bearer token provided by the identity service", required = true) @RequestHeader(value = "Authorization", required = true) String bearerToken
+    ) throws IOException {
+        logger.info("Incoming request to add clause titles");
+
+        // validate role
+        if (!identityService.hasAnyRole(bearerToken, PLATFORM_MANAGER))
+            return new ResponseEntity<>("Only platform managers are allowed to run this migration script", HttpStatus.FORBIDDEN);
+
+        List<NegotiationSettings> negotiationSettings = (List<NegotiationSettings>) negotiationSettingsRepository.findAll();
+        for (NegotiationSettings negotiationSetting : negotiationSettings) {
+            if(negotiationSetting.getCompany().getSalesTerms() != null){
+                List<ClauseType> clauseTypes = negotiationSetting.getCompany().getSalesTerms().getTermOrCondition();
+                for (ClauseType clause : clauseTypes) {
+                    String clauseId = clause.getID();
+                    String clauseTitle = clauseId.substring(clauseId.indexOf("_")+1);
+                    TextType title = new TextType();
+                    title.setLanguageID("en");
+                    title.setValue(clauseTitle);
+                    clause.getClauseTitle().add(title);
+                }
+            negotiationSettingsRepository.save(negotiationSetting);
+            }
+        }
+
+        logger.info("Completed request to add clause titles");
         return ResponseEntity.ok(null);
     }
 
