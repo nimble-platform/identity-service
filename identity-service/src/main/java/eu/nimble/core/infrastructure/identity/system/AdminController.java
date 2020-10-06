@@ -285,8 +285,7 @@ public class AdminController {
 
             return ResponseEntity.ok().build();
         }else{
-            return new ResponseEntity<>("Only company_admin, external_representative, "
-                    + "initial_representative, legal_representative of company are allowed to delete companies",
+            return new ResponseEntity<>("Only platform managers or company members are allowed to delete the company.",
                     HttpStatus.UNAUTHORIZED);
         }
 
