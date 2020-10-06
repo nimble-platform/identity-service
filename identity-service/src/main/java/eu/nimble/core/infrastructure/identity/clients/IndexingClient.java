@@ -31,7 +31,7 @@ public interface IndexingClient {
     Boolean deleteParty(@RequestParam(value = "uri") String uri,
     @RequestHeader(value = "Authorization", required = true) String bearerToken);
 
-    @RequestMapping(method = RequestMethod.POST, value = "/item/search")
+    @RequestMapping(method = RequestMethod.POST, value = "/item/search", consumes = "application/json")
     SearchResult searchItem(@RequestBody Search search,
             @RequestHeader(value = "Authorization", required = true) String bearerToken);
 
