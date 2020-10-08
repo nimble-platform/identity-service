@@ -202,6 +202,8 @@ public class IdentityController {
     ResponseEntity<FrontEndUser> loginFederatedUser(
             @ApiParam(value = "Access token provided by the IDP", required = true) @RequestBody Token token) throws IOException {
 
+        logger.info("got the code from efacotry"+token.toString());
+
         FrontEndUser frontEndUser = new FrontEndUser();
 
         if (token.getCode() == null) {

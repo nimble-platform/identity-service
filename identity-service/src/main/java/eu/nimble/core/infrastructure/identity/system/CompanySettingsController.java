@@ -524,22 +524,28 @@ public class CompanySettingsController {
         List<PartyType> unVerifiedCompanies = adminService.queryCompanies(AdminService.CompanyState.UNVERIFIED);
 
         for (PartyType party : verifiedCompanies) {
-            QualifyingPartyType qualifyingPartyType = qualifyingPartyRepository.findByParty(party).stream().findFirst().get();
-            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party,qualifyingPartyType);
-            newParty.setVerified(true);
-            logger.info("Indexing verified party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
-            List<IndexingClient> indexingClients = indexingController.getClients();
-            for(IndexingClient indexingClient : indexingClients) {
-                indexingClient.setParty(newParty,bearer);
+            Optional<QualifyingPartyType> qualifyingPartyTypeOptional = qualifyingPartyRepository.findByParty(party).stream().findFirst();
+            if(qualifyingPartyTypeOptional.isPresent()){
+                QualifyingPartyType qualifyingPartyType = qualifyingPartyTypeOptional.get();
+                eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party,qualifyingPartyType);
+                newParty.setVerified(true);
+                logger.info("Indexing verified party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
+                List<IndexingClient> indexingClients = indexingController.getClients();
+                for(IndexingClient indexingClient : indexingClients) {
+                    indexingClient.setParty(newParty,bearer);
+                }
             }
         }
         for (PartyType party : unVerifiedCompanies) {
-            QualifyingPartyType qualifyingPartyType = qualifyingPartyRepository.findByParty(party).stream().findFirst().get();
-            eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party,qualifyingPartyType);
-            logger.info("Indexing unverified party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
-            List<IndexingClient> indexingClients = indexingController.getClients();
-            for (IndexingClient indexingClient : indexingClients) {
-                indexingClient.setParty(newParty, bearer);
+            Optional<QualifyingPartyType> qualifyingPartyTypeOptional = qualifyingPartyRepository.findByParty(party).stream().findFirst();
+            if(qualifyingPartyTypeOptional.isPresent()){
+                QualifyingPartyType qualifyingPartyType = qualifyingPartyTypeOptional.get();
+                eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(party,qualifyingPartyType);
+                logger.info("Indexing unverified party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
+                List<IndexingClient> indexingClients = indexingController.getClients();
+                for (IndexingClient indexingClient : indexingClients) {
+                    indexingClient.setParty(newParty, bearer);
+                }
             }
         }
 
