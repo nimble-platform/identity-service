@@ -37,6 +37,8 @@ public class NimbleConfigurationProperties {
         GERMAN("de"),
         @JsonProperty("tr")
         TURKISH("tr"),
+        @JsonProperty("sv")
+        SWEDISH("sv"),
         @JsonProperty("it")
         ITALIAN("it");
 
