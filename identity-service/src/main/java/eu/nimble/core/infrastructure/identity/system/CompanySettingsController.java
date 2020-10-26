@@ -10,6 +10,7 @@ import eu.nimble.core.infrastructure.identity.clients.IndexingClientController;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
+import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
@@ -23,6 +24,7 @@ import eu.nimble.utility.persistence.binary.BinaryContentService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,6 +90,9 @@ public class CompanySettingsController {
 
     @Autowired
     private AdminService adminService;
+
+    @Autowired
+    private KafkaSender kafkaSender;
 
     @ApiOperation(value = "Retrieve company settings", response = CompanySettings.class)
     @RequestMapping(value = "/{companyID}", produces = {"application/json"}, method = RequestMethod.GET)
@@ -411,11 +416,23 @@ public class CompanySettingsController {
 
         PartyType company = getCompanySecure(companyID, bearer);
 
-        // update settings
+        // retrieve existing negotiation settings
         NegotiationSettings existingSettings = findOrCreateNegotiationSettings(company);
+        // check whether the available process ids are updated for the company
+        boolean isProcessIdListUpdated = false;
+        if(!CollectionUtils.isEqualCollection(existingSettings.getCompany().getProcessID(),newSettings.getCompany().getProcessID())){
+            isProcessIdListUpdated = true;
+        }
+        // update settings
         existingSettings.update(newSettings);
         existingSettings = negotiationSettingsRepository.save(existingSettings);
 
+        // when the available process id list is updated for the company,
+        // we need to recalculate the company rating since the available sub-ratings depend on the selected process ids
+        // broadcast the change on ratings
+        if(isProcessIdListUpdated){
+            kafkaSender.broadcastRatingsUpdate(String.valueOf(companyID),bearer);
+        }
         logger.info("Updated negotiation settings {} for company {}", existingSettings.getId(), UblAdapter.adaptPartyIdentifier(company));
 
 //        //indexing the updated company in the indexing service
