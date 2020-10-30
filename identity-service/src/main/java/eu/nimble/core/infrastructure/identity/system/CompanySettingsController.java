@@ -40,6 +40,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -322,7 +323,8 @@ public class CompanySettingsController {
         }
 
         BinaryObjectType certificateBinary = new BinaryObjectType();
-        certificateBinary.setValue(certFile.getBytes());
+        // since the file content is Base64 encoded, decode it before saving
+        certificateBinary.setValue(Base64.getDecoder().decode(certFile.getBytes()));
         certificateBinary.setFileName(certFile.getOriginalFilename());
         certificateBinary.setMimeCode(certFile.getContentType());
         certificateBinary.setLanguageID(languageId);
