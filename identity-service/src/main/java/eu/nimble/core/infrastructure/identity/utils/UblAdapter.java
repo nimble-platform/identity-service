@@ -72,10 +72,6 @@ public class UblAdapter {
         settings.getRecentlyUsedProductCategories().clear();
         settings.getRecentlyUsedProductCategories().addAll(recentlyUsedProductCategories);
 
-        Map< NimbleConfigurationProperties.LanguageID, String> industrySectors = party.getIndustrySector().stream()
-                .collect(Collectors.toMap(t -> NimbleConfigurationProperties.LanguageID.fromString(t.getLanguageID()), t -> t.getValue()));
-        settings.getDetails().setIndustrySectors(industrySectors);
-
         return settings;
     }
 
@@ -131,6 +127,9 @@ public class UblAdapter {
                 .findFirst().orElse(null));
         companyDetails.setAddress(adaptAddress(party.getPostalAddress()));
         companyDetails.setProcessIds(new ArrayList<>(party.getProcessID()));
+        Map< NimbleConfigurationProperties.LanguageID, String> industrySectors = party.getIndustrySector().stream()
+                .collect(Collectors.toMap(t -> NimbleConfigurationProperties.LanguageID.fromString(t.getLanguageID()), t -> t.getValue()));
+        companyDetails.setIndustrySectors(industrySectors);
         if (party.getIndustryClassificationCode() != null)
             companyDetails.setBusinessType(party.getIndustryClassificationCode().getValue());
 

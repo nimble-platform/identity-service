@@ -7,24 +7,30 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClientController;
+import eu.nimble.core.infrastructure.identity.entity.CompanyDetailsUpdates;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
+import eu.nimble.core.infrastructure.identity.entity.dto.CompanyDetails;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
+import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
+import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.utils.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
+import eu.nimble.utility.ExecutionContext;
 import eu.nimble.utility.JsonSerializationUtility;
 import eu.nimble.utility.persistence.binary.BinaryContentService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.collections.CollectionUtils;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,13 +42,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.thymeleaf.util.StringUtils;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static eu.nimble.core.infrastructure.identity.uaa.OAuthClient.Role.*;
@@ -93,6 +97,15 @@ public class CompanySettingsController {
     private AdminService adminService;
 
     @Autowired
+    private KeycloakAdmin keycloakAdmin;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private ExecutionContext executionContext;
+
+    @Autowired
     private KafkaSender kafkaSender;
 
     @ApiOperation(value = "Retrieve company settings", response = CompanySettings.class)
@@ -123,15 +136,18 @@ public class CompanySettingsController {
 
         if (identityService.hasAnyRole(bearer,COMPANY_ADMIN,LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE, PUBLISHER) == false)
             return new ResponseEntity<>("Only legal representatives, company admin or platform managers are allowed add images", HttpStatus.FORBIDDEN);
-
+        // retrieve party and qualifying party
         PartyType existingCompany = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         logger.debug("Changing settings for party with Id {}", existingCompany.getHjid());
+        QualifyingPartyType qualifyingPartyType = qualifyingPartyRepository.findByParty(existingCompany).stream().findFirst().orElse(null);
 
+        // create company details using the party and qualifying party
+        CompanyDetails existingCompanyDetails = UblAdapter.adaptCompanyDetails(existingCompany,qualifyingPartyType);
+        // update party and qualifying party
         existingCompany = UblAdapter.adaptCompanySettings(newSettings, null, existingCompany);
 
-        Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(existingCompany).stream().findFirst();
-        QualifyingPartyType qualifyingParty = UblAdapter.adaptQualifyingParty(newSettings, existingCompany, qualifyingPartyOptional.orElse(null));
+        QualifyingPartyType qualifyingParty = UblAdapter.adaptQualifyingParty(newSettings, existingCompany, qualifyingPartyType);
         qualifyingPartyRepository.save(qualifyingParty);
 
         // set preferred product categories
@@ -159,6 +175,17 @@ public class CompanySettingsController {
         }
 
         newSettings = adaptCompanySettings(existingCompany, qualifyingParty);
+
+        // if the company data is updated by the users which are not platform managers, let platform managers know about that change
+        if(!identityService.hasAnyRole(bearer,PLATFORM_MANAGER)){
+            // get the updates on company details
+            CompanyDetailsUpdates companyDetailsUpdates = this.getCompanyDetailsUpdates(existingCompanyDetails,newSettings.getDetails());
+            // check whether company data is updated
+            if(companyDetailsUpdates.areCompanyDetailsUpdated()){
+                PersonType person = identityService.getUserfromBearer(bearer).getUBLPerson();
+                this.informPlatformManagerAboutCompanyDataUpdates(person,existingCompany,companyDetailsUpdates);
+            }
+        }
         return new ResponseEntity<>(newSettings, HttpStatus.ACCEPTED);
     }
 
@@ -594,5 +621,51 @@ public class CompanySettingsController {
         documentReference.setHjid(identifier.longValue());
         documentReference.setDocumentType(documentType);
         return documentReference;
+    }
+
+    private void informPlatformManagerAboutCompanyDataUpdates(PersonType representative, PartyType company, CompanyDetailsUpdates companyDetailsUpdates) {
+        List<UserRepresentation> managers = keycloakAdmin.getPlatformManagers();
+        List<String> emails = managers.stream().map(UserRepresentation::getEmail).collect(Collectors.toList());
+
+        emailService.notifyPlatformManagersCompanyDataUpdates(emails, representative, company, companyDetailsUpdates,executionContext.getLanguageId());
+    }
+
+    /**
+     * Returns the updated fields of company {{@link CompanyDetailsUpdates}} based on the old and new company details
+     * @param oldCompanyDetails the old company details
+     * @param newCompanyDetails the new company details
+     * @return the updated fields of company as {{@link CompanyDetailsUpdates}}
+     * */
+    private CompanyDetailsUpdates getCompanyDetailsUpdates(CompanyDetails oldCompanyDetails, CompanyDetails newCompanyDetails){
+        CompanyDetailsUpdates companyDetailsUpdates = new CompanyDetailsUpdates();
+        // vat number
+        if(!StringUtils.equals(oldCompanyDetails.getVatNumber(),newCompanyDetails.getVatNumber()))
+            companyDetailsUpdates.setVatNumber(newCompanyDetails.getVatNumber());
+        // verification info
+        if(!StringUtils.equals(oldCompanyDetails.getVerificationInformation(),newCompanyDetails.getVerificationInformation()))
+            companyDetailsUpdates.setVerificationInformation(newCompanyDetails.getVerificationInformation());
+        // business type
+        if(!StringUtils.equals(oldCompanyDetails.getBusinessType(),newCompanyDetails.getBusinessType()))
+            companyDetailsUpdates.setBusinessType(newCompanyDetails.getBusinessType());
+        // year of foundation
+        if(!Objects.equals(oldCompanyDetails.getYearOfCompanyRegistration(),newCompanyDetails.getYearOfCompanyRegistration()))
+            companyDetailsUpdates.setYearOfCompanyRegistration(newCompanyDetails.getYearOfCompanyRegistration());
+        // brand name
+        if(!Objects.equals(oldCompanyDetails.getBrandName(),newCompanyDetails.getBrandName()))
+            companyDetailsUpdates.setBrandName(newCompanyDetails.getBrandName());
+        // legal name
+        if(!Objects.equals(oldCompanyDetails.getLegalName(),newCompanyDetails.getLegalName()))
+            companyDetailsUpdates.setLegalName(newCompanyDetails.getLegalName());
+        // industry sectors
+        if(!Objects.equals(oldCompanyDetails.getIndustrySectors(),newCompanyDetails.getIndustrySectors()))
+            companyDetailsUpdates.setIndustrySectors(newCompanyDetails.getIndustrySectors());
+        // business keywords
+        if(!Objects.equals(oldCompanyDetails.getBusinessKeywords(),newCompanyDetails.getBusinessKeywords()))
+            companyDetailsUpdates.setBusinessKeywords(newCompanyDetails.getBusinessKeywords());
+        // address
+        if(!Objects.equals(oldCompanyDetails.getAddress(), newCompanyDetails.getAddress())){
+            companyDetailsUpdates.setAddress(newCompanyDetails.getAddress());
+        }
+        return companyDetailsUpdates;
     }
 }

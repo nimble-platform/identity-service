@@ -1,0 +1,10 @@
+Hello,
+
+[(${username})] has changed the company data for [(${companyName})] to the following:
+
+[(${companyUpdates})]
+
+Link to the company details: [(${companyDetailsUrl})]
+
+Sincerely,
+    your [(${platformName})] platform manager

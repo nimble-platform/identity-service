@@ -2,6 +2,7 @@ package eu.nimble.core.infrastructure.identity.entity.dto;
 
 import io.swagger.annotations.ApiModelProperty;
 
+import java.util.Objects;
 /**
  * Created by Johannes Innerbichler on 04/07/17.
  */
@@ -97,5 +98,24 @@ public class Address {
 
     public void setRegion(String region) {
         this.region = region;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Address address = (Address) o;
+        return Objects.equals(streetName, address.streetName) &&
+                Objects.equals(buildingNumber, address.buildingNumber) &&
+                Objects.equals(cityName, address.cityName) &&
+                Objects.equals(postalCode, address.postalCode) &&
+                Objects.equals(country, address.country) &&
+                Objects.equals(district, address.district) &&
+                Objects.equals(region, address.region);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(streetName, buildingNumber, cityName, postalCode, country, district, region);
     }
 }

@@ -1,0 +1,10 @@
+Hola
+
+[(${username})] ha actualizado los datos de la empresa [(${companyName})] por los siguientes:
+
+[(${companyUpdates})]
+
+Enlace a los datos de la empresa: [(${companyDetailsUrl})]
+
+Atentamente,
+    [(${platformName})] Servicio de notificaciones.

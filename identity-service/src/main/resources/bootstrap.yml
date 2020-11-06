@@ -118,6 +118,8 @@ nimble:
     url: ${FRONTEND_URL:http://localhost:9092}
     registration:
       url: ${FRONTEND_REGISTRATION_URL:#/user-mgmt/registration}
+    company-details:
+      url: ${FRONTEND_COMPANY_DETAILS_URL:#/user-mgmt/company-details}
   kafka:
     topics:
       companyUpdates: ${KAFKA_TOPIC_COMPANY_UPDATES:company-updates}
