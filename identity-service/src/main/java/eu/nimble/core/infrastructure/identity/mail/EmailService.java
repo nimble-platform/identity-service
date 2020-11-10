@@ -68,6 +68,9 @@ public class EmailService {
     @Value("${spring.mail.languages}")
     private String mailTemplateLanguages;
 
+    @Value("${nimble.companyDataUpdateEmail}")
+    private String companyDataUpdateEmail;
+
     public void sendResetCredentialsLink(String toEmail, String credentials, String language) throws UnsupportedEncodingException{
         String resetCredentialsURL = frontendUrl + "/#/user-mgmt/forgot/?key=" + URLEncoder.encode(credentials, "UTF-8");
         Context context = new Context();
@@ -127,6 +130,12 @@ public class EmailService {
 
         String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
         String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_DATA_UPDATED, language, Arrays.asList(platformName,version));
+
+        // if the specific email address is defined for the company data updates, use it to send the email
+        // otherwise, send the email to all platform managers
+        if(!Strings.isNullOrEmpty(this.companyDataUpdateEmail)){
+            emails = Arrays.asList(this.companyDataUpdateEmail);
+        }
 
         this.send(emails.toArray(new String[]{}), subject, getTemplateName("company_data_updated",language), context);
     }
