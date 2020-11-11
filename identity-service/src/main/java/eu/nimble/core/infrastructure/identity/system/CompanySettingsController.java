@@ -363,8 +363,22 @@ public class CompanySettingsController {
 
         // update and store company
         company.getCertificate().add(certificate);
-        partyRepository.save(company);
+        company = partyRepository.save(company);
+        // index the party
+        Optional<QualifyingPartyType> qualifyingPartyTypeOptional = qualifyingPartyRepository.findByParty(company).stream().findFirst();
+        if(qualifyingPartyTypeOptional.isPresent()){
+            eu.nimble.service.model.solr.party.PartyType indexedParty =  indexingController.getNimbleIndexClient().getParty(company.getHjid().toString(),bearer);
+            //indexing the new company in the indexing service
+            eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(company,qualifyingPartyTypeOptional.get());
+            if (indexedParty != null && indexedParty.getVerified()) {
+                party.setVerified(true);
+            }
 
+            List<IndexingClient> indexingClients = indexingController.getClients();
+            for(IndexingClient indexingClient : indexingClients){
+                indexingClient.setParty(party,bearer);
+            }
+        }
         return ResponseEntity.ok(certificate);
     }
 
@@ -421,13 +435,21 @@ public class CompanySettingsController {
         certificateRepository.delete(certificate);
 
         // update list of certificates
-        Optional<CertificateType> toDelete = company.getCertificate().stream()
-                .filter(c -> c.getHjid() != null)
-                .filter(c -> c.getHjid().equals(certificateId))
-                .findFirst();
-        if (toDelete.isPresent()) {
-            company.getCertificate().remove(toDelete.get());
-            partyRepository.save(company);
+        company = partyRepository.save(company);
+        // index the party
+        Optional<QualifyingPartyType> qualifyingPartyTypeOptional = qualifyingPartyRepository.findByParty(company).stream().findFirst();
+        if(qualifyingPartyTypeOptional.isPresent()){
+            eu.nimble.service.model.solr.party.PartyType indexedParty =  indexingController.getNimbleIndexClient().getParty(company.getHjid().toString(),bearer);
+            //indexing the new company in the indexing service
+            eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(company,qualifyingPartyTypeOptional.get());
+            if (indexedParty != null && indexedParty.getVerified()) {
+                party.setVerified(true);
+            }
+
+            List<IndexingClient> indexingClients = indexingController.getClients();
+            for(IndexingClient indexingClient : indexingClients){
+                indexingClient.setParty(party,bearer);
+            }
         }
 
         return ResponseEntity.ok().build();
