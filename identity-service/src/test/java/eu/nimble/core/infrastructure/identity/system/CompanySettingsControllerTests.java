@@ -265,6 +265,7 @@ public class CompanySettingsControllerTests {
 
         // WHEN: setting empty negotiation settings
         NegotiationSettings emptySettings = new NegotiationSettings();
+        emptySettings.setCompany(negotiationSettings.getCompany());
 
         Gson gson = new Gson();
         this.mockMvc.perform(put(String.format("/company-settings/%s/negotiation", companyID)   )
@@ -473,6 +474,7 @@ public class CompanySettingsControllerTests {
 
         // WHEN: changing negotiation settings of company
         NegotiationSettings negotiationSettings = new NegotiationSettings();
+        negotiationSettings.setCompany(company);
         negotiationSettings.getWarrantyPeriodUnits().add("weeks");
         negotiationSettings.getWarrantyPeriodRanges().add(new NegotiationSettings.Range(5, 6));
         negotiationSettings.getDeliveryPeriodUnits().add("days");

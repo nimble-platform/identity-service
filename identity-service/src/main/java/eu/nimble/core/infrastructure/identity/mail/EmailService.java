@@ -1,7 +1,9 @@
 package eu.nimble.core.infrastructure.identity.mail;
 
 import com.google.common.base.Strings;
+import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
 import eu.nimble.core.infrastructure.identity.config.message.NimbleMessageCode;
+import eu.nimble.core.infrastructure.identity.entity.CompanyDetailsUpdates;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.AddressType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
@@ -19,10 +21,7 @@ import org.thymeleaf.context.Context;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 @Service
 @SuppressWarnings("Duplicates")
@@ -63,8 +62,14 @@ public class EmailService {
     @Value("${nimble.frontend.registration.url}")
     private String frontendRegistrationUrl;
 
+    @Value("${nimble.frontend.company-details.url}")
+    private String companyDetailsUrl;
+
     @Value("${spring.mail.languages}")
     private String mailTemplateLanguages;
+
+    @Value("${nimble.companyDataUpdateEmail}")
+    private String companyDataUpdateEmail;
 
     public void sendResetCredentialsLink(String toEmail, String credentials, String language) throws UnsupportedEncodingException{
         String resetCredentialsURL = frontendUrl + "/#/user-mgmt/forgot/?key=" + URLEncoder.encode(credentials, "UTF-8");
@@ -106,6 +111,33 @@ public class EmailService {
         String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_INVITATION_EXISTING_COMPANY, language, Arrays.asList(companyName,platformName,version));
 
         this.send(new String[]{toEmail}, subject, getTemplateName("invitation_existing_company",language), context);
+    }
+
+    public void notifyPlatformManagersCompanyDataUpdates(List<String> emails, PersonType user, PartyType company, CompanyDetailsUpdates companyDetailsUpdates, String language){
+        Context context = new Context();
+
+        // collect info of user
+        String username = user.getFirstName() + " " + user.getFamilyName();
+        context.setVariable("username", username);
+
+        // collect info of company and platform
+        context.setVariable("companyName", ublUtils.getName(company));
+        context.setVariable("platformName",platformName);
+        // company updates
+        context.setVariable("companyUpdates",getMailContentForCompanyDetailsUpdates(companyDetailsUpdates,language));
+        // link to the company details
+        context.setVariable("companyDetailsUrl", String.format("%s/%s?id=%s&viewMode=mgmt",frontendUrl,companyDetailsUrl,company.getPartyIdentification().get(0).getID()));
+
+        String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_COMPANY_DATA_UPDATED, language, Arrays.asList(platformName,version));
+
+        // if the specific email address is defined for the company data updates, use it to send the email
+        // otherwise, send the email to all platform managers
+        if(!Strings.isNullOrEmpty(this.companyDataUpdateEmail)){
+            emails = Arrays.asList(this.companyDataUpdateEmail);
+        }
+
+        this.send(emails.toArray(new String[]{}), subject, getTemplateName("company_data_updated",language), context);
     }
 
     public void notifyPlatformManagersNewCompany(List<String> emails, PersonType representative, PartyType company, String language) {
@@ -207,9 +239,105 @@ public class EmailService {
     }
 
     private String getMailSubject(NimbleMessageCode messageCode, String language, List<String> parameters){
+        return this.messageSource.getMessage(messageCode.toString(), parameters.toArray(), getLocale(language));
+    }
+
+    /**
+     * Returns the {{@link Locale}} for the given language
+     * */
+    private Locale getLocale(String language){
         List<String> languages = Arrays.asList(mailTemplateLanguages.split(","));
         String mailSubjectLanguage = languages.contains(language) ? language :languages.get(0) ;
-        Locale locale = new Locale(mailSubjectLanguage);
-        return this.messageSource.getMessage(messageCode.toString(), parameters.toArray(), locale);
+        return new Locale(mailSubjectLanguage);
+    }
+
+    /**
+     * Returns the mail content for company details updates
+     * @param companyDetailsUpdates the updated fields of company details
+     * @param language the language id to be used to put proper translations of company fields
+     * @return the mail content for company details updates as string
+     * */
+    private String getMailContentForCompanyDetailsUpdates(CompanyDetailsUpdates companyDetailsUpdates,String language){
+        Locale locale = getLocale(language);
+
+        StringBuilder content = new StringBuilder();
+        // company name
+        if(companyDetailsUpdates.getLegalName() != null){
+            content.append(this.messageSource.getMessage(NimbleMessageCode.COMPANY_NAME.toString(),null,locale)).append(":\n");
+            content.append(stringifyLanguageMap(companyDetailsUpdates.getLegalName())).append("\n");
+        }
+        // brand name
+        if(companyDetailsUpdates.getBrandName() != null){
+            content.append(this.messageSource.getMessage(NimbleMessageCode.BRAND_NAME.toString(),null,locale)).append(":\n");
+            content.append(stringifyLanguageMap(companyDetailsUpdates.getBrandName())).append("\n");
+        }
+        // vat number
+        if(companyDetailsUpdates.getVatNumber() != null){
+            content.append(this.messageSource.getMessage(NimbleMessageCode.VAT_NUMBER.toString(),null,locale)).append(":\n");
+            content.append(companyDetailsUpdates.getVatNumber()).append("\n\n");
+        }
+        // verification info
+        if(companyDetailsUpdates.getVerificationInformation() != null){
+            content.append(this.messageSource.getMessage(NimbleMessageCode.VERIFICATION_INFO.toString(),null,locale)).append(":\n");
+            content.append(companyDetailsUpdates.getVerificationInformation()).append("\n\n");
+        }
+        // business type
+        if(companyDetailsUpdates.getBusinessType() != null){
+            String businessTypeKey = companyDetailsUpdates.getBusinessType().replace(" ","_").toUpperCase();
+            content.append(this.messageSource.getMessage(NimbleMessageCode.BUSINESS_TYPE.toString(),null,locale)).append(":\n");
+            content.append(this.messageSource.getMessage(businessTypeKey,null,locale)).append("\n\n");
+        }
+        // activity sectors
+        if(companyDetailsUpdates.getIndustrySectors() != null){
+            content.append(this.messageSource.getMessage(NimbleMessageCode.ACTIVITY_SECTORS.toString(),null,locale)).append(":\n");
+            content.append(stringifyLanguageMap(companyDetailsUpdates.getIndustrySectors())).append("\n");
+        }
+        // business keywords
+        if(companyDetailsUpdates.getBusinessKeywords() != null){
+            content.append(this.messageSource.getMessage(NimbleMessageCode.BUSINESS_KEYWORDS.toString(),null,locale)).append(":\n");
+            content.append(stringifyLanguageMap(companyDetailsUpdates.getBusinessKeywords())).append("\n");
+        }
+        // year of foundation
+        if(companyDetailsUpdates.getYearOfCompanyRegistration() != null){
+            content.append(this.messageSource.getMessage(NimbleMessageCode.YEAR_FOUNDATION.toString(),null,locale)).append(":\n");
+            content.append(companyDetailsUpdates.getYearOfCompanyRegistration()).append("\n\n");
+        }
+        // address
+        if(companyDetailsUpdates.getAddress() != null){
+            // street
+            content.append(this.messageSource.getMessage(NimbleMessageCode.STREET.toString(),null,locale)).append(":\n");
+            content.append(companyDetailsUpdates.getAddress().getStreetName()).append("\n\n");
+            // building number
+            content.append(this.messageSource.getMessage(NimbleMessageCode.BUILDING_NUMBER.toString(),null,locale)).append(":\n");
+            content.append(companyDetailsUpdates.getAddress().getBuildingNumber()).append("\n\n");
+            // city/town
+            content.append(this.messageSource.getMessage(NimbleMessageCode.CITY_TOWN.toString(),null,locale)).append(":\n");
+            content.append(companyDetailsUpdates.getAddress().getCityName()).append("\n\n");
+            // state/province
+            content.append(this.messageSource.getMessage(NimbleMessageCode.STATE_PROVINCE.toString(),null,locale)).append(":\n");
+            content.append(companyDetailsUpdates.getAddress().getRegion()).append("\n\n");
+            // postal code
+            content.append(this.messageSource.getMessage(NimbleMessageCode.POSTAL_CODE.toString(),null,locale)).append(":\n");
+            content.append(companyDetailsUpdates.getAddress().getPostalCode()).append("\n\n");
+            // country
+            content.append(this.messageSource.getMessage(NimbleMessageCode.COUNTRY.toString(),null,locale)).append(":\n");
+            content.append(companyDetailsUpdates.getAddress().getCountry()).append("\n");
+        }
+        return content.toString();
+    }
+
+    /**
+     * Stringifies the given language map
+     * @param languageMap the language id - value map
+     * @return language id - value pairs separeted by new line
+     * */
+    private String stringifyLanguageMap(Map<NimbleConfigurationProperties.LanguageID, String> languageMap){
+        String newLineChar = "\n";
+        StringBuilder stringBuilder = new StringBuilder();
+        languageMap.forEach((languageID, value) -> {
+            List<String> values = Arrays.asList(value.split(newLineChar).clone());
+            values.forEach(v -> stringBuilder.append(v).append("(").append(languageID).append(")\n"));
+        });
+        return stringBuilder.toString();
     }
 }

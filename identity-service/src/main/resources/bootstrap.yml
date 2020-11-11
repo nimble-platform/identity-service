@@ -118,12 +118,16 @@ nimble:
     url: ${FRONTEND_URL:http://localhost:9092}
     registration:
       url: ${FRONTEND_REGISTRATION_URL:#/user-mgmt/registration}
+    company-details:
+      url: ${FRONTEND_COMPANY_DETAILS_URL:#/user-mgmt/company-details}
   kafka:
     topics:
       companyUpdates: ${KAFKA_TOPIC_COMPANY_UPDATES:company-updates}
+      ratingsUpdates: ${KAFKA_TOPIC_BUSINESS_PROCESS_UPDATES:business-process-updates-staging}
   binary-content:
     url: ${IDENTITY_BINARY_CONTENT_URL:IdentityBinaryContentUri:}
   supportEmail: ${SUPPORT_EMAIL:nimble-support@salzburgresearch.at}
+  companyDataUpdateEmail: ${COMPATA_DATA_UPDATE_EMAIL:}
   rocketChat:
     isEnabled: ${ROCKET_CHAT:false}
     chatServiceURL: ${CHAT_SERVICE_URL:http://localhost:8095}

@@ -7,22 +7,30 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClientController;
+import eu.nimble.core.infrastructure.identity.entity.CompanyDetailsUpdates;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
+import eu.nimble.core.infrastructure.identity.entity.dto.CompanyDetails;
 import eu.nimble.core.infrastructure.identity.entity.dto.CompanySettings;
+import eu.nimble.core.infrastructure.identity.mail.EmailService;
+import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.CertificateService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
+import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.utils.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.BinaryObjectType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
+import eu.nimble.utility.ExecutionContext;
 import eu.nimble.utility.JsonSerializationUtility;
 import eu.nimble.utility.persistence.binary.BinaryContentService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import org.apache.commons.collections.CollectionUtils;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,12 +42,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.thymeleaf.util.StringUtils;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static eu.nimble.core.infrastructure.identity.uaa.OAuthClient.Role.*;
@@ -89,6 +96,18 @@ public class CompanySettingsController {
     @Autowired
     private AdminService adminService;
 
+    @Autowired
+    private KeycloakAdmin keycloakAdmin;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private ExecutionContext executionContext;
+
+    @Autowired
+    private KafkaSender kafkaSender;
+
     @ApiOperation(value = "Retrieve company settings", response = CompanySettings.class)
     @RequestMapping(value = "/{companyID}", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<CompanySettings> getSettings(
@@ -117,15 +136,18 @@ public class CompanySettingsController {
 
         if (identityService.hasAnyRole(bearer,COMPANY_ADMIN,LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE, PUBLISHER) == false)
             return new ResponseEntity<>("Only legal representatives, company admin or platform managers are allowed add images", HttpStatus.FORBIDDEN);
-
+        // retrieve party and qualifying party
         PartyType existingCompany = partyRepository.findByHjid(companyID).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
 
         logger.debug("Changing settings for party with Id {}", existingCompany.getHjid());
+        QualifyingPartyType qualifyingPartyType = qualifyingPartyRepository.findByParty(existingCompany).stream().findFirst().orElse(null);
 
+        // create company details using the party and qualifying party
+        CompanyDetails existingCompanyDetails = UblAdapter.adaptCompanyDetails(existingCompany,qualifyingPartyType);
+        // update party and qualifying party
         existingCompany = UblAdapter.adaptCompanySettings(newSettings, null, existingCompany);
 
-        Optional<QualifyingPartyType> qualifyingPartyOptional = qualifyingPartyRepository.findByParty(existingCompany).stream().findFirst();
-        QualifyingPartyType qualifyingParty = UblAdapter.adaptQualifyingParty(newSettings, existingCompany, qualifyingPartyOptional.orElse(null));
+        QualifyingPartyType qualifyingParty = UblAdapter.adaptQualifyingParty(newSettings, existingCompany, qualifyingPartyType);
         qualifyingPartyRepository.save(qualifyingParty);
 
         // set preferred product categories
@@ -153,6 +175,17 @@ public class CompanySettingsController {
         }
 
         newSettings = adaptCompanySettings(existingCompany, qualifyingParty);
+
+        // if the company data is updated by the users which are not platform managers, let platform managers know about that change
+        if(!identityService.hasAnyRole(bearer,PLATFORM_MANAGER)){
+            // get the updates on company details
+            CompanyDetailsUpdates companyDetailsUpdates = this.getCompanyDetailsUpdates(existingCompanyDetails,newSettings.getDetails());
+            // check whether company data is updated
+            if(companyDetailsUpdates.areCompanyDetailsUpdated()){
+                PersonType person = identityService.getUserfromBearer(bearer).getUBLPerson();
+                this.informPlatformManagerAboutCompanyDataUpdates(person,existingCompany,companyDetailsUpdates);
+            }
+        }
         return new ResponseEntity<>(newSettings, HttpStatus.ACCEPTED);
     }
 
@@ -282,7 +315,7 @@ public class CompanySettingsController {
     public ResponseEntity<?> uploadCertificate(
             @RequestHeader(value = "Authorization") String bearer,
             @ApiParam(value = "Id of company owning the certificate", required = true) @PathVariable Long companyID,
-            @RequestParam("file") MultipartFile certFile,
+            @RequestParam(value = "file",required = false) MultipartFile certFile,
             @RequestParam("name") String name,
             @RequestParam("description") String description,
             @RequestParam("type") String type,
@@ -292,14 +325,26 @@ public class CompanySettingsController {
 
         if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>("Only legal representatives or platform managers are allowed to upload certificates", HttpStatus.FORBIDDEN);
-
+        // retrieve the company
         PartyType company = getCompanySecure(companyID, bearer);
-
+        // binary object for the certificate to be uploaded
+        BinaryObjectType certificateBinary = new BinaryObjectType();
+        // set the file content if certificate file is provided
+        if(certFile != null){
+            // since the file content is Base64 encoded, decode it before saving
+            certificateBinary.setValue(Base64.getDecoder().decode(certFile.getBytes()));
+            certificateBinary.setFileName(certFile.getOriginalFilename());
+            certificateBinary.setMimeCode(certFile.getContentType());
+        }
+        // certificate id is not null when an existing certificate is being updated
         if(!certID.equals("null")){
             Long certId = Long.parseLong(certID);
-            // delete binary content
+            // find the certificate
             CertificateType certificate = certificateRepository.findOne(certId);
             String uri = certificate.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getUri();
+            // retrieve its content
+            BinaryObjectType exitingCertificate = binaryContentService.retrieveContent(uri);
+            // delete binary content
             binaryContentService.deleteContentIdentity(uri);
 
             // delete certificate
@@ -314,12 +359,13 @@ public class CompanySettingsController {
                 company.getCertificate().remove(toDelete.get());
                 partyRepository.save(company);
             }
+            // if no file is provided for the new certificate, we assume that the file content of existing certificate will be used
+            if(certFile == null){
+                certificateBinary.setValue(exitingCertificate.getValue());
+                certificateBinary.setFileName(exitingCertificate.getFileName());
+                certificateBinary.setMimeCode(exitingCertificate.getMimeCode());
+            }
         }
-
-        BinaryObjectType certificateBinary = new BinaryObjectType();
-        certificateBinary.setValue(certFile.getBytes());
-        certificateBinary.setFileName(certFile.getOriginalFilename());
-        certificateBinary.setMimeCode(certFile.getContentType());
         certificateBinary.setLanguageID(languageId);
         certificateBinary = binaryContentService.createContent(certificateBinary);
         certificateBinary.setValue(null); // reset value so it is not stored in database
@@ -329,8 +375,22 @@ public class CompanySettingsController {
 
         // update and store company
         company.getCertificate().add(certificate);
-        partyRepository.save(company);
+        company = partyRepository.save(company);
+        // index the party
+        Optional<QualifyingPartyType> qualifyingPartyTypeOptional = qualifyingPartyRepository.findByParty(company).stream().findFirst();
+        if(qualifyingPartyTypeOptional.isPresent()){
+            eu.nimble.service.model.solr.party.PartyType indexedParty =  indexingController.getNimbleIndexClient().getParty(company.getHjid().toString(),bearer);
+            //indexing the new company in the indexing service
+            eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(company,qualifyingPartyTypeOptional.get());
+            if (indexedParty != null && indexedParty.getVerified()) {
+                party.setVerified(true);
+            }
 
+            List<IndexingClient> indexingClients = indexingController.getClients();
+            for(IndexingClient indexingClient : indexingClients){
+                indexingClient.setParty(party,bearer);
+            }
+        }
         return ResponseEntity.ok(certificate);
     }
 
@@ -387,13 +447,21 @@ public class CompanySettingsController {
         certificateRepository.delete(certificate);
 
         // update list of certificates
-        Optional<CertificateType> toDelete = company.getCertificate().stream()
-                .filter(c -> c.getHjid() != null)
-                .filter(c -> c.getHjid().equals(certificateId))
-                .findFirst();
-        if (toDelete.isPresent()) {
-            company.getCertificate().remove(toDelete.get());
-            partyRepository.save(company);
+        company = partyRepository.save(company);
+        // index the party
+        Optional<QualifyingPartyType> qualifyingPartyTypeOptional = qualifyingPartyRepository.findByParty(company).stream().findFirst();
+        if(qualifyingPartyTypeOptional.isPresent()){
+            eu.nimble.service.model.solr.party.PartyType indexedParty =  indexingController.getNimbleIndexClient().getParty(company.getHjid().toString(),bearer);
+            //indexing the new company in the indexing service
+            eu.nimble.service.model.solr.party.PartyType party = DataModelUtils.toIndexParty(company,qualifyingPartyTypeOptional.get());
+            if (indexedParty != null && indexedParty.getVerified()) {
+                party.setVerified(true);
+            }
+
+            List<IndexingClient> indexingClients = indexingController.getClients();
+            for(IndexingClient indexingClient : indexingClients){
+                indexingClient.setParty(party,bearer);
+            }
         }
 
         return ResponseEntity.ok().build();
@@ -411,11 +479,23 @@ public class CompanySettingsController {
 
         PartyType company = getCompanySecure(companyID, bearer);
 
-        // update settings
+        // retrieve existing negotiation settings
         NegotiationSettings existingSettings = findOrCreateNegotiationSettings(company);
+        // check whether the available process ids are updated for the company
+        boolean isProcessIdListUpdated = false;
+        if(!CollectionUtils.isEqualCollection(existingSettings.getCompany().getProcessID(),newSettings.getCompany().getProcessID())){
+            isProcessIdListUpdated = true;
+        }
+        // update settings
         existingSettings.update(newSettings);
         existingSettings = negotiationSettingsRepository.save(existingSettings);
 
+        // when the available process id list is updated for the company,
+        // we need to recalculate the company rating since the available sub-ratings depend on the selected process ids
+        // broadcast the change on ratings
+        if(isProcessIdListUpdated){
+            kafkaSender.broadcastRatingsUpdate(String.valueOf(companyID),bearer);
+        }
         logger.info("Updated negotiation settings {} for company {}", existingSettings.getId(), UblAdapter.adaptPartyIdentifier(company));
 
 //        //indexing the updated company in the indexing service
@@ -575,5 +655,51 @@ public class CompanySettingsController {
         documentReference.setHjid(identifier.longValue());
         documentReference.setDocumentType(documentType);
         return documentReference;
+    }
+
+    private void informPlatformManagerAboutCompanyDataUpdates(PersonType representative, PartyType company, CompanyDetailsUpdates companyDetailsUpdates) {
+        List<UserRepresentation> managers = keycloakAdmin.getPlatformManagers();
+        List<String> emails = managers.stream().map(UserRepresentation::getEmail).collect(Collectors.toList());
+
+        emailService.notifyPlatformManagersCompanyDataUpdates(emails, representative, company, companyDetailsUpdates,executionContext.getLanguageId());
+    }
+
+    /**
+     * Returns the updated fields of company {{@link CompanyDetailsUpdates}} based on the old and new company details
+     * @param oldCompanyDetails the old company details
+     * @param newCompanyDetails the new company details
+     * @return the updated fields of company as {{@link CompanyDetailsUpdates}}
+     * */
+    private CompanyDetailsUpdates getCompanyDetailsUpdates(CompanyDetails oldCompanyDetails, CompanyDetails newCompanyDetails){
+        CompanyDetailsUpdates companyDetailsUpdates = new CompanyDetailsUpdates();
+        // vat number
+        if(!StringUtils.equals(oldCompanyDetails.getVatNumber(),newCompanyDetails.getVatNumber()))
+            companyDetailsUpdates.setVatNumber(newCompanyDetails.getVatNumber());
+        // verification info
+        if(!StringUtils.equals(oldCompanyDetails.getVerificationInformation(),newCompanyDetails.getVerificationInformation()))
+            companyDetailsUpdates.setVerificationInformation(newCompanyDetails.getVerificationInformation());
+        // business type
+        if(!StringUtils.equals(oldCompanyDetails.getBusinessType(),newCompanyDetails.getBusinessType()))
+            companyDetailsUpdates.setBusinessType(newCompanyDetails.getBusinessType());
+        // year of foundation
+        if(!Objects.equals(oldCompanyDetails.getYearOfCompanyRegistration(),newCompanyDetails.getYearOfCompanyRegistration()))
+            companyDetailsUpdates.setYearOfCompanyRegistration(newCompanyDetails.getYearOfCompanyRegistration());
+        // brand name
+        if(!Objects.equals(oldCompanyDetails.getBrandName(),newCompanyDetails.getBrandName()))
+            companyDetailsUpdates.setBrandName(newCompanyDetails.getBrandName());
+        // legal name
+        if(!Objects.equals(oldCompanyDetails.getLegalName(),newCompanyDetails.getLegalName()))
+            companyDetailsUpdates.setLegalName(newCompanyDetails.getLegalName());
+        // industry sectors
+        if(!Objects.equals(oldCompanyDetails.getIndustrySectors(),newCompanyDetails.getIndustrySectors()))
+            companyDetailsUpdates.setIndustrySectors(newCompanyDetails.getIndustrySectors());
+        // business keywords
+        if(!Objects.equals(oldCompanyDetails.getBusinessKeywords(),newCompanyDetails.getBusinessKeywords()))
+            companyDetailsUpdates.setBusinessKeywords(newCompanyDetails.getBusinessKeywords());
+        // address
+        if(!Objects.equals(oldCompanyDetails.getAddress(), newCompanyDetails.getAddress())){
+            companyDetailsUpdates.setAddress(newCompanyDetails.getAddress());
+        }
+        return companyDetailsUpdates;
     }
 }

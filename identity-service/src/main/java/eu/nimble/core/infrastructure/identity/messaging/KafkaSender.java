@@ -16,6 +16,9 @@ public class KafkaSender {
     @Value("${nimble.kafka.topics.companyUpdates}")
     private String companyUpdatesTopic;
 
+    @Value("${nimble.kafka.topics.ratingsUpdates}")
+    private String ratingsUpdatesTopic;
+
     @Autowired
     private KafkaTemplate<String, AuthorizedCompanyUpdate> kafkaTemplate;
 
@@ -24,5 +27,12 @@ public class KafkaSender {
         AuthorizedCompanyUpdate update = new AuthorizedCompanyUpdate(companyID, accessToken);
         kafkaTemplate.send(companyUpdatesTopic, update);
         System.out.println("Message: " + update + " sent to topic: " + companyUpdatesTopic);
+    }
+
+    public void broadcastRatingsUpdate(String companyId, String accessToken) {
+        accessToken = accessToken.replace("Bearer ", "");
+        AuthorizedCompanyUpdate update = new AuthorizedCompanyUpdate(companyId, accessToken);
+        kafkaTemplate.send(ratingsUpdatesTopic, update);
+        System.out.println("Message: " + update + " sent to topic: " + ratingsUpdatesTopic);
     }
 }
