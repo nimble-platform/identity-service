@@ -315,7 +315,7 @@ public class CompanySettingsController {
     public ResponseEntity<?> uploadCertificate(
             @RequestHeader(value = "Authorization") String bearer,
             @ApiParam(value = "Id of company owning the certificate", required = true) @PathVariable Long companyID,
-            @RequestParam("file") MultipartFile certFile,
+            @RequestParam(value = "file",required = false) MultipartFile certFile,
             @RequestParam("name") String name,
             @RequestParam("description") String description,
             @RequestParam("type") String type,
@@ -325,14 +325,26 @@ public class CompanySettingsController {
 
         if (identityService.hasAnyRole(bearer, LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE) == false)
             return new ResponseEntity<>("Only legal representatives or platform managers are allowed to upload certificates", HttpStatus.FORBIDDEN);
-
+        // retrieve the company
         PartyType company = getCompanySecure(companyID, bearer);
-
+        // binary object for the certificate to be uploaded
+        BinaryObjectType certificateBinary = new BinaryObjectType();
+        // set the file content if certificate file is provided
+        if(certFile != null){
+            // since the file content is Base64 encoded, decode it before saving
+            certificateBinary.setValue(Base64.getDecoder().decode(certFile.getBytes()));
+            certificateBinary.setFileName(certFile.getOriginalFilename());
+            certificateBinary.setMimeCode(certFile.getContentType());
+        }
+        // certificate id is not null when an existing certificate is being updated
         if(!certID.equals("null")){
             Long certId = Long.parseLong(certID);
-            // delete binary content
+            // find the certificate
             CertificateType certificate = certificateRepository.findOne(certId);
             String uri = certificate.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getUri();
+            // retrieve its content
+            BinaryObjectType exitingCertificate = binaryContentService.retrieveContent(uri);
+            // delete binary content
             binaryContentService.deleteContentIdentity(uri);
 
             // delete certificate
@@ -347,13 +359,13 @@ public class CompanySettingsController {
                 company.getCertificate().remove(toDelete.get());
                 partyRepository.save(company);
             }
+            // if no file is provided for the new certificate, we assume that the file content of existing certificate will be used
+            if(certFile == null){
+                certificateBinary.setValue(exitingCertificate.getValue());
+                certificateBinary.setFileName(exitingCertificate.getFileName());
+                certificateBinary.setMimeCode(exitingCertificate.getMimeCode());
+            }
         }
-
-        BinaryObjectType certificateBinary = new BinaryObjectType();
-        // since the file content is Base64 encoded, decode it before saving
-        certificateBinary.setValue(Base64.getDecoder().decode(certFile.getBytes()));
-        certificateBinary.setFileName(certFile.getOriginalFilename());
-        certificateBinary.setMimeCode(certFile.getContentType());
         certificateBinary.setLanguageID(languageId);
         certificateBinary = binaryContentService.createContent(certificateBinary);
         certificateBinary.setValue(null); // reset value so it is not stored in database
