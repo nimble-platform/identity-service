@@ -165,6 +165,8 @@ public class AdminController {
             // retrieve qualifying party
             QualifyingPartyType qualifyingParty = qualifyingPartyRepository.findByParty(company).stream().findFirst().get();
             eu.nimble.service.model.solr.party.PartyType newParty = DataModelUtils.toIndexParty(company,qualifyingParty);
+            // the deleted companies are the ones which are already verified previously
+            newParty.setVerified(true);
             List<IndexingClient> indexingClients = indexingController.getClients();
             for (IndexingClient indexingClient : indexingClients) {
                 indexingClient.setParty(newParty, bearer);
