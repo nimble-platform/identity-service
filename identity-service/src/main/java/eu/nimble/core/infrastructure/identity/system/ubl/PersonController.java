@@ -1,9 +1,11 @@
 package eu.nimble.core.infrastructure.identity.system.ubl;
 
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
+import eu.nimble.core.infrastructure.identity.repository.PartyRepository;
 import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.system.dto.PeopleList;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -36,6 +38,9 @@ public class PersonController {
     @Autowired
     private IdentityService identityService;
 
+    @Autowired
+    private PartyRepository partyRepository;
+
     @ApiOperation(value = "Get Person for Id.", notes = "Roles are fetch from Keycloak", response = PersonType.class, tags = {})
     @RequestMapping(value = "/person/{personId}", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<PersonType> getPerson(
@@ -60,6 +65,21 @@ public class PersonController {
 
         logger.debug("Returning requested person with Id {}", person.getHjid());
         return new ResponseEntity<>(person, HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "", notes = "Returns person id-company id tuple for the given access token ", response = PersonPartyTuple.class)
+    @RequestMapping(value = "/person/party/tuple", produces = {"application/json"}, method = RequestMethod.GET)
+    ResponseEntity<PersonPartyTuple> getPersonPartyTuple(@RequestHeader(value = "Authorization") String bearer) throws IOException {
+        // get user from the bearer token
+        UaaUser user = identityService.getUserfromBearer(bearer);
+        // get ubl person for the user
+        PersonType personType = user.getUBLPerson();
+        // find the user parties
+        List<PartyType> parties = partyRepository.findByPerson(personType);
+        // create the response
+        PersonPartyTuple personPartyTuple = new PersonPartyTuple(parties.get(0).getPartyIdentification().get(0).getID(),personType.getID());
+
+        return new ResponseEntity<>(personPartyTuple, HttpStatus.OK);
     }
 
     @ApiOperation(value = "Get personal information for a list of IDs.", notes = "Roles are fetched from Keycloak", response = PersonType.class, tags = {})
@@ -97,5 +117,23 @@ public class PersonController {
     ResponseEntity<PersonType> getPerson(@RequestHeader(value = "Authorization") String bearer) throws IOException {
         UaaUser user = identityService.getUserfromBearer(bearer);
         return new ResponseEntity<>(user.getUBLPerson(), HttpStatus.OK);
+    }
+
+    private static class PersonPartyTuple {
+        private String companyID;
+        private String personID;
+
+        PersonPartyTuple(String companyID, String personID) {
+            this.companyID = companyID;
+            this.personID = personID;
+        }
+
+        public String getCompanyID() {
+            return companyID;
+        }
+
+        public String getPersonID() {
+            return personID;
+        }
     }
 }
