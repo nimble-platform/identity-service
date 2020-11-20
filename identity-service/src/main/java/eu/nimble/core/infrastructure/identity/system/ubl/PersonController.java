@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import eu.nimble.common.rest.identity.model.PersonPartyTuple;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -117,23 +118,5 @@ public class PersonController {
     ResponseEntity<PersonType> getPerson(@RequestHeader(value = "Authorization") String bearer) throws IOException {
         UaaUser user = identityService.getUserfromBearer(bearer);
         return new ResponseEntity<>(user.getUBLPerson(), HttpStatus.OK);
-    }
-
-    private static class PersonPartyTuple {
-        private String companyID;
-        private String personID;
-
-        PersonPartyTuple(String companyID, String personID) {
-            this.companyID = companyID;
-            this.personID = personID;
-        }
-
-        public String getCompanyID() {
-            return companyID;
-        }
-
-        public String getPersonID() {
-            return personID;
-        }
     }
 }
