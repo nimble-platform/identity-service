@@ -68,7 +68,7 @@ public class PersonController {
     }
 
     @ApiOperation(value = "", notes = "Returns person id-company id tuple for the given access token ", response = PersonPartyTuple.class)
-    @RequestMapping(value = "/person/party/tuple", produces = {"application/json"}, method = RequestMethod.GET)
+    @RequestMapping(value = "/person/person-party", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<PersonPartyTuple> getPersonPartyTuple(@RequestHeader(value = "Authorization") String bearer) throws IOException {
         // get user from the bearer token
         UaaUser user = identityService.getUserfromBearer(bearer);
