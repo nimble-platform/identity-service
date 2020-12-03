@@ -293,6 +293,12 @@
             <artifactId>solr-data-model</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>eu.nimble.core.common</groupId>
+            <artifactId>rest-client</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <build>
