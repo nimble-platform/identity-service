@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.utils;
 
+import com.google.common.base.Strings;
 import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
@@ -580,7 +581,10 @@ public class UblAdapter {
                         new CompanyCertificate(certificateType.getCertificateTypeCode().getName(),
                                 certificateType.getCertificateType(),
                                 certificateType.getHjid().toString(),
-                                certificateType.getRemarks()))
+                                certificateType.getRemarks(),
+                                certificateType.getDocumentReference().size() > 0 &&
+                                        !Strings.isNullOrEmpty(certificateType.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getFileName()) &&
+                                        !Strings.isNullOrEmpty(certificateType.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getMimeCode())))
                 .collect(Collectors.toList());
     }
 

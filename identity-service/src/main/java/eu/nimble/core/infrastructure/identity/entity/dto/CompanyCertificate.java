@@ -5,15 +5,17 @@ public class CompanyCertificate {
     private String name;
     private String description;
     private String type;
+    private boolean hasFile; // whether the certificate has a file or not
 
     public CompanyCertificate() {
     }
 
-    public CompanyCertificate(String name, String type, String id, String description) {
+    public CompanyCertificate(String name, String type, String id, String description, boolean hasFile) {
         this.name = name;
         this.type = type;
         this.id = id;
         this.description = description;
+        this.hasFile = hasFile;
     }
 
     public String getName() {
@@ -46,5 +48,13 @@ public class CompanyCertificate {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public boolean isHasFile() {
+        return hasFile;
+    }
+
+    public void setHasFile(boolean hasFile) {
+        this.hasFile = hasFile;
     }
 }
