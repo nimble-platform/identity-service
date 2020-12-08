@@ -141,6 +141,7 @@ public class UblAdapter {
                 companyDetails.setYearOfCompanyRegistration(qualifyingParty.getOperatingYearsQuantity().getValue().intValue());
         }
 
+        companyDetails.setPerson(party.getPerson());
         return companyDetails;
     }
 
