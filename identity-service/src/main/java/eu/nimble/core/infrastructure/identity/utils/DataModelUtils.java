@@ -28,7 +28,11 @@ public class DataModelUtils {
         }
         if(party.getPostalAddress() != null && party.getPostalAddress().getCountry() != null && party.getPostalAddress().getCountry().getIdentificationCode() != null){
             Map<String ,String> countryNames = CountryUtil.getCountryNamesByISOCode(party.getPostalAddress().getCountry().getIdentificationCode().getValue());
-            countryNames.forEach(indexParty::addOrigin);
+            if(countryNames == null){
+                indexParty.addOrigin("en",party.getPostalAddress().getCountry().getIdentificationCode().getValue());
+            } else {
+                countryNames.forEach(indexParty::addOrigin);
+            }
         }
 
         indexParty.setId(party.getHjid().toString());
