@@ -3,10 +3,7 @@ package eu.nimble.core.infrastructure.identity.migration;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
-import eu.nimble.core.infrastructure.identity.repository.NegotiationSettingsRepository;
-import eu.nimble.core.infrastructure.identity.repository.PersonRepository;
-import eu.nimble.core.infrastructure.identity.repository.UaaUserRepository;
-import eu.nimble.core.infrastructure.identity.repository.UserInvitationRepository;
+import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.service.RocketChatService;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.list.ChatUser;
@@ -17,6 +14,7 @@ import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.QuantityType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
+import eu.nimble.utility.country.CountryUtil;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -58,6 +56,10 @@ public class R17MigrationController {
     private RocketChatService chatService;
     @Autowired
     private NegotiationSettingsRepository negotiationSettingsRepository;
+    @Autowired
+    private CertificateRepository certificateRepository;
+    @Autowired
+    private DeliveryTermsRepository deliveryTermsRepository;
 
     private final String oldIncoterm = "DAT (Delivered at Terminal)";
     private final String newIncoterm = "DPU (Delivery at Place Unloaded)";
@@ -277,6 +279,113 @@ public class R17MigrationController {
         }
 
         logger.info("Completed request to update time quantity units");
+        return ResponseEntity.ok(null);
+    }
+
+    @ApiOperation(value = "", notes = "Set the identification code of countries")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Set the identification code of countries successfully"),
+            @ApiResponse(code = 401, message = "Invalid role")
+    })
+    @RequestMapping(value = "/r17/migration/country-code",
+            produces = {"application/json"},
+            method = RequestMethod.PATCH)
+    public ResponseEntity setCountryIdentificationCode(@ApiParam(value = "The Bearer token provided by the identity service", required = true) @RequestHeader(value = "Authorization") String bearerToken
+    ) throws IOException {
+        logger.info("Incoming request to set country identification code");
+
+        if (!identityService.hasAnyRole(bearerToken, PLATFORM_MANAGER))
+            return new ResponseEntity<>("Only platform managers are allowed to run this migration script", HttpStatus.FORBIDDEN);
+
+        List<NegotiationSettings> negotiationSettingsList = (List<NegotiationSettings>) negotiationSettingsRepository.findAll();
+        for (NegotiationSettings negotiationSettings : negotiationSettingsList) {
+            boolean saveNegotiationSettings = false;
+            // company postal address
+            CountryType countryType = negotiationSettings.getCompany().getPostalAddress().getCountry();
+            if(countryType.getName() != null && countryType.getName().getValue() != null){
+                String isoCode = CountryUtil.getISOCodeByCountryName(countryType.getName().getValue());
+                if(isoCode == null){
+                    isoCode = countryType.getName().getValue();
+                }
+
+                CodeType codeType = new CodeType();
+                codeType.setValue(isoCode);
+
+                countryType.setIdentificationCode(codeType);
+
+                saveNegotiationSettings = true;
+            }
+            // company contract terms and conditions
+            if(negotiationSettings.getCompany().getSalesTerms() != null){
+                List<ClauseType> clauseTypes = negotiationSettings.getCompany().getSalesTerms().getTermOrCondition();
+                for (ClauseType clauseType : clauseTypes) {
+                    for (TradingTermType tradingTermType : clauseType.getTradingTerms()) {
+
+                        if(tradingTermType.getValue() != null && tradingTermType.getValue().getValueQualifier().contentEquals("CODE") &&
+                                tradingTermType.getValue().getValueCode() != null && tradingTermType.getValue().getValueCode().size() > 0 &&
+                                tradingTermType.getValue().getValueCode().get(0).getListID().contentEquals("COUNTRY_LIST")){
+
+                            String isoCode = CountryUtil.getISOCodeByCountryName(tradingTermType.getValue().getValueCode().get(0).getValue());
+                            if(isoCode != null){
+                                tradingTermType.getValue().getValueCode().get(0).setValue(isoCode);
+
+                                saveNegotiationSettings = true;
+                            }
+                        }
+
+                    }
+                }
+            }
+
+            if(saveNegotiationSettings){
+                negotiationSettingsRepository.save(negotiationSettings);
+            }
+        }
+        // company certificates
+        List<CertificateType> certificateTypes = (List<CertificateType>) certificateRepository.findAll();
+        for (CertificateType certificateType : certificateTypes) {
+            if(certificateType.getCountry() != null){
+                for (CountryType countryType : certificateType.getCountry()) {
+                    if(countryType.getName() != null && countryType.getName().getValue() != null){
+                        String isoCode = CountryUtil.getISOCodeByCountryName(countryType.getName().getValue());
+                        if(isoCode == null){
+                            isoCode = countryType.getName().getValue();
+                        }
+
+                        CodeType codeType = new CodeType();
+                        codeType.setValue(isoCode);
+
+                        countryType.setIdentificationCode(codeType);
+
+                        certificateRepository.save(certificateType);
+                    }
+                }
+            }
+        }
+
+        // company delivery terms
+        List<DeliveryTermsType> deliveryTermsTypes = (List<DeliveryTermsType>) deliveryTermsRepository.findAll();
+
+        for (DeliveryTermsType deliveryTermsType : deliveryTermsTypes) {
+            if(deliveryTermsType.getDeliveryLocation() != null &&  deliveryTermsType.getDeliveryLocation().getAddress() != null &&  deliveryTermsType.getDeliveryLocation().getAddress().getCountry() != null){
+                CountryType countryType = deliveryTermsType.getDeliveryLocation().getAddress().getCountry();
+                if(countryType.getName() != null && countryType.getName().getValue() != null){
+                    String isoCode = CountryUtil.getISOCodeByCountryName(countryType.getName().getValue());
+                    if(isoCode == null){
+                        isoCode = countryType.getName().getValue();
+                    }
+
+                    CodeType codeType = new CodeType();
+                    codeType.setValue(isoCode);
+
+                    countryType.setIdentificationCode(codeType);
+
+                    deliveryTermsRepository.save(deliveryTermsType);
+                }
+            }
+        }
+
+        logger.info("Completed request to set country identification code");
         return ResponseEntity.ok(null);
     }
 }
