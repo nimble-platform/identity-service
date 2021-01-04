@@ -23,7 +23,7 @@
         <default.package>eu.nimble.core.infrastructure.identity</default.package>
         <swagger.api.src>${project.basedir}/src/main/resources/api.yml</swagger.api.src>
         <springfox.version>2.6.1</springfox.version>
-        <keycloak.version>3.3.0.Final</keycloak.version>
+        <keycloak.version>7.0.0</keycloak.version>
         <resteasy.version>3.1.3.Final</resteasy.version>
         <spring.kafka.version>1.3.7.RELEASE</spring.kafka.version>
         <thymeleaf.version>3.0.9.RELEASE</thymeleaf.version>

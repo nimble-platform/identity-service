@@ -88,8 +88,8 @@ public class UblAdapter {
         dtoAddress.setPostalCode(ublAddress.getPostalZone());
         dtoAddress.setDistrict(ublAddress.getDistrict());
         dtoAddress.setRegion(ublAddress.getRegion());
-        if (ublAddress.getCountry() != null)
-            dtoAddress.setCountry(ublAddress.getCountry().getName().getValue());
+        if (ublAddress.getCountry() != null && ublAddress.getCountry().getIdentificationCode() != null)
+            dtoAddress.setCountry(ublAddress.getCountry().getIdentificationCode().getValue());
         return dtoAddress;
     }
 
@@ -107,7 +107,9 @@ public class UblAdapter {
         ublAddress.setRegion(dtoAddress.getRegion());
 
         CountryType country = new CountryType();
-        country.setName(UblAdapter.adaptTextTypeSingleLang(dtoAddress.getCountry()));
+        CodeType codeType = new CodeType();
+        codeType.setValue(dtoAddress.getCountry());
+        country.setIdentificationCode(codeType);
         ublAddress.setCountry(country);
 
         return ublAddress;

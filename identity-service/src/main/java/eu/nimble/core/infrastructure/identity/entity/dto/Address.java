@@ -16,7 +16,7 @@ public class Address {
     private String cityName;
     @ApiModelProperty(value = "Postal code of the city")
     private String postalCode;
-    @ApiModelProperty(value = "Name of the country")
+    @ApiModelProperty(value = "Iso code of the country")
     private String country;
     @ApiModelProperty(value = "Name of the district")
     private String district;
