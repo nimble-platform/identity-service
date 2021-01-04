@@ -47,6 +47,8 @@ public class R17MigrationController {
     @Autowired
     private UaaUserRepository uaaUserRepository;
     @Autowired
+    private QualifyingPartyRepository qualifyingPartyRepository;
+    @Autowired
     private PersonRepository personRepository;
     @Autowired
     private KeycloakAdmin keycloakAdmin;
@@ -383,6 +385,31 @@ public class R17MigrationController {
                     deliveryTermsRepository.save(deliveryTermsType);
                 }
             }
+        }
+
+        // company events
+        List<QualifyingPartyType> qualifyingPartyTypes = (List<QualifyingPartyType>) qualifyingPartyRepository.findAll();
+
+        for (QualifyingPartyType qualifyingPartyType : qualifyingPartyTypes) {
+            if(qualifyingPartyType.getEvent() != null){
+                for (EventType eventType : qualifyingPartyType.getEvent()) {
+                    if(eventType.getOccurenceLocation() != null &&  eventType.getOccurenceLocation().getAddress() != null && eventType.getOccurenceLocation().getAddress().getCountry() != null){
+                        CountryType countryType = eventType.getOccurenceLocation().getAddress().getCountry();
+                        if(countryType.getName() != null && countryType.getName().getValue() != null){
+                            String isoCode = CountryUtil.getISOCodeByCountryName(countryType.getName().getValue());
+                            if(isoCode == null){
+                                isoCode = countryType.getName().getValue();
+                            }
+
+                            CodeType codeType = new CodeType();
+                            codeType.setValue(isoCode);
+
+                            countryType.setIdentificationCode(codeType);
+                        }
+                    }
+                }
+            }
+            qualifyingPartyRepository.save(qualifyingPartyType);
         }
 
         logger.info("Completed request to set country identification code");
