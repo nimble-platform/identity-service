@@ -5,8 +5,10 @@ import eu.nimble.service.model.ubl.commonaggregatecomponents.DocumentReferenceTy
 import eu.nimble.service.model.ubl.commonaggregatecomponents.QualifyingPartyType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import eu.nimble.service.model.ubl.extension.QualityIndicatorParameter;
+import eu.nimble.utility.country.CountryUtil;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by Dileepa Jayakody on 15/03/19
@@ -24,9 +26,9 @@ public class DataModelUtils {
         if(party.getPartyName() != null && party.getPartyName().size() > 0){
             indexParty.setLegalName(party.getPartyName().get(0).getName().getValue());
         }
-        if(party.getPostalAddress() != null && party.getPostalAddress().getCountry() != null){
-            String originLang = party.getPostalAddress().getCountry().getName().getLanguageID() != null ? party.getPostalAddress().getCountry().getName().getLanguageID() : "";
-            indexParty.addOrigin(originLang, party.getPostalAddress().getCountry().getName().getValue());
+        if(party.getPostalAddress() != null && party.getPostalAddress().getCountry() != null && party.getPostalAddress().getCountry().getIdentificationCode() != null){
+            Map<String ,String> countryNames = CountryUtil.getCountryNamesByISOCode(party.getPostalAddress().getCountry().getIdentificationCode().getValue());
+            countryNames.forEach(indexParty::addOrigin);
         }
 
         indexParty.setId(party.getHjid().toString());
