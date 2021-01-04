@@ -107,7 +107,9 @@ public class UblAdapter {
         ublAddress.setRegion(dtoAddress.getRegion());
 
         CountryType country = new CountryType();
-        country.setName(UblAdapter.adaptTextTypeSingleLang(dtoAddress.getCountry()));
+        CodeType codeType = new CodeType();
+        codeType.setValue(dtoAddress.getCountry());
+        country.setIdentificationCode(codeType);
         ublAddress.setCountry(country);
 
         return ublAddress;
