@@ -143,6 +143,10 @@ nimble:
   platformName : ${PLATFORM_NAME:Staging}
   platformHost : ${IDENTITY_SERVICE_URL:http://localhost:9096}
   federation-instance-id: ${FEDERATION_INSTANCE_ID}
+  stripe:
+    secretKey: ${STRIPE_SECRET_KEY:}
+    refreshUrl: ${STRIPE_SECRET_KEY:http://localhost:9092/#/user-mgmt/company-settings}
+    returnUrl: ${STRIPE_SECRET_KEY:http://localhost:9092/#/user-mgmt/company-settings}
   delegate-service:
     url: ${DELEGATE_SERVICE_URL:}
 
