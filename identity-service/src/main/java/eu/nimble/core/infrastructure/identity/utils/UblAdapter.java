@@ -56,6 +56,8 @@ public class UblAdapter {
 
         if (party.getPpapCompatibilityLevel() != null)
             settings.getTradeDetails().setPpapCompatibilityLevel(party.getPpapCompatibilityLevel().intValue());
+        if (party.getStripeAccountId() != null)
+            settings.getTradeDetails().setStripeAccountId(party.getStripeAccountId());
 
         // set certificates
         settings.setCertificates(UblAdapter.adaptCertificates(party.getCertificate()));
@@ -407,6 +409,9 @@ public class UblAdapter {
             // PPAP
             int ppapLevel = settings.getTradeDetails().getPpapCompatibilityLevel() != null ? settings.getTradeDetails().getPpapCompatibilityLevel() : 0;
             companyToChange.setPpapCompatibilityLevel(BigDecimal.valueOf(ppapLevel));
+
+            // stripe account it
+            companyToChange.setStripeAccountId(settings.getTradeDetails().getStripeAccountId());
         }
 
         return companyToChange;
