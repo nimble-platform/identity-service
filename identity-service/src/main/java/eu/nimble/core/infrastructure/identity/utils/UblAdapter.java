@@ -90,6 +90,10 @@ public class UblAdapter {
         dtoAddress.setPostalCode(ublAddress.getPostalZone());
         dtoAddress.setDistrict(ublAddress.getDistrict());
         dtoAddress.setRegion(ublAddress.getRegion());
+        if (ublAddress.getCoordinate() != null){
+            dtoAddress.setLocationLatitude(ublAddress.getCoordinate().getLatitude());
+            dtoAddress.setLocationLongitude(ublAddress.getCoordinate().getLongitude());
+        }
         if (ublAddress.getCountry() != null && ublAddress.getCountry().getIdentificationCode() != null)
             dtoAddress.setCountry(ublAddress.getCountry().getIdentificationCode().getValue());
         return dtoAddress;
@@ -107,6 +111,11 @@ public class UblAdapter {
         ublAddress.setPostalZone(dtoAddress.getPostalCode());
         ublAddress.setDistrict(dtoAddress.getDistrict());
         ublAddress.setRegion(dtoAddress.getRegion());
+
+        CoordinateType coordinateType = new CoordinateType();
+        coordinateType.setLatitude(dtoAddress.getLocationLatitude());
+        coordinateType.setLongitude(dtoAddress.getLocationLongitude());
+        ublAddress.setCoordinate(coordinateType);
 
         CountryType country = new CountryType();
         CodeType codeType = new CodeType();

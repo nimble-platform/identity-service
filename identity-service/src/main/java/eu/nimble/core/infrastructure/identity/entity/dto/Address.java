@@ -2,6 +2,7 @@ package eu.nimble.core.infrastructure.identity.entity.dto;
 
 import io.swagger.annotations.ApiModelProperty;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 /**
  * Created by Johannes Innerbichler on 04/07/17.
@@ -22,6 +23,10 @@ public class Address {
     private String district;
     @ApiModelProperty(value = "Name of the region")
     private String region;
+    @ApiModelProperty(value = "Longitude of address")
+    private BigDecimal locationLongitude;
+    @ApiModelProperty(value = "Latitude of address")
+    private BigDecimal locationLatitude;
 
     public Address() {
     }
@@ -92,6 +97,22 @@ public class Address {
         this.district = district;
     }
 
+    public BigDecimal getLocationLongitude() {
+        return locationLongitude;
+    }
+
+    public void setLocationLongitude(BigDecimal locationLongitude) {
+        this.locationLongitude = locationLongitude;
+    }
+
+    public BigDecimal getLocationLatitude() {
+        return locationLatitude;
+    }
+
+    public void setLocationLatitude(BigDecimal locationLatitude) {
+        this.locationLatitude = locationLatitude;
+    }
+
     public String getRegion() {
         return region;
     }
@@ -111,11 +132,13 @@ public class Address {
                 Objects.equals(postalCode, address.postalCode) &&
                 Objects.equals(country, address.country) &&
                 Objects.equals(district, address.district) &&
-                Objects.equals(region, address.region);
+                Objects.equals(region, address.region) &&
+                Objects.equals(locationLongitude, address.locationLongitude) &&
+                Objects.equals(locationLatitude, address.locationLatitude);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(streetName, buildingNumber, cityName, postalCode, country, district, region);
+        return Objects.hash(streetName, buildingNumber, cityName, postalCode, country, district, region, locationLongitude, locationLatitude);
     }
 }
