@@ -29,12 +29,21 @@ public class DataModelUtils {
         if(party.getPartyName() != null && party.getPartyName().size() > 0){
             indexParty.setLegalName(party.getPartyName().get(0).getName().getValue());
         }
-        if(party.getPostalAddress() != null && party.getPostalAddress().getCountry() != null && party.getPostalAddress().getCountry().getIdentificationCode() != null){
-            Map<String ,String> countryNames = CountryUtil.getCountryNamesByISOCode(party.getPostalAddress().getCountry().getIdentificationCode().getValue());
-            if(countryNames == null){
-                indexParty.addOrigin("en",party.getPostalAddress().getCountry().getIdentificationCode().getValue());
-            } else {
-                countryNames.forEach(indexParty::addOrigin);
+        // postal address
+        if(party.getPostalAddress() != null){
+            // country
+            if(party.getPostalAddress().getCountry() != null && party.getPostalAddress().getCountry().getIdentificationCode() != null){
+                Map<String ,String> countryNames = CountryUtil.getCountryNamesByISOCode(party.getPostalAddress().getCountry().getIdentificationCode().getValue());
+                if(countryNames == null){
+                    indexParty.addOrigin("en",party.getPostalAddress().getCountry().getIdentificationCode().getValue());
+                } else {
+                    countryNames.forEach(indexParty::addOrigin);
+                }
+            }
+            // location longitude and latitude
+            if(party.getPostalAddress().getCoordinate() != null){
+                indexParty.setLocationLatitude(party.getPostalAddress().getCoordinate().getLatitude().doubleValue());
+                indexParty.setLocationLongitude(party.getPostalAddress().getCoordinate().getLongitude().doubleValue());
             }
         }
 
