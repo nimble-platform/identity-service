@@ -41,7 +41,7 @@ public class DataModelUtils {
                 }
             }
             // location longitude and latitude
-            if(party.getPostalAddress().getCoordinate() != null){
+            if(party.getPostalAddress().getCoordinate() != null && party.getPostalAddress().getCoordinate().getLatitude() != null && party.getPostalAddress().getCoordinate().getLongitude() != null){
                 indexParty.setLocationLatitude(party.getPostalAddress().getCoordinate().getLatitude().doubleValue());
                 indexParty.setLocationLongitude(party.getPostalAddress().getCoordinate().getLongitude().doubleValue());
             }
