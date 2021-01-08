@@ -7,8 +7,10 @@ import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import eu.nimble.service.model.ubl.extension.QualityIndicatorParameter;
 import eu.nimble.utility.country.CountryUtil;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by Dileepa Jayakody on 15/03/19
@@ -16,6 +18,7 @@ import java.util.Map;
  */
 public class DataModelUtils {
 
+    private static final String circularEconomyCertificateGroup = "Circular Economy (Environment / Sustainability)";
     /**
      * UBL data model to Solr model converter
      */
@@ -48,7 +51,8 @@ public class DataModelUtils {
         indexParty.setUri(party.getHjid().toString());
 
         // TODO currently we do not support multilingual certificate types
-        party.getCertificate().stream().forEach(certificate -> indexParty.addCertificateType("", certificate.getCertificateTypeCode().getName()));
+        indexParty.setCertificateType(getOtherCertificates(party));
+        indexParty.setCircularEconomyCertificates(getCircularEconomyRelatedCertificateNames(party));
         if(party.getPpapCompatibilityLevel() != null) {
             indexParty.setPpapComplianceLevel(party.getPpapCompatibilityLevel().intValue());
         }
@@ -128,4 +132,23 @@ public class DataModelUtils {
         return indexParty;
     }
 
+    private static Set<String> getCircularEconomyRelatedCertificateNames(eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType partyType) {
+        Set<String> certificateNames = new HashSet<>();
+        partyType.getCertificate().stream()
+                .filter(cert -> cert.getCertificateType().contentEquals(circularEconomyCertificateGroup))
+                .forEach(cert -> {
+                    certificateNames.add(cert.getCertificateTypeCode().getName());
+                });
+        return certificateNames;
+    }
+
+    private static Set<String> getOtherCertificates(eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType partyType) {
+        Set<String> certificateNames = new HashSet<>();
+        partyType.getCertificate().stream()
+                .filter(cert -> !cert.getCertificateType().contentEquals(circularEconomyCertificateGroup))
+                .forEach(cert -> {
+                    certificateNames.add(cert.getCertificateTypeCode().getName());
+                });
+        return certificateNames;
+    }
 }
