@@ -38,7 +38,7 @@ spring:
       driverClassName: org.postgresql.Driver
     test-on-borrow: true
     test-while-idle: true
-    remove-abandoned: true
+    remove-abandoned: false #making this false since some of the queries take too much time and abandoning connections causes an error in such cases
     log-abandoned: true
     initial-size: 3
     max-active: 55
