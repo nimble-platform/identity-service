@@ -3,6 +3,7 @@ package eu.nimble.core.infrastructure.identity.migration;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
+import eu.nimble.core.infrastructure.identity.migration.util.OpenStreetMapUtils;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.service.RocketChatService;
@@ -48,6 +49,8 @@ public class R17MigrationController {
     private UaaUserRepository uaaUserRepository;
     @Autowired
     private QualifyingPartyRepository qualifyingPartyRepository;
+    @Autowired
+    private PartyRepository partyRepository;
     @Autowired
     private PersonRepository personRepository;
     @Autowired
@@ -413,6 +416,46 @@ public class R17MigrationController {
         }
 
         logger.info("Completed request to set country identification code");
+        return ResponseEntity.ok(null);
+    }
+
+    @ApiOperation(value = "", notes = "Set the company location based on the company postal code")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Set the location of company successfully"),
+            @ApiResponse(code = 401, message = "Invalid role")
+    })
+    @RequestMapping(value = "/r17/migration/geo-location",
+            produces = {"application/json"},
+            method = RequestMethod.PATCH)
+    public ResponseEntity setCompanyLocationOnMap(@ApiParam(value = "The Bearer token provided by the identity service", required = true) @RequestHeader(value = "Authorization") String bearerToken
+    ) throws IOException {
+        logger.info("Incoming request to set company location");
+
+        if (!identityService.hasAnyRole(bearerToken, PLATFORM_MANAGER))
+            return new ResponseEntity<>("Only platform managers are allowed to run this migration script", HttpStatus.FORBIDDEN);
+
+        List<PartyType> parties = (List<PartyType>) partyRepository.findAll();
+        for (PartyType party : parties) {
+            // set the location of company based on its postal code
+            // skip the party if its location is provided
+            if (party.getPostalAddress() != null && party.getPostalAddress().getPostalZone() != null && (party.getPostalAddress().getCoordinate() == null ||
+                    party.getPostalAddress().getCoordinate().getLatitude() == null || party.getPostalAddress().getCoordinate().getLatitude() == null)) {
+                // get the location
+                CoordinateType coordinateType = OpenStreetMapUtils.getInstance().getCoordinates(party.getPostalAddress().getPostalZone());
+                // set the party location and save the party
+                if (coordinateType != null) {
+                    if (party.getPostalAddress().getCoordinate() == null) {
+                        party.getPostalAddress().setCoordinate(coordinateType);
+                    } else {
+                        party.getPostalAddress().getCoordinate().setLongitude(coordinateType.getLongitude());
+                        party.getPostalAddress().getCoordinate().setLatitude(coordinateType.getLatitude());
+                    }
+                    partyRepository.save(party);
+                }
+            }
+        }
+
+        logger.info("Completed request to set company location");
         return ResponseEntity.ok(null);
     }
 }
