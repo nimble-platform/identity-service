@@ -1,11 +1,14 @@
 package eu.nimble.core.infrastructure.identity.system;
 
+import eu.nimble.core.infrastructure.identity.clients.BusinessProcessServiceClient;
 import eu.nimble.core.infrastructure.identity.clients.CatalogueServiceClient;
 import eu.nimble.core.infrastructure.identity.clients.IndexingClient;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
+import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
+import eu.nimble.core.infrastructure.identity.messaging.KafkaSender;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
@@ -21,8 +24,10 @@ import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.QualifyingPartyType;
 import eu.nimble.utility.ExecutionContext;
 import eu.nimble.utility.LoggerUtils;
+import eu.nimble.utility.bp.BusinessWorkflowUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,13 +39,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static eu.nimble.core.infrastructure.identity.uaa.OAuthClient.Role.PLATFORM_MANAGER;
@@ -63,7 +62,11 @@ public class AdminController {
     @Autowired
     private KeycloakAdmin keycloakAdmin;
     @Autowired
+    private CompanySettingsController companySettingsController;
+    @Autowired
     private PersonRepository personRepository;
+    @Autowired
+    private KafkaSender kafkaSender;
     @Autowired
     private UaaUserRepository uaaUserRepository;
     @Autowired
@@ -73,6 +76,9 @@ public class AdminController {
 
     @Autowired
     private ExecutionContext executionContext;
+
+    @Autowired
+    private BusinessProcessServiceClient businessProcessServiceClient;
 
     @Autowired
     private IndexingClientController indexingController;
@@ -87,6 +93,8 @@ public class AdminController {
     private RocketChatService chatService;
     @Autowired
     private EmailService emailService;
+    @Autowired
+    private NegotiationSettingsRepository negotiationSettingsRepository;
 
     @ApiOperation(value = "Retrieve unverified companies", response = Page.class)
     @RequestMapping(value = "/unverified_companies", produces = {"application/json"}, method = RequestMethod.GET)
@@ -339,6 +347,64 @@ public class AdminController {
             if(chatService.isChatEnabled()){
                 chatService.deleteUser(person.getContact().getElectronicMail());
             }
+        }
+        return ResponseEntity.ok().build();
+    }
+
+    @ApiOperation(value = "Updates the business workflow of companies.The business workflow of companies which have unfinished collaborations can not be updated." +
+            "Therefore, the service returns the identifiers of companies which need to finish their collaborations.")
+    @RequestMapping(value = "/business-workflow", method = RequestMethod.PUT)
+    ResponseEntity<?> updateCompanyBusinessWorkflow(@ApiParam(value = "List of business process ids.<br>Example:[\"Negotiation\",\"Order\"]", required = true) @RequestBody List<String> workflow,
+                                                    @RequestHeader(value = "Authorization") String bearer) throws Exception {
+
+        // role check
+        if (identityService.hasAnyRole(bearer, OAuthClient.Role.PLATFORM_MANAGER) == false)
+            return new ResponseEntity<>("Only platform managers are allowed to update companies' business workflow", HttpStatus.UNAUTHORIZED);
+
+        logger.info("Incoming request to update companies' business workflow to {}",workflow);
+
+        // company ids with unfinished collaborations
+        List<String> companyIdsWithUnfinishedCollaborations = new ArrayList<>();
+        // check whether the workflow is valid or not
+        BusinessWorkflowUtil.validateBusinessWorkflow(workflow);
+        // get all parties
+        List<PartyType> partyTypes = (List<PartyType>) partyRepository.findAll();
+        // update the negotiation settings for each party
+        try {
+            for (PartyType partyType : partyTypes) {
+                // check whether the party has any unfinished collaborations
+                String isAllCollaborationsFinished = businessProcessServiceClient.checkAllCollaborationsFinished(partyType.getPartyIdentification().get(0).getID(),partyType.getFederationInstanceID(),bearer);
+                if(isAllCollaborationsFinished.contentEquals("true")){
+                    // get negotiation settings for the party
+                    NegotiationSettings negotiationSetting = negotiationSettingsRepository.findOneByCompany(partyType);
+                    if(negotiationSetting != null){
+                        // set process ids for the company
+                        negotiationSetting.getCompany().getProcessIDItems().clear();
+                        negotiationSetting.getCompany().setProcessID(workflow);
+                        // update negotiation settings
+                        negotiationSettingsRepository.save(negotiationSetting);
+
+                        // when the available process id list is updated for the company,
+                        // we need to recalculate the company rating since the available sub-ratings depend on the selected process ids
+                        // broadcast the change on ratings
+                        kafkaSender.broadcastRatingsUpdate(partyType.getPartyIdentification().get(0).getID(),bearer);
+                    }
+                } else{
+                    companyIdsWithUnfinishedCollaborations.add(partyType.getPartyIdentification().get(0).getID());
+                }
+            }
+        }catch (Exception e){
+            String msg = String.format("Unexpected error while updating companies' business workflow to %s",workflow);
+            logger.error(msg,e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(msg);
+        }
+
+        logger.info("Completed the request to update companies' business workflow to {}",workflow);
+        if(companyIdsWithUnfinishedCollaborations.size() > 0){
+            // returns the party ids which need to finish their collaboration
+            String msg = String.format("The following companies have unfinished collaborations:%s",companyIdsWithUnfinishedCollaborations);
+            logger.info(msg);
+            return ResponseEntity.ok().body(msg);
         }
         return ResponseEntity.ok().build();
     }

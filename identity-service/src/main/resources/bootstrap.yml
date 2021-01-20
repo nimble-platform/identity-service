@@ -140,6 +140,8 @@ nimble:
     federated-index-url: ${FEDERATED_INDEXING_SERVICE_URL:}
   catalogue-service:
     url: ${CATALOGUE_SERVICE_URL:http://localhost:8095}
+  business-process-service:
+    url: ${BUSINESS_PROCESS_SERVICE_URL:http://localhost:8081}
   platformName : ${PLATFORM_NAME:Staging}
   platformHost : ${IDENTITY_SERVICE_URL:http://localhost:9096}
   federation-instance-id: ${FEDERATION_INSTANCE_ID}
