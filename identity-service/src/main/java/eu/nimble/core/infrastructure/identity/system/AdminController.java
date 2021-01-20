@@ -351,7 +351,7 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
-    @ApiOperation(value = "Updates the business workflow of companies.The business workflow of companies which have unfinished collaborations can not be updated." +
+    @ApiOperation(value = "",notes = "Updates the business workflow of companies.The business workflow of companies which have unfinished collaborations can not be updated." +
             "Therefore, the service returns the identifiers of companies which need to finish their collaborations.")
     @RequestMapping(value = "/business-workflow", method = RequestMethod.PUT)
     ResponseEntity<?> updateCompanyBusinessWorkflow(@ApiParam(value = "List of business process ids.<br>Example:[\"Negotiation\",\"Order\"]", required = true) @RequestBody List<String> workflow,
