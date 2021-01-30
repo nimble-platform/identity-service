@@ -72,7 +72,7 @@ public class IndexingClientController {
         return HystrixFeign.builder().contract(new SpringMvcContract())
                 .encoder(new JacksonEncoder())
                 .decoder(new JacksonDecoder())
-                .retryer(new Retryer.Default(100, SECONDS.toMillis(1), 5))
+                .retryer(new Retryer.Default(1,100,3))
                 .target(IndexingClient.class, url, indexingFallback);
     }
 
