@@ -31,6 +31,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.IOUtils;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -620,7 +621,8 @@ public class CompanySettingsController {
                         logger.error("Failed to index verified party from database to index : {} legalName : {} and response is null",newParty.getId(), newParty.getLegalName());
                     }
                     else {
-                        logger.error("Failed to index verified party from database to index : {} legalName : {}, body response status: {}, reason: {}",newParty.getId(), newParty.getLegalName(),response.status(),response.reason());
+                        String responseBody = IOUtils.toString(response.body().asInputStream());
+                        logger.error("Failed to index verified party from database to index : {} legalName : {}, response body: {}",newParty.getId(), newParty.getLegalName(),responseBody);
                     }
                 }
             }
@@ -640,8 +642,8 @@ public class CompanySettingsController {
                         logger.error("Failed to index unverified party from database to index : {} legalName : {} and response is null",newParty.getId(), newParty.getLegalName());
                     }
                     else {
-                        logger.error("Failed to index unverified party from database to index : {} legalName : {}, body response status: {}, reason: {}",newParty.getId(), newParty.getLegalName(),response.status(),response.reason());
-                    }
+                        String responseBody = IOUtils.toString(response.body().asInputStream());
+                        logger.error("Failed to index unverified party from database to index : {} legalName : {}, response body: {}",newParty.getId(), newParty.getLegalName(),responseBody);                    }
                 }
             }
         }
