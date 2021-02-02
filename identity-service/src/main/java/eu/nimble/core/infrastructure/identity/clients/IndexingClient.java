@@ -4,6 +4,7 @@ import eu.nimble.service.model.solr.Search;
 import eu.nimble.service.model.solr.SearchResult;
 import eu.nimble.service.model.solr.party.PartyType;
 import feign.Headers;
+import feign.Response;
 import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,8 +21,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 public interface IndexingClient {
     @RequestMapping(method = RequestMethod.PUT, value = "/party", consumes = "application/json")
     @Headers("Content-Type: application/json")
-    Boolean setParty(@RequestBody PartyType party,
-    @RequestHeader(value = "Authorization", required = true) String bearerToken);
+    Response setParty(@RequestBody PartyType party,
+                      @RequestHeader(value = "Authorization", required = true) String bearerToken);
 
     @RequestMapping(method = RequestMethod.GET, value = "/party")
     PartyType getParty(@RequestParam(value = "uri") String uri,

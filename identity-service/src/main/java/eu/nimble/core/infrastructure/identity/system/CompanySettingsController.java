@@ -26,6 +26,7 @@ import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
 import eu.nimble.utility.ExecutionContext;
 import eu.nimble.utility.JsonSerializationUtility;
 import eu.nimble.utility.persistence.binary.BinaryContentService;
+import feign.Response;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -612,7 +613,15 @@ public class CompanySettingsController {
                 logger.info("Indexing verified party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
                 List<IndexingClient> indexingClients = indexingController.getClients();
                 for(IndexingClient indexingClient : indexingClients) {
-                    indexingClient.setParty(newParty,bearer);
+                    Response response = indexingClient.setParty(newParty,bearer);
+                    if(response != null && response.status() == 200){
+                        logger.info("Indexed verified party from database to index : {} legalName : {} successfully",newParty.getId(), newParty.getLegalName());
+                    } else if(response == null){
+                        logger.error("Failed to index verified party from database to index : {} legalName : {} and response is null",newParty.getId(), newParty.getLegalName());
+                    }
+                    else {
+                        logger.error("Failed to index verified party from database to index : {} legalName : {}, body response status: {}, reason: {}",newParty.getId(), newParty.getLegalName(),response.status(),response.reason());
+                    }
                 }
             }
         }
@@ -624,7 +633,15 @@ public class CompanySettingsController {
                 logger.info("Indexing unverified party from database to index : " + newParty.getId() + " legalName : " + newParty.getLegalName());
                 List<IndexingClient> indexingClients = indexingController.getClients();
                 for (IndexingClient indexingClient : indexingClients) {
-                    indexingClient.setParty(newParty, bearer);
+                    Response response = indexingClient.setParty(newParty,bearer);
+                    if(response != null && response.status() == 200){
+                        logger.info("Indexed unverified party from database to index : {} legalName : {} successfully",newParty.getId(), newParty.getLegalName());
+                    } else if(response == null){
+                        logger.error("Failed to index unverified party from database to index : {} legalName : {} and response is null",newParty.getId(), newParty.getLegalName());
+                    }
+                    else {
+                        logger.error("Failed to index unverified party from database to index : {} legalName : {}, body response status: {}, reason: {}",newParty.getId(), newParty.getLegalName(),response.status(),response.reason());
+                    }
                 }
             }
         }
