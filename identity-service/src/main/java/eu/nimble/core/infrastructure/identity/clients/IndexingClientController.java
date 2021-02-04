@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 @Service
 @PropertySource("classpath:bootstrap.yml")
 public class IndexingClientController {

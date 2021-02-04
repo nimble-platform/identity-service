@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.utils;
 
+import com.google.common.base.Strings;
 import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.dto.*;
@@ -55,6 +56,8 @@ public class UblAdapter {
 
         if (party.getPpapCompatibilityLevel() != null)
             settings.getTradeDetails().setPpapCompatibilityLevel(party.getPpapCompatibilityLevel().intValue());
+        if (party.getStripeAccountId() != null)
+            settings.getTradeDetails().setStripeAccountId(party.getStripeAccountId());
 
         // set certificates
         settings.setCertificates(UblAdapter.adaptCertificates(party.getCertificate()));
@@ -87,8 +90,12 @@ public class UblAdapter {
         dtoAddress.setPostalCode(ublAddress.getPostalZone());
         dtoAddress.setDistrict(ublAddress.getDistrict());
         dtoAddress.setRegion(ublAddress.getRegion());
-        if (ublAddress.getCountry() != null)
-            dtoAddress.setCountry(ublAddress.getCountry().getName().getValue());
+        if (ublAddress.getCoordinate() != null){
+            dtoAddress.setLocationLatitude(ublAddress.getCoordinate().getLatitude());
+            dtoAddress.setLocationLongitude(ublAddress.getCoordinate().getLongitude());
+        }
+        if (ublAddress.getCountry() != null && ublAddress.getCountry().getIdentificationCode() != null)
+            dtoAddress.setCountry(ublAddress.getCountry().getIdentificationCode().getValue());
         return dtoAddress;
     }
 
@@ -105,8 +112,15 @@ public class UblAdapter {
         ublAddress.setDistrict(dtoAddress.getDistrict());
         ublAddress.setRegion(dtoAddress.getRegion());
 
+        CoordinateType coordinateType = new CoordinateType();
+        coordinateType.setLatitude(dtoAddress.getLocationLatitude());
+        coordinateType.setLongitude(dtoAddress.getLocationLongitude());
+        ublAddress.setCoordinate(coordinateType);
+
         CountryType country = new CountryType();
-        country.setName(UblAdapter.adaptTextTypeSingleLang(dtoAddress.getCountry()));
+        CodeType codeType = new CodeType();
+        codeType.setValue(dtoAddress.getCountry());
+        country.setIdentificationCode(codeType);
         ublAddress.setCountry(country);
 
         return ublAddress;
@@ -140,6 +154,7 @@ public class UblAdapter {
                 companyDetails.setYearOfCompanyRegistration(qualifyingParty.getOperatingYearsQuantity().getValue().intValue());
         }
 
+        companyDetails.setPerson(party.getPerson());
         return companyDetails;
     }
 
@@ -403,6 +418,9 @@ public class UblAdapter {
             // PPAP
             int ppapLevel = settings.getTradeDetails().getPpapCompatibilityLevel() != null ? settings.getTradeDetails().getPpapCompatibilityLevel() : 0;
             companyToChange.setPpapCompatibilityLevel(BigDecimal.valueOf(ppapLevel));
+
+            // stripe account it
+            companyToChange.setStripeAccountId(settings.getTradeDetails().getStripeAccountId());
         }
 
         return companyToChange;
@@ -580,7 +598,10 @@ public class UblAdapter {
                         new CompanyCertificate(certificateType.getCertificateTypeCode().getName(),
                                 certificateType.getCertificateType(),
                                 certificateType.getHjid().toString(),
-                                certificateType.getRemarks()))
+                                certificateType.getRemarks(),
+                                certificateType.getDocumentReference().size() > 0 &&
+                                        !Strings.isNullOrEmpty(certificateType.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getFileName()) &&
+                                        !Strings.isNullOrEmpty(certificateType.getDocumentReference().get(0).getAttachment().getEmbeddedDocumentBinaryObject().getMimeCode())))
                 .collect(Collectors.toList());
     }
 

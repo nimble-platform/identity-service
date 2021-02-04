@@ -28,7 +28,7 @@ public class TestUtils {
         CompanyDetails companyDetails = new CompanyDetails(Collections.singletonMap(ENGLISH, "brand name"),
                 Collections.singletonMap(ENGLISH, legalName), "vat number", "verification info",
                 new Address(), "business type", Collections.singletonMap(ENGLISH, "business type"), 1970,
-                industrySectors,new ArrayList<>());
+                industrySectors,new ArrayList<>(),new ArrayList<>());
         CompanyDescription companyDescription = new CompanyDescription(companyStatement, "website",
                 Collections.singletonList("photos"), "imageId", Collections.singletonList("social media"),
                 Collections.singletonList(new CompanyEvent()), Collections.singletonList("test"));

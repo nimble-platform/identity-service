@@ -99,7 +99,7 @@ public class CompanySettingsControllerTests {
         companyDetails.setLegalName(Collections.singletonMap(NimbleConfigurationProperties.LanguageID.ENGLISH, "legal name"));
         companyDetails.setVatNumber("vat number");
         companyDetails.setVerificationInformation("verification number");
-        companyDetails.setAddress(new Address("street name", "building number", "city name", "postal code", "country"));
+        companyDetails.setAddress(new Address("street name", "building number", "city name", "postal code", "TR"));
         companyDetails.setBusinessKeywords(Collections.singletonMap(NimbleConfigurationProperties.LanguageID.ENGLISH, "k1"));
         companyDetails.setBusinessType("business type");
         companyDetails.setYearOfCompanyRegistration(2001);
@@ -154,7 +154,7 @@ public class CompanySettingsControllerTests {
                 .andExpect(jsonPath("$.details.address.buildingNumber", is("building number")))
                 .andExpect(jsonPath("$.details.address.cityName", is("city name")))
                 .andExpect(jsonPath("$.details.address.postalCode", is("postal code")))
-                .andExpect(jsonPath("$.details.address.country", is("country")))
+                .andExpect(jsonPath("$.details.address.country", is("TR")))
                 .andExpect(jsonPath("$.details.businessType", is("business type")))
                 .andExpect(jsonPath("$.details.businessKeywords.length()", is(1)))
                 .andExpect(jsonPath("$.details.businessKeywords.en", is("k1")))

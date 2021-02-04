@@ -11,14 +11,16 @@ public class CompanyTradeDetails {
     private List<PaymentMeans> paymentMeans = new ArrayList<>();
     private List<DeliveryTerms> deliveryTerms = new ArrayList<>();
     private Integer ppapCompatibilityLevel;
+    private String stripeAccountId;
 
     public CompanyTradeDetails() {
     }
 
-    public CompanyTradeDetails(List<PaymentMeans> paymentMeans, List<DeliveryTerms> deliveryTerms, Integer ppapCompatibilityLevel) {
+    public CompanyTradeDetails(List<PaymentMeans> paymentMeans, List<DeliveryTerms> deliveryTerms, Integer ppapCompatibilityLevel, String stripeAccountId) {
         this.paymentMeans = paymentMeans;
         this.deliveryTerms = deliveryTerms;
         this.ppapCompatibilityLevel = ppapCompatibilityLevel;
+        this.stripeAccountId = stripeAccountId;
     }
 
     public List<PaymentMeans> getPaymentMeans() {
@@ -43,5 +45,13 @@ public class CompanyTradeDetails {
 
     public void setPpapCompatibilityLevel(Integer ppapCompatibilityLevel) {
         this.ppapCompatibilityLevel = ppapCompatibilityLevel;
+    }
+
+    public String getStripeAccountId() {
+        return stripeAccountId;
+    }
+
+    public void setStripeAccountId(String stripeAccountId) {
+        this.stripeAccountId = stripeAccountId;
     }
 }

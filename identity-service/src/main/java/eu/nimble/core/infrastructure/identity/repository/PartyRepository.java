@@ -40,4 +40,7 @@ public interface PartyRepository extends PagingAndSortingRepository<PartyType, L
 
     @Query(value = "select hjid from document_reference_type where document_reference_party_typ_0 = ?1 and document_type = ?2", nativeQuery = true)
     List<BigInteger> findDocumentIds(Long companyId, String documentType);
+
+    @Query(value = "FROM PartyType WHERE stripeAccountId = ?1")
+    List<PartyType> findByStripeAccountId(String accountId);
 }

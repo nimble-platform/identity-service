@@ -1,6 +1,7 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
 import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties.LanguageID;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import io.swagger.annotations.ApiModelProperty;
 
 import java.util.ArrayList;
@@ -43,12 +44,15 @@ public class CompanyDetails {
     @ApiModelProperty(value = "List of process instance ids which are included in the workflow of company")
     private List<String> processIds = new ArrayList<>();
 
+    @ApiModelProperty(value = "List of users participating in the company")
+    private List<PersonType> person = null;
+
     public CompanyDetails() {
     }
 
     public CompanyDetails(Map<LanguageID, String> brandName, Map<LanguageID, String> legalName, String vatNumber,
                           String verificationInformation, Address address, String businessType, Map<LanguageID, String> businessKeywords,
-                          Integer yearOfCompanyRegistration, Map<LanguageID, String> industrySectors, List<String> processIds) {
+                          Integer yearOfCompanyRegistration, Map<LanguageID, String> industrySectors, List<String> processIds, List<PersonType> person) {
         this.brandName = brandName;
         this.legalName = legalName;
         this.vatNumber = vatNumber;
@@ -59,6 +63,7 @@ public class CompanyDetails {
         this.yearOfCompanyRegistration = yearOfCompanyRegistration;
         this.industrySectors = industrySectors;
         this.processIds = processIds;
+        this.person = person;
     }
 
     public Map<LanguageID, String> getBrandName() {
@@ -139,5 +144,13 @@ public class CompanyDetails {
 
     public void setProcessIds(List<String> processIds) {
         this.processIds = processIds;
+    }
+
+    public List<PersonType> getPerson() {
+        return person;
+    }
+
+    public void setPerson(List<PersonType> person) {
+        this.person = person;
     }
 }

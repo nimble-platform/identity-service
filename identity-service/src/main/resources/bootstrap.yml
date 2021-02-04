@@ -38,7 +38,7 @@ spring:
       driverClassName: org.postgresql.Driver
     test-on-borrow: true
     test-while-idle: true
-    remove-abandoned: true
+    remove-abandoned: false #making this false since some of the queries take too much time and abandoning connections causes an error in such cases
     log-abandoned: true
     initial-size: 3
     max-active: 55
@@ -140,9 +140,15 @@ nimble:
     federated-index-url: ${FEDERATED_INDEXING_SERVICE_URL:}
   catalogue-service:
     url: ${CATALOGUE_SERVICE_URL:http://localhost:8095}
+  business-process-service:
+    url: ${BUSINESS_PROCESS_SERVICE_URL:http://localhost:8081}
   platformName : ${PLATFORM_NAME:Staging}
   platformHost : ${IDENTITY_SERVICE_URL:http://localhost:9096}
   federation-instance-id: ${FEDERATION_INSTANCE_ID}
+  stripe:
+    secretKey: ${STRIPE_SECRET_KEY:}
+    refreshUrl: ${STRIPE_REFRESH_URL:http://localhost:9092/#/user-mgmt/company-settings}
+    returnUrl: ${STRIPE_RETURN_URL:http://localhost:9092/#/user-mgmt/company-settings}
   delegate-service:
     url: ${DELEGATE_SERVICE_URL:}
 
