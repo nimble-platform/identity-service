@@ -29,6 +29,7 @@ import eu.nimble.core.infrastructure.identity.utils.*;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.*;
 import eu.nimble.utility.ExecutionContext;
 import eu.nimble.utility.LoggerUtils;
+import eu.nimble.utility.persistence.repository.MetadataUtility;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -476,6 +477,10 @@ public class IdentityController {
         UblUtils.setID(newCompany, newCompany.getHjid().toString());
         // set federation id of company
         newCompany.setFederationInstanceID(federationConfig.getFederationInstanceId());
+        // create metadata for the company
+        MetadataType metadataType = MetadataUtility.createEntityMetadata(null,Arrays.asList(newCompany.getHjid().toString()));
+        newCompany.setMetadata(metadataType);
+        // save the company
         partyRepository.save(newCompany);
 
         // create qualifying party

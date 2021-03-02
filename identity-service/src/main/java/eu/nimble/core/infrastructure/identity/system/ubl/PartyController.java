@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static eu.nimble.core.infrastructure.identity.uaa.OAuthClient.Role.*;
+import static eu.nimble.core.infrastructure.identity.utils.UblAdapter.adaptPartyCreationDate;
 
 /**
  * Created by Johannes Innerbichler on 26/04/17.
@@ -210,12 +211,14 @@ public class PartyController {
         return new ResponseEntity<>(xmlParty, responseHeaders, HttpStatus.OK);
     }
 
-    @ApiOperation(value = "Get all party ids and name. Returns id-name tuples.",
+    @ApiOperation(value = "Get all party ids, names and registration dates.",
             notes = "Roles for persons are not set. Please use /person/{personId} for fetching roles of users",
             response = PartyTuple.class, responseContainer = "List")
     @RequestMapping(value = "/party/all", produces = {"application/json"}, method = RequestMethod.GET)
     ResponseEntity<List<PartyTuple>> getAllPartyIds(
             @ApiParam(value = "Excluded ids") @RequestParam(value = "exclude", required = false) List<String> exclude,
+            @ApiParam(value = "Sort option for company registration date. If it is true, they are sorted in the ascending order of registration date.If it is false, they" +
+                    " are sorted in the descending order of that.") @RequestParam(value = "dateSortAsc", required = false) Boolean sortAsc,
             @ApiParam(value = "Whether the company is deleted or not ") @RequestParam(value = "deleted", required = false) Boolean deleted) {
 
         List<PartyTuple> partyIds;
@@ -223,17 +226,27 @@ public class PartyController {
         if(deleted != null){
             partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
                     .filter(p -> deleted == p.isDeleted())
-                    .map(p -> new PartyTuple(UblAdapter.adaptPartyIdentifier(p), UblAdapter.adaptPartyNames(p.getPartyName())))
+                    .map(p -> new PartyTuple(UblAdapter.adaptPartyIdentifier(p), UblAdapter.adaptPartyNames(p.getPartyName()),adaptPartyCreationDate(p)))
                     .collect(Collectors.toList());
         } else{
             partyIds = StreamSupport.stream(partyRepository.findAll().spliterator(), false)
                     .filter(p -> p.getPerson().isEmpty() == false) // exclude parties with no members (might be deleted)
-                    .map(p -> new PartyTuple(UblAdapter.adaptPartyIdentifier(p), UblAdapter.adaptPartyNames(p.getPartyName())))
+                    .map(p -> new PartyTuple(UblAdapter.adaptPartyIdentifier(p), UblAdapter.adaptPartyNames(p.getPartyName()),adaptPartyCreationDate(p)))
                     .collect(Collectors.toList());
         }
         if (exclude != null)
             partyIds = partyIds.stream().filter(p -> !exclude.contains(p.getCompanyID())).collect(Collectors.toList());
-
+        // sort the result based on the company registration date
+        if(sortAsc != null){
+            if(sortAsc){
+                partyIds = partyIds.stream()
+                        .sorted(Comparator.comparing(PartyTuple::getDate, Comparator.nullsLast(Comparator.naturalOrder()))).collect(Collectors.toList());
+            }
+            else{
+                partyIds = partyIds.stream()
+                        .sorted(Comparator.comparing(PartyTuple::getDate, Comparator.nullsLast(Comparator.reverseOrder()))).collect(Collectors.toList());
+            }
+        }
         return ResponseEntity.ok(partyIds);
     }
 
@@ -276,10 +289,12 @@ public class PartyController {
     private static class PartyTuple {
         private String companyID;
         private Map<NimbleConfigurationProperties.LanguageID, String> names;
+        private String date;
 
-        PartyTuple(String companyID, Map<NimbleConfigurationProperties.LanguageID, String> names) {
+        PartyTuple(String companyID, Map<NimbleConfigurationProperties.LanguageID, String> names, String date) {
             this.companyID = companyID;
             this.names = names;
+            this.date = date;
         }
 
         public String getCompanyID() {
@@ -288,6 +303,10 @@ public class PartyController {
 
         public Map<NimbleConfigurationProperties.LanguageID, String> getNames() {
             return names;
+        }
+
+        public String getDate() {
+            return date;
         }
     }
 }

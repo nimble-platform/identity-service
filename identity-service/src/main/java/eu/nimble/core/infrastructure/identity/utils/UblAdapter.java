@@ -13,6 +13,8 @@ import eu.nimble.service.model.ubl.extension.QualityIndicatorParameter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -683,5 +685,15 @@ public class UblAdapter {
 
     public static Map<NimbleConfigurationProperties.LanguageID, String> adaptPartyNames(List<PartyNameType> partyNameTypes) {
         return adaptTextType(partyNameTypes.stream().map(PartyNameType::getName).collect(Collectors.toList()));
+    }
+
+    public static String adaptPartyCreationDate(PartyType party) {
+
+        if (party == null || party.getMetadata() == null)
+            return null;
+
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+
+        return dateFormat.format(party.getMetadata().getCreationDateItem());
     }
 }

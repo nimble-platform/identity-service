@@ -3,10 +3,12 @@ package eu.nimble.core.infrastructure.identity.migration;
 import eu.nimble.core.infrastructure.identity.entity.NegotiationSettings;
 import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
+import eu.nimble.core.infrastructure.identity.migration.model.CompanyCreationDate;
 import eu.nimble.core.infrastructure.identity.migration.util.OpenStreetMapUtils;
 import eu.nimble.core.infrastructure.identity.repository.*;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.service.RocketChatService;
+import eu.nimble.core.infrastructure.identity.system.ControllerUtils;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.list.ChatUser;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.list.ChatUsers;
 import eu.nimble.core.infrastructure.identity.system.dto.rocketchat.list.UserEmail;
@@ -26,13 +28,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.ws.rs.NotFoundException;
+import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.XMLGregorianCalendar;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -456,6 +463,52 @@ public class R17MigrationController {
         }
 
         logger.info("Completed request to set company location");
+        return ResponseEntity.ok(null);
+    }
+
+    @ApiOperation(value = "", notes = "Set the company registration date")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Set the company registration date successfully"),
+            @ApiResponse(code = 401, message = "Invalid role")
+    })
+    @RequestMapping(value = "/r17/migration/registration-date",
+            produces = {"application/json"},
+            method = RequestMethod.PATCH)
+    public ResponseEntity setCompanyRegistrationDate(@ApiParam(value = "The list of company registration dates. The date input should be in the following format: 'day/month/year'") @RequestBody List<CompanyCreationDate> companyCreationDateList,
+                                                     @ApiParam(value = "The Bearer token provided by the identity service", required = true) @RequestHeader(value = "Authorization") String bearerToken
+    ) throws IOException, DatatypeConfigurationException {
+        logger.info("Incoming request to set company registration dates");
+
+        if (!identityService.hasAnyRole(bearerToken, PLATFORM_MANAGER))
+            return new ResponseEntity<>("Only platform managers are allowed to run this migration script", HttpStatus.FORBIDDEN);
+
+        for (CompanyCreationDate companyCreationDate : companyCreationDateList) {
+            PartyType company = partyRepository.findByHjid(companyCreationDate.getId()).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+
+            // date array keeps dayOfMonth, month, year
+            String[] date = companyCreationDate.getDate().split("/");
+            if (date.length != 3) {
+                String msg = String.format("Invalid input for date: %s. It should be in the following format: 'day/month/year.", companyCreationDate.getDate());
+                logger.error(msg);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+            }
+            // month info is zero-based
+            GregorianCalendar c = new GregorianCalendar(Integer.parseInt(date[2]), Integer.parseInt(date[1]) - 1, Integer.parseInt(date[0]));
+            XMLGregorianCalendar currentDateTime = DatatypeFactory.newInstance().newXMLGregorianCalendar(c);
+
+            MetadataType metadataType = new MetadataType();
+            // update the metadata of company
+            if (company.getMetadata() != null) {
+                metadataType = company.getMetadata();
+            }
+            metadataType.setCreationDate(currentDateTime);
+
+            company.setMetadata(metadataType);
+
+            partyRepository.save(company);
+        }
+
+        logger.info("Completed request to set company registration dates");
         return ResponseEntity.ok(null);
     }
 }
