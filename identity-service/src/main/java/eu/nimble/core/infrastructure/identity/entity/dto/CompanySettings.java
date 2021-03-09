@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
+import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
 import io.swagger.annotations.ApiModelProperty;
 
 import java.util.ArrayList;
@@ -33,12 +34,18 @@ public class CompanySettings {
     @ApiModelProperty(value = "List of recently used product categories")
     private Set<String> recentlyUsedProductCategories = new HashSet<>();
 
+    @ApiModelProperty(value = "Set of subscribed company ids")
+    private Set<String> subscribedCompanyIds = new HashSet<>();
+
+    @ApiModelProperty(value = "List of subscribed category codes")
+    private List<CodeType> subscribedProductCategories = new ArrayList<>();
+
     public CompanySettings() {
     }
 
     public CompanySettings(String companyID, CompanyDetails details, CompanyDescription description, CompanyTradeDetails tradeDetails,
                            List<CompanyCertificate> certificates, Set<String> preferredProductCategories,
-                           Set<String> recentlyUsedProductCategories) {
+                           Set<String> recentlyUsedProductCategories,Set<String> subscribedCompanyIds,List<CodeType> subscribedProductCategories) {
         this.companyID = companyID;
         this.details = details;
         this.description = description;
@@ -46,6 +53,8 @@ public class CompanySettings {
         this.certificates = certificates;
         this.preferredProductCategories = preferredProductCategories;
         this.recentlyUsedProductCategories = recentlyUsedProductCategories;
+        this.subscribedCompanyIds = subscribedCompanyIds;
+        this.subscribedProductCategories = subscribedProductCategories;
     }
 
     public String getCompanyID() {
@@ -102,5 +111,21 @@ public class CompanySettings {
 
     public void setRecentlyUsedProductCategories(Set<String> recentlyUsedProductCategories) {
         this.recentlyUsedProductCategories = recentlyUsedProductCategories;
+    }
+
+    public Set<String> getSubscribedCompanyIds() {
+        return subscribedCompanyIds;
+    }
+
+    public void setSubscribedCompanyIds(Set<String> subscribedCompanyIds) {
+        this.subscribedCompanyIds = subscribedCompanyIds;
+    }
+
+    public List<CodeType> getSubscribedProductCategories() {
+        return subscribedProductCategories;
+    }
+
+    public void setSubscribedProductCategories(List<CodeType> subscribedProductCategories) {
+        this.subscribedProductCategories = subscribedProductCategories;
     }
 }

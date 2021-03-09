@@ -70,6 +70,13 @@ public class UblAdapter {
                 .collect(Collectors.toSet());
         settings.setPreferredProductCategories(preferredProductCategories);
 
+        // set product subscriptions
+        if(party.getProductPublishSubscription() != null){
+            settings.setSubscribedProductCategories(party.getProductPublishSubscription().getCategoryCode());
+            Set<String> subscribedCompanyIds = new HashSet<>(party.getProductPublishSubscription().getCompanyID());
+            settings.setSubscribedCompanyIds(subscribedCompanyIds);
+        }
+
         // set recently used product categories
         Set<String> recentlyUsedProductCategories = party.getMostRecentItemsClassificationCode().stream()
                 .map(CodeType::getValue)

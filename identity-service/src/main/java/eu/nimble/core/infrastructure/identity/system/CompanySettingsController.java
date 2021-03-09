@@ -157,6 +157,18 @@ public class CompanySettingsController {
         existingCompany.getPreferredItemClassificationCode().clear();
         existingCompany.getPreferredItemClassificationCode().addAll(preferredProductCategories);
 
+        // set product subscriptions
+        if(existingCompany.getProductPublishSubscription() == null){
+            existingCompany.setProductPublishSubscription(new ProductPublishSubscriptionType());
+        }
+        // set category codes
+        existingCompany.getProductPublishSubscription().getCategoryCode().clear();
+        existingCompany.getProductPublishSubscription().getCategoryCode().addAll(newSettings.getSubscribedProductCategories());
+
+        // set company ids
+        existingCompany.getProductPublishSubscription().getCompanyIDItems().clear();
+        existingCompany.getProductPublishSubscription().setCompanyID(new ArrayList<>(newSettings.getSubscribedCompanyIds()));
+
         // set recently used product categories
         List<CodeType> recentlyUsedProductCategories = UblAdapter.adaptProductCategories(newSettings.getRecentlyUsedProductCategories());
         existingCompany.getMostRecentItemsClassificationCode().clear();

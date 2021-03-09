@@ -34,7 +34,7 @@ public class TestUtils {
                 Collections.singletonList(new CompanyEvent()), Collections.singletonList("test"));
         CompanyTradeDetails companyTradeDetails = new CompanyTradeDetails();
         CompanySettings companySettings = new CompanySettings("123", companyDetails, companyDescription,
-                companyTradeDetails, Collections.singletonList(new CompanyCertificate()), Collections.singleton("category 1"), Collections.singleton("category 2"));
+                companyTradeDetails, Collections.singletonList(new CompanyCertificate()), Collections.singleton("category 1"), Collections.singleton("category 2"),null,null);
         CompanyRegistration companyRegistration = new CompanyRegistration();
         companyRegistration.setCompanyID(123L);
         companyRegistration.setUserID(user.getHjid());

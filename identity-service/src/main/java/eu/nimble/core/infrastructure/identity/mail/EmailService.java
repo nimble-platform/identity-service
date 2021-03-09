@@ -4,6 +4,8 @@ import com.google.common.base.Strings;
 import eu.nimble.core.infrastructure.identity.config.NimbleConfigurationProperties;
 import eu.nimble.core.infrastructure.identity.config.message.NimbleMessageCode;
 import eu.nimble.core.infrastructure.identity.entity.CompanyDetailsUpdates;
+import eu.nimble.core.infrastructure.identity.mail.model.SubscriptionMailModel;
+import eu.nimble.core.infrastructure.identity.mail.model.SubscriptionSummary;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.AddressType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
@@ -98,6 +100,46 @@ public class EmailService {
         String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_INVITATION,language,Arrays.asList(platformName,version));
 
         this.send(new String[]{toEmail}, subject, getTemplateName("invitation",language), context);
+    }
+
+    public void sendSubscriptionSummary(List<String> toEmail, List<SubscriptionSummary> subscriptionSummaryList, String language) throws UnsupportedEncodingException {
+        Context context = new Context();
+
+        // keeps the list of SubscriptionMailModel which corresponds to the 'subscriptions' variable in mail template
+        List<SubscriptionMailModel> subscriptionMailModels = new ArrayList<>();
+        // populate subscriptionMailModels array
+        for (SubscriptionSummary subscriptionSummary : subscriptionSummaryList) {
+            // retrieve the urls for product details
+            List<String> productDetailsUrls = new ArrayList<>();
+            for (int i = 0; i < subscriptionSummary.getCatalogueIds().size(); i++) {
+                productDetailsUrls.add(String.format("%s/#/product-details?catalogueId=%s&id=%s",frontendUrl,URLEncoder.encode(subscriptionSummary.getCatalogueIds().get(i), "UTF-8"),
+                        URLEncoder.encode(subscriptionSummary.getProductIds().get(i), "UTF-8")));
+            }
+            // set title of subscription
+            String title;
+            // company
+            if(subscriptionSummary.getCompanyName() != null){
+                title = String.format("The following products are published/updated by %s",subscriptionSummary.getCompanyName());
+            }
+            // category
+            else{
+                title = String.format("The following products are published/updated on category: %s",subscriptionSummary.getCategoryName());
+            }
+            // create the subscription mail model
+            SubscriptionMailModel subscriptionMailModel = new SubscriptionMailModel();
+            subscriptionMailModel.setTitle(title);
+            subscriptionMailModel.setProductUrls(productDetailsUrls);
+
+            subscriptionMailModels.add(subscriptionMailModel);
+        }
+        // set context variables
+        context.setVariable("subscriptions", subscriptionMailModels);
+        context.setVariable("platformName",platformName);
+        // set mail subject
+        String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_SUBSCRIPTION,language,Arrays.asList(platformName,version));
+
+        this.send(toEmail.toArray(new String[0]), subject, getTemplateName("subscription",language), context);
     }
 
     public void informInviteExistingCompany(String toEmail, String senderName, String companyName, Collection<String> roles, String language) {
