@@ -1,5 +1,6 @@
 package eu.nimble.core.infrastructure.identity.entity.dto;
 
+import eu.nimble.service.model.ubl.commonaggregatecomponents.DocumentReferenceType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.CodeType;
 import io.swagger.annotations.ApiModelProperty;
 
@@ -39,6 +40,9 @@ public class CompanySettings {
 
     @ApiModelProperty(value = "List of subscribed category codes")
     private List<CodeType> subscribedProductCategories = new ArrayList<>();
+
+    @ApiModelProperty(value = "List of terms and conditions files")
+    private List<DocumentReferenceType> termsAndConditions = new ArrayList<>();
 
     public CompanySettings() {
     }
@@ -127,5 +131,13 @@ public class CompanySettings {
 
     public void setSubscribedProductCategories(List<CodeType> subscribedProductCategories) {
         this.subscribedProductCategories = subscribedProductCategories;
+    }
+
+    public List<DocumentReferenceType> getTermsAndConditions() {
+        return termsAndConditions;
+    }
+
+    public void setTermsAndConditions(List<DocumentReferenceType> termsAndConditions) {
+        this.termsAndConditions = termsAndConditions;
     }
 }

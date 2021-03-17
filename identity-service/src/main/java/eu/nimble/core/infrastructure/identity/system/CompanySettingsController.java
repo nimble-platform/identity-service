@@ -169,6 +169,11 @@ public class CompanySettingsController {
         existingCompany.getProductPublishSubscription().getCompanyIDItems().clear();
         existingCompany.getProductPublishSubscription().setCompanyID(new ArrayList<>(newSettings.getSubscribedCompanyIds()));
 
+        // set terms and conditions
+        if(existingCompany.getSalesTerms() != null){
+            existingCompany.getSalesTerms().getDocumentReference().clear();
+            existingCompany.getSalesTerms().getDocumentReference().addAll(newSettings.getTermsAndConditions());
+        }
         // set recently used product categories
         List<CodeType> recentlyUsedProductCategories = UblAdapter.adaptProductCategories(newSettings.getRecentlyUsedProductCategories());
         existingCompany.getMostRecentItemsClassificationCode().clear();
@@ -477,6 +482,129 @@ public class CompanySettingsController {
                 indexingClient.setParty(party,bearer);
             }
         }
+
+        return ResponseEntity.ok().build();
+    }
+
+    @ApiOperation(value = "Terms and conditions file upload")
+    @PostMapping("/{companyID}/termsAndConditions")
+    public ResponseEntity<?> uploadTermsAndConditions(
+            @RequestHeader(value = "Authorization") String bearer,
+            @ApiParam(value = "Id of company owning the terms and conditions file", required = true) @PathVariable Long companyID,
+            @RequestParam(value = "file",required = false) MultipartFile termsAndConditionsFile,
+            @RequestParam("id") String id
+    ) throws IOException {
+        if (identityService.hasAnyRole(bearer,COMPANY_ADMIN,LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE, PUBLISHER) == false)
+            return new ResponseEntity<>("Only legal representatives, company admin or platform managers are allowed to upload terms and conditions", HttpStatus.FORBIDDEN);
+        // retrieve the company
+        PartyType company = getCompanySecure(companyID, bearer);
+        // binary object for the terms and conditions to be uploaded
+        BinaryObjectType termsAndConditionsBinary = new BinaryObjectType();
+        // set the file content if terms and conditions file is provided
+        if(termsAndConditionsFile != null){
+            // since the file content is Base64 encoded, decode it before saving
+            termsAndConditionsBinary.setValue(Base64.getDecoder().decode(termsAndConditionsFile.getBytes()));
+            termsAndConditionsBinary.setFileName(termsAndConditionsFile.getOriginalFilename());
+            termsAndConditionsBinary.setMimeCode(termsAndConditionsFile.getContentType());
+        }
+        // terms and conditions file id is not null when an existing terms and conditions file is being updated
+        if(!id.equals("null")){
+
+            Optional<DocumentReferenceType> documentReferenceTypeOptional = company.getSalesTerms().getDocumentReference().stream().filter(documentReferenceType1 -> documentReferenceType1.getID().contentEquals(id)).findFirst();
+
+            if(documentReferenceTypeOptional.isPresent()){
+                DocumentReferenceType documentReferenceType = documentReferenceTypeOptional.get();
+                String uri = documentReferenceType.getAttachment().getEmbeddedDocumentBinaryObject().getUri();
+                // retrieve its content
+                BinaryObjectType existingTermsAndConditionsFile = binaryContentService.retrieveContent(uri);
+                // delete binary content
+                binaryContentService.deleteContentIdentity(uri);
+
+                company.getSalesTerms().getDocumentReference().remove(documentReferenceType);
+                partyRepository.save(company);
+                // if no file is provided for the new terms and conditions file, we assume that the file content of existing terms and conditions will be used
+                if(termsAndConditionsFile == null){
+                    termsAndConditionsBinary.setValue(existingTermsAndConditionsFile.getValue());
+                    termsAndConditionsBinary.setFileName(existingTermsAndConditionsFile.getFileName());
+                    termsAndConditionsBinary.setMimeCode(existingTermsAndConditionsFile.getMimeCode());
+                }
+            }
+        }
+        termsAndConditionsBinary = binaryContentService.createContent(termsAndConditionsBinary);
+        termsAndConditionsBinary.setValue(null); // reset value so it is not stored in database
+
+        // create a document reference type for the terms and conditions file
+        AttachmentType attachmentType = new AttachmentType();
+        attachmentType.setEmbeddedDocumentBinaryObject(termsAndConditionsBinary);
+        DocumentReferenceType documentReferenceType = new DocumentReferenceType();
+        documentReferenceType.setID(UUID.randomUUID().toString());
+        documentReferenceType.setAttachment(attachmentType);
+
+        // update and store company
+        company.getSalesTerms().getDocumentReference().add(documentReferenceType);
+        partyRepository.save(company);
+        return ResponseEntity.ok(documentReferenceType);
+    }
+
+    @ApiOperation(value = "Terms and conditions file download")
+    @RequestMapping(value = "/termsAndConditions/{id}", method = RequestMethod.GET)
+    ResponseEntity<?> downloadTermsAndConditions(@ApiParam(value = "Id of terms and conditions file.", required = true) @PathVariable String id) {
+
+        Optional<BigInteger> partyIdOptional = partyRepository.findByTermsAndConditionsDocumentReferenceId(id).stream().findFirst();
+        if (!partyIdOptional.isPresent())
+            return ResponseEntity.notFound().build();
+        PartyType company = partyRepository.findByHjid(partyIdOptional.get().longValue()).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+
+        Optional<DocumentReferenceType> documentReferenceOptional = company.getSalesTerms().getDocumentReference().stream().filter(documentReferenceType -> documentReferenceType.getID().contentEquals(id)).findFirst();
+        String uri = documentReferenceOptional.get().getAttachment().getEmbeddedDocumentBinaryObject().getUri();
+        BinaryObjectType file = binaryContentService.retrieveContent(uri);
+        Resource certResource = new ByteArrayResource(file.getValue());
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(file.getMimeCode()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFileName() + "\"")
+                .body(certResource);
+    }
+
+    @ApiOperation(value = "Terms and conditions file download")
+    @RequestMapping(value = "/termsAndConditions/{id}/object", method = RequestMethod.GET)
+    ResponseEntity<DocumentReferenceType> downloadTermsAndConditionsObject(@ApiParam(value = "Id of terms and conditions file.", required = true) @PathVariable String id) {
+        Optional<BigInteger> partyIdOptional = partyRepository.findByTermsAndConditionsDocumentReferenceId(id).stream().findFirst();
+        if (!partyIdOptional.isPresent())
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        PartyType company = partyRepository.findByHjid(partyIdOptional.get().longValue()).stream().findFirst().orElseThrow(ControllerUtils.CompanyNotFoundException::new);
+
+        Optional<DocumentReferenceType> documentReferenceOptional = company.getSalesTerms().getDocumentReference().stream().filter(documentReferenceType -> documentReferenceType.getID().contentEquals(id)).findFirst();
+
+        return ResponseEntity.ok().body(documentReferenceOptional.get());
+    }
+
+    @ApiOperation(value = "Terms and conditions file deletion")
+    @RequestMapping(value = "/{companyID}/termsAndConditions/{id}", method = RequestMethod.DELETE)
+    ResponseEntity<?> deleteTermsAndConditions(
+            @RequestHeader(value = "Authorization") String bearer,
+            @ApiParam(value = "Id of company owning the terms and conditions file", required = true) @PathVariable Long companyID,
+            @ApiParam(value = "Id of terms and conditions file.", required = true) @PathVariable String id) throws IOException {
+
+        if (identityService.hasAnyRole(bearer,COMPANY_ADMIN,LEGAL_REPRESENTATIVE, PLATFORM_MANAGER, INITIAL_REPRESENTATIVE, PUBLISHER) == false)
+            return new ResponseEntity<>("Only legal representatives, company admin or platform managers are allowed to delete terms and conditions", HttpStatus.FORBIDDEN);
+
+        PartyType company = getCompanySecure(companyID, bearer);
+
+        Optional<DocumentReferenceType> documentReferenceOptional = company.getSalesTerms().getDocumentReference().stream().filter(documentReferenceType -> documentReferenceType.getID().contentEquals(id)).findFirst();
+
+        if (!documentReferenceOptional.isPresent())
+            throw new ControllerUtils.DocumentNotFoundException("No terms and conditions file for Id found.");
+
+        // delete binary content
+        String uri = documentReferenceOptional.get().getAttachment().getEmbeddedDocumentBinaryObject().getUri();
+        binaryContentService.deleteContentIdentity(uri);
+
+        // delete terms and conditions file
+        company.getSalesTerms().getDocumentReference().remove(documentReferenceOptional.get());
+
+        // update list of terms and conditions
+        partyRepository.save(company);
 
         return ResponseEntity.ok().build();
     }

@@ -77,6 +77,8 @@ public class UblAdapter {
             settings.setSubscribedCompanyIds(subscribedCompanyIds);
         }
 
+        // set terms and conditions
+        settings.setTermsAndConditions(party.getSalesTerms().getDocumentReference());
         // set recently used product categories
         Set<String> recentlyUsedProductCategories = party.getMostRecentItemsClassificationCode().stream()
                 .map(CodeType::getValue)
