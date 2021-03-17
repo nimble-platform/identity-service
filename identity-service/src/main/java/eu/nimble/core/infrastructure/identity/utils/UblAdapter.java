@@ -78,7 +78,9 @@ public class UblAdapter {
         }
 
         // set terms and conditions
-        settings.setTermsAndConditions(party.getSalesTerms().getDocumentReference());
+        if(party.getSalesTerms() != null){
+            settings.setTermsAndConditions(party.getSalesTerms().getDocumentReference());
+        }
         // set recently used product categories
         Set<String> recentlyUsedProductCategories = party.getMostRecentItemsClassificationCode().stream()
                 .map(CodeType::getValue)
