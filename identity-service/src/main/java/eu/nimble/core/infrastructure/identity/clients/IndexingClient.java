@@ -6,11 +6,7 @@ import eu.nimble.service.model.solr.party.PartyType;
 import feign.Headers;
 import feign.Response;
 import org.springframework.cloud.netflix.feign.FeignClient;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * REST Client to index entities via the Indexing Service.
@@ -43,4 +39,9 @@ public interface IndexingClient {
     @RequestMapping(method = RequestMethod.DELETE, value = "/catalogue")
     Boolean deleteCatalogue(@RequestParam(value = "uri") String uri,
             @RequestHeader(value = "Authorization", required = true) String bearerToken);
+
+    @RequestMapping(method = RequestMethod.POST, value = "/class/search", consumes = "application/json")
+    SearchResult searchClass(
+            @RequestBody Search search,
+            @RequestHeader(value = "Authorization") String bearerToken);
 }

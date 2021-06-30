@@ -42,4 +42,9 @@ public class IndexingClientFallback implements IndexingClient {
     public Boolean deleteCatalogue(String uri,String bearerToken) {
         return false;
     }
+
+    @Override
+    public SearchResult searchClass(Search search, String bearerToken) {
+        return null;
+    }
 }

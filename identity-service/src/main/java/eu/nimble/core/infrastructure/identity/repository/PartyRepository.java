@@ -43,4 +43,10 @@ public interface PartyRepository extends PagingAndSortingRepository<PartyType, L
 
     @Query(value = "FROM PartyType WHERE stripeAccountId = ?1")
     List<PartyType> findByStripeAccountId(String accountId);
+
+    @Query(value = "FROM PartyType WHERE productPublishSubscription is not null")
+    List<PartyType> findAllWithSubscriptions();
+
+    @Query(value = "select pt.hjid from document_reference_type drt,trading_preferences tp,party_type pt where drt.id = ?1 and tp.hjid = drt.document_reference_trading_p_0 and pt.sales_terms_party_type_hjid = tp .hjid",nativeQuery = true)
+    List<BigInteger> findByTermsAndConditionsDocumentReferenceId(String id);
 }

@@ -1,0 +1,12 @@
+Hello,
+
+Here is the daily summary of your subscriptions:
+[# th:each="subscription : ${subscriptions}"]
+[( ${subscription.title} )]
+[# th:each="productUrl : ${subscription.productUrls}"]
+- [( ${productUrl} )]
+[/]
+[/]
+
+Sincerely,
+    your [(${platformName})] platform manager
