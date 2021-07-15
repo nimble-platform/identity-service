@@ -1,16 +1,17 @@
 package eu.nimble.core.infrastructure.identity.utils;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import eu.nimble.service.model.solr.party.PartyType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.ContactType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.DocumentReferenceType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.QualifyingPartyType;
 import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import eu.nimble.service.model.ubl.extension.QualityIndicatorParameter;
 import eu.nimble.utility.country.CountryUtil;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by Dileepa Jayakody on 15/03/19
@@ -46,7 +47,13 @@ public class DataModelUtils {
                 indexParty.setLocationLongitude(party.getPostalAddress().getCoordinate().getLongitude().doubleValue());
             }
         }
-
+        // when contact address set - include with party when indexing
+        if ( party.getContact()!=null) {
+        	ContactType contact = party.getContact();
+        	indexParty.setProperty(contact.getName().getValue(), "contact","Name");
+        	indexParty.setProperty(contact.getElectronicMail(), "contact", "Email");
+        	indexParty.setProperty(contact.getTelephone(), "contact", "Phone");
+        }
         indexParty.setId(party.getHjid().toString());
         indexParty.setUri(party.getHjid().toString());
 
