@@ -48,8 +48,9 @@ public class DataModelUtils {
             }
         }
         // when contact address set - include with party when indexing
-        if ( party.getContact()!=null) {
+        if ( party.getContact()!=null && party.getContact().getName() != null) {
         	ContactType contact = party.getContact();
+        	
         	indexParty.setProperty(contact.getName().getValue(), "contact","Name");
         	indexParty.setProperty(contact.getElectronicMail(), "contact", "Email");
         	indexParty.setProperty(contact.getTelephone(), "contact", "Phone");
