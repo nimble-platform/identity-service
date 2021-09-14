@@ -98,6 +98,13 @@ public class FederationService {
 
         try {
 
+            // debug request
+            logger.info("URL:{}",url);
+            logger.info("client_id:{}",request.getBody().get("client_id").get(0));
+            logger.info("client_secret:{}",request.getBody().get("client_secret").get(0));
+            logger.info("redirect_uri:{}",request.getBody().get("redirect_uri").get(0));
+            logger.info("grant_type:{}",request.getBody().get("grant_type").get(0));
+            logger.info("code:{}",request.getBody().get("code").get(0));
             ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
             ObjectMapper mapper = new ObjectMapper();
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
