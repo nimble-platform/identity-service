@@ -34,9 +34,15 @@ public class IndexingClientController {
     @Value("${nimble.indexing.federated-index-url}")
     private String federatedIndexUrl;
 
+    @Value("${federated-index-platform-name}")
+    private String federatedIndexPlatformName;
 
     @Autowired
     IndexingClientFallback indexingFallback;
+
+    public String getFederatedIndexPlatformName() {
+        return federatedIndexPlatformName;
+    }
 
     public IndexingClientController() {
 

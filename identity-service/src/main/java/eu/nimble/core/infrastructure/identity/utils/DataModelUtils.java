@@ -137,6 +137,8 @@ public class DataModelUtils {
             indexParty.setWebsite(party.getWebsiteURI());
         }
         indexParty.setVerified(false);
+        // set base platform
+        indexParty.setBasePlatform(SpringBridge.getInstance().getFederatedIndexPlatformName());
         return indexParty;
     }
 
