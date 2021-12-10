@@ -8,6 +8,8 @@ import com.mashape.unirest.http.Unirest;
 import eu.nimble.core.infrastructure.identity.constants.GlobalConstants;
 import eu.nimble.core.infrastructure.identity.system.dto.oauth.Token;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -16,11 +18,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 @Service
 public class FederationService {
+
+    private final Logger logger = LoggerFactory.getLogger(FederationService.class);
 
     @Value("${nimble.oauth.federationClient.accessTokenUri}")
     private String accessTokenUri;
@@ -92,11 +97,13 @@ public class FederationService {
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
 
         try {
-
             ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
             ObjectMapper mapper = new ObjectMapper();
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             token = mapper.readValue(response.getBody(), Token.class);
+        } catch (HttpClientErrorException e) {
+            logger.error("Failed to retrieve access token: {} ",e.getResponseBodyAsString());
+            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }
