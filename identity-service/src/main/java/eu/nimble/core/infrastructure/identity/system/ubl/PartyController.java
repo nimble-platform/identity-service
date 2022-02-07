@@ -101,7 +101,7 @@ public class PartyController {
 
         logger.debug("Requesting all parties page {}", pageNumber);
 
-        Page<PartyType> partyPage = partyRepository.findAll(new PageRequest(pageNumber, pageSize, new Sort(Sort.Direction.ASC, "partyName")));
+        Page<PartyType> partyPage = partyRepository.findAll(new PageRequest(pageNumber, pageSize));
 
         // fetch and include roles
         if (includeRoles)
