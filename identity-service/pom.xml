@@ -212,11 +212,11 @@
             <artifactId>resteasy-client</artifactId>
             <version>${resteasy.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jaxrs</artifactId>
-            <version>${resteasy.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.jboss.resteasy</groupId>-->
+<!--            <artifactId>resteasy-jaxrs</artifactId>-->
+<!--            <version>${resteasy.version}</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>com.stripe</groupId>
             <artifactId>stripe-java</artifactId>

@@ -37,6 +37,7 @@ import javax.annotation.PostConstruct;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
@@ -90,7 +91,7 @@ public class KeycloakAdmin {
     @PostConstruct
     @SuppressWarnings("unused")
     public void init() {
-        ResteasyClient client = new ResteasyClientBuilder().connectionPoolSize(10).build();
+        ResteasyClient client = ((ResteasyClientBuilder) ClientBuilder.newBuilder()).connectionPoolSize(10).build();
         this.keycloak = KeycloakBuilder.builder()
                 .serverUrl(keycloakConfig.getServerUrl())
                 .realm(keycloakConfig.getRealm())
