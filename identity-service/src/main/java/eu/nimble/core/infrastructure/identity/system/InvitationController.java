@@ -5,15 +5,18 @@ import eu.nimble.core.infrastructure.identity.entity.UaaUser;
 import eu.nimble.core.infrastructure.identity.entity.UserInvitation;
 import eu.nimble.core.infrastructure.identity.mail.EmailService;
 import eu.nimble.core.infrastructure.identity.repository.*;
+import eu.nimble.core.infrastructure.identity.service.AdminService;
 import eu.nimble.core.infrastructure.identity.service.IdentityService;
 import eu.nimble.core.infrastructure.identity.uaa.KeycloakAdmin;
 import eu.nimble.core.infrastructure.identity.uaa.OAuthClient;
 import eu.nimble.core.infrastructure.identity.uaa.OpenIdConnectUserDetails;
 import eu.nimble.core.infrastructure.identity.utils.UblAdapter;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.DemandType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
 import eu.nimble.utility.ExecutionContext;
+import eu.nimble.utility.validation.NimbleRole;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -60,6 +63,9 @@ public class InvitationController {
 
     @Autowired
     private KeycloakAdmin keycloakAdmin;
+
+    @Autowired
+    private AdminService adminService;
 
     @ApiOperation(value = "", notes = "Send invitation to user.", response = ResponseEntity.class, tags = {})
     @RequestMapping(value = "/send_invitation", produces = {"application/json"}, method = RequestMethod.POST)
@@ -255,5 +261,30 @@ public class InvitationController {
 
         responseMessage = responseMessage.isEmpty() ? "No changes" : responseMessage;
         return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "", notes = "Send email to users to notify them about new demand.", response = ResponseEntity.class, tags = {})
+    @RequestMapping(value = "/invite/demand", produces = {"application/json"}, method = RequestMethod.POST)
+    ResponseEntity<?> inviteCompaniesToDemandDetails(
+            @ApiParam(value = "Demand object.", required = true) @Valid @RequestBody DemandType demand,
+            @RequestHeader(value = "Authorization") String bearer,
+            HttpServletRequest request) throws IOException {
+
+        if (!identityService.hasAnyRole(bearer, COMPANY_ADMIN, EXTERNAL_REPRESENTATIVE, LEGAL_REPRESENTATIVE, INITIAL_REPRESENTATIVE, PUBLISHER, EFACTORY_USER))
+            return new ResponseEntity<>("You are not allowed to invite users to view demand details."
+                    , HttpStatus.UNAUTHORIZED);
+
+        List<String> emailList = new ArrayList<>();
+        List<PartyType> parties = adminService.queryCompanies(AdminService.CompanyState.VERIFIED);
+        for (PartyType party : parties) {
+            for (PersonType person : party.getPerson()) {
+                if(person.getRole().contains(NimbleRole.LEGAL_REPRESENTATIVE.getName()) || person.getRole().contains(NimbleRole.SALES_OFFICER.getName())){
+                    emailList.add(person.getContact().getElectronicMail());
+                }
+            }
+        }
+
+        emailService.informUsersNewDemand(emailList,executionContext.getLanguageId(),demand);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }

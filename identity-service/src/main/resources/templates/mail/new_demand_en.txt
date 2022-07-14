@@ -1,0 +1,13 @@
+Hello,
+
+A new demand is published on [(${platformName})].
+
+Demand Details:
+    Title: [(${title})]
+    Description: [(${description})]
+
+For a closer look, please follow the link below:
+[(${demandUrl})]
+
+Sincerely,
+    your platform

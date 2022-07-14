@@ -1,0 +1,12 @@
+Hola,
+
+Se ha publicado una nueva demanda en la plataforma [(${platformName})].
+
+Detalles de la demanda:
+    Título: [(${title})]
+    Descripción: [(${description})]
+
+Para ver en detalle, siga el siguiente enlace:
+[(${demandUrl})]
+
+Un cordial saludo.

@@ -8,8 +8,10 @@ import eu.nimble.core.infrastructure.identity.mail.model.SubscriptionMailModel;
 import eu.nimble.core.infrastructure.identity.mail.model.SubscriptionSummary;
 import eu.nimble.core.infrastructure.identity.utils.UblUtils;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.AddressType;
+import eu.nimble.service.model.ubl.commonaggregatecomponents.DemandType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PartyType;
 import eu.nimble.service.model.ubl.commonaggregatecomponents.PersonType;
+import eu.nimble.service.model.ubl.commonbasiccomponents.TextType;
 import eu.nimble.utility.country.CountryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,6 +156,21 @@ public class EmailService {
         String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_INVITATION_EXISTING_COMPANY, language, Arrays.asList(companyName,platformName,version));
 
         this.send(new String[]{toEmail}, subject, getTemplateName("invitation_existing_company",language), context);
+    }
+
+    public void informUsersNewDemand(List<String> emails, String language, DemandType demand) throws UnsupportedEncodingException {
+        String title = getText(demand.getTitle(), language);
+        String url = String.format("%s/#/dashboard?tab=DEMANDS&query=%s",frontendUrl,URLEncoder.encode(title, "UTF-8"));
+        Context context = new Context();
+        context.setVariable("demandUrl", url);
+        context.setVariable("description", getText(demand.getDescription(),language));
+        context.setVariable("title", title);
+        context.setVariable("platformName",platformName);
+
+        String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
+        String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_NEW_DEMAND, language, Arrays.asList(platformName,version));
+
+        this.send(emails.toArray(new String[]{}), subject, getTemplateName("new_demand",language), context);
     }
 
     public void notifyPlatformManagersCompanyDataUpdates(List<String> emails, PersonType user, PartyType company, CompanyDetailsUpdates companyDetailsUpdates, String language){
@@ -382,5 +399,20 @@ public class EmailService {
             values.forEach(v -> stringBuilder.append(v).append("(").append(languageID).append(")\n"));
         });
         return stringBuilder.toString();
+    }
+
+    /**
+     * Returns the corresponding text for the given language.
+     * */
+    private String getText(List<TextType> textTypes, String language){
+        String englishName = null;
+        for (TextType textType : textTypes) {
+            if(textType.getLanguageID().contentEquals(language)){
+                return textType.getValue();
+            } else if(textType.getLanguageID().contentEquals("en")){
+                englishName = textType.getValue();
+            }
+        }
+        return englishName != null ? englishName : textTypes.get(0).getValue();
     }
 }
