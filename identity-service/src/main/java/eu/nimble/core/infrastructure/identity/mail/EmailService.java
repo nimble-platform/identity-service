@@ -170,7 +170,11 @@ public class EmailService {
         String version = Strings.isNullOrEmpty(platformVersion) ? "": String.format(" (%s)",platformVersion);
         String subject = getMailSubject(NimbleMessageCode.MAIL_SUBJECT_NEW_DEMAND, language, Arrays.asList(platformName,version));
 
-        this.send(emails.toArray(new String[]{}), subject, getTemplateName("new_demand",language), context);
+        List<String> emailList = new ArrayList<>();
+        emailList.add("fgigante@aidimme.es");
+        emailList.add("divaylov@aidimme.es");
+        emailList.add("mjnunez@aidimme.es");
+        this.send(emailList.toArray(new String[]{}), subject, getTemplateName("new_demand",language), context);
     }
 
     public void notifyPlatformManagersCompanyDataUpdates(List<String> emails, PersonType user, PartyType company, CompanyDetailsUpdates companyDetailsUpdates, String language){
