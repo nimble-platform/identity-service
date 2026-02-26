@@ -10,7 +10,6 @@ import eu.nimble.utility.email.ThymeleafConfig;
 import eu.nimble.utility.persistence.binary.BinaryContentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
@@ -24,9 +23,6 @@ import org.springframework.cloud.netflix.hystrix.EnableHystrix;
 import org.springframework.context.annotation.*;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 import javax.sql.DataSource;
 
@@ -42,8 +38,6 @@ import javax.sql.DataSource;
 @ComponentScan(basePackages = {"eu.nimble.utility", "eu.nimble.utility.persistence.initalizer", "eu.nimble.core.infrastructure.identity"},excludeFilters = {@ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = EmailService.class), @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = ThymeleafConfig.class)})
 public class IdentityServiceApplication extends SpringBootServletInitializer {
 
-
-
     @Bean
     public HystrixCommandAspect hystrixAspect() {
         return new HystrixCommandAspect();
@@ -51,28 +45,11 @@ public class IdentityServiceApplication extends SpringBootServletInitializer {
 
     private static final Logger logger = LoggerFactory.getLogger(IdentityServiceApplication.class);
 
-    @Value("${nimble.corsEnabled}")
-    private String corsEnabled;
-
     @Bean
     @Primary
     @ConfigurationProperties(prefix="spring.datasource")
     public DataSource primaryDataSource() {
         return DataSourceBuilder.create().build();
-    }
-
-    @Bean
-    public WebMvcConfigurer corsConfigurer() {
-
-        return new WebMvcConfigurerAdapter() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                if (corsEnabled.equals("true")) {
-                    logger.info("Enabling CORS...");
-                    registry.addMapping("/**").allowedMethods("HEAD", "GET", "PUT", "POST", "DELETE", "PATCH");
-                }
-            }
-        };
     }
 
     public static void main(String[] args) {

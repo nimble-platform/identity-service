@@ -89,14 +89,14 @@ nimble:
     clientid: ${UAA_CLIENT_ID:sultans}
     clientsecret: ${UAA_CLIENT_SECRET:sultanssecret}
   keycloak:
-    serverUrl: ${KEYCLOAK_URL:http://localhost:10096/auth}
+    serverUrl: ${KEYCLOAK_URL:http://localhost:10096}
     realm: ${KEYCLOAK_REALM:master}
-    public-key: ${KEYCLOAK_PUBLIC_KEY}
+    public-key: ${KEYCLOAK_PUBLIC_KEY:}
     admin:
       username: ${KEYCLOAK_ADMIN_USERNAME:admin}
       password: ${KEYCLOAK_ADMIN_PASSWORD:password}
       cliendId: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
-      cliendSecret: ${KEYCLOAK_ADMIN_CLIENT_SECRET}
+      cliendSecret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}
   oauth:
     client:
       cliendId: ${OAUTH_CLIENT_ID:nimble-client}
